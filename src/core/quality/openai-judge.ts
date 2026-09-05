@@ -1,15 +1,11 @@
-/**
- * Claude quality judge: looks at the source frame, the destination frame and sampled bridge frames,
- * and scores the transition against the recipe's expected structure and quality criteria.
- */
+/** OpenAI judges source/destination fidelity and sampled bridge continuity. */
 import path from "node:path";
-import Anthropic from "@anthropic-ai/sdk";
+import type OpenAI from "openai";
+import type { ResponseInputContent } from "openai/resources/responses/responses";
 import { z } from "zod";
-import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { config } from "@/core/config";
 import { logger } from "@/core/log";
-import { anthropic, usageCost } from "@/core/analysis/claude-analyzer";
-import { jpegForModel } from "@/core/media/image";
+import { imageInput, openai, structuredResponse } from "@/core/openai";
 import { sampleFrames } from "@/core/media/ffmpeg";
 import type { TransitionRecipe } from "@/core/recipes/types";
 import type { QualityScores } from "@/core/types";
@@ -37,36 +33,30 @@ List concrete issues in "issues" (empty if none).`;
 
 const clamp = (v: number) => Math.max(0, Math.min(100, Math.round(v)));
 
-export async function claudeJudge(bridgePath: string, sourceFrame: string, destFrame: string, recipe: TransitionRecipe, prompt: string): Promise<{ scores: QualityScores; costUsd: number }> {
-  const model = config.anthropic.judgeModel;
-  const samples = await sampleFrames(bridgePath, path.join(path.dirname(bridgePath), "judge-claude"), 5, "judge");
-  const img = async (p: string): Promise<Anthropic.ImageBlockParam> => ({
-    type: "image", source: { type: "base64", media_type: "image/jpeg", data: (await jpegForModel(p, 768)).toString("base64") },
-  });
-  const content: Anthropic.ContentBlockParam[] = [{ type: "text", text: "SOURCE frame:" }, await img(sourceFrame), { type: "text", text: "DESTINATION frame:" }, await img(destFrame)];
+export async function openaiJudge(bridgePath: string, sourceFrame: string, destFrame: string, recipe: TransitionRecipe, prompt: string, api: OpenAI = openai()): Promise<{ scores: QualityScores; costUsd: number }> {
+  const samples = await sampleFrames(bridgePath, path.join(path.dirname(bridgePath), "judge-openai"), 5, "judge");
+  const content: ResponseInputContent[] = [
+    { type: "input_text", text: "SOURCE frame:" }, await imageInput(sourceFrame, 768),
+    { type: "input_text", text: "DESTINATION frame:" }, await imageInput(destFrame, 768),
+  ];
   for (let i = 0; i < samples.length; i++) {
-    content.push({ type: "text", text: `Bridge frame ${i + 1}/${samples.length} (t=${samples[i].t.toFixed(2)}s):` });
-    content.push(await img(samples[i].path));
+    content.push({ type: "input_text", text: `Bridge frame ${i + 1}/${samples.length} (t=${samples[i].t.toFixed(2)}s):` });
+    content.push(await imageInput(samples[i].path, 768));
   }
   content.push({
-    type: "text",
+    type: "input_text",
     text: `Requested transition: ${recipe.name}. Expected structure: ${recipe.expectedStructure.join(" -> ")}. ` +
       `Quality criteria to emphasise: ${recipe.qualityCriteria.join(", ")}. Prompt used: ${prompt.slice(0, 800)}`,
   });
-  const res = await anthropic().messages.parse({
-    model, max_tokens: 4000,
-    system: [{ type: "text", text: SYSTEM, cache_control: { type: "ephemeral" } }],
-    messages: [{ role: "user", content }],
-    output_config: { format: zodOutputFormat(Schema) },
-  });
-  if (res.stop_reason === "refusal" || !res.parsed_output) throw new Error(`judge unavailable (${res.stop_reason})`);
-  const p = res.parsed_output;
+  const res = await structuredResponse({
+    model: config.openai.judgeModel, instructions: SYSTEM, content, schema: Schema, name: "quality_scores", maxOutputTokens: 4000,
+  }, api);
+  const p = res.data;
   const scores: QualityScores = {
     startFidelity: clamp(p.startFidelity), endFidelity: clamp(p.endFidelity), subjectConsistency: clamp(p.subjectConsistency),
     continuity: clamp(p.continuity), artifacts: clamp(p.artifacts), aesthetic: clamp(p.aesthetic), transitionSuccess: clamp(p.transitionSuccess),
     overall: clamp(p.overall), issues: p.issues.slice(0, 8),
   };
-  const costUsd = usageCost(model, res.usage);
-  log.info("judged", { overall: scores.overall, issues: scores.issues.length, costUsd: Number(costUsd.toFixed(4)) });
-  return { scores, costUsd };
+  log.info("judged", { overall: scores.overall, issues: scores.issues.length, costUsd: Number(res.costUsd.toFixed(4)) });
+  return { scores, costUsd: res.costUsd };
 }

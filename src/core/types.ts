@@ -136,7 +136,7 @@ export interface VisualAnalysis {
   id: string;
   assetId: string;
   frameId: string;
-  analyzer: "claude" | "heuristic";
+  analyzer: "openai" | "claude" | "heuristic"; // Claude remains readable in historical records only.
   data: FrameAnalysis;
   createdAt: string;
 }
@@ -146,7 +146,7 @@ export interface PairAnalysisRecord {
   projectId: string;
   startFrameId: string;
   endFrameId: string;
-  analyzer: "claude" | "heuristic";
+  analyzer: "openai" | "claude" | "heuristic";
   data: PairAnalysis;
   createdAt: string;
 }
@@ -288,7 +288,7 @@ export interface QualityScores {
 export interface QualityEvaluation {
   id: string;
   attemptId: string;
-  judge: "claude" | "heuristic";
+  judge: "openai" | "claude" | "heuristic";
   scores: QualityScores;
   passed: boolean;
   createdAt: string;

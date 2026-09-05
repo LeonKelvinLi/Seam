@@ -2,7 +2,7 @@
 
 Next.js 16 (App Router) + TypeScript. One process runs the UI, the API and the job runner; the job table is durable so a
 separate worker can drain it later without changes. SQLite (better-sqlite3) for state, ffmpeg for media, sharp for pixels,
-Claude for understanding and judging, fal.ai / Runway for generation, a procedural ffmpeg provider as preview tier and safety net.
+OpenAI for understanding and judging, fal.ai / Runway for generation, a procedural ffmpeg provider as preview tier and safety net.
 
 ## Module map (`src/`)
 
@@ -11,13 +11,13 @@ Claude for understanding and judging, fal.ai / Runway for generation, a procedur
 | `core/types.ts` | Domain entities: Project, Asset, ExtractedFrame, VisualAnalysis, PairAnalysis, TransitionOpportunity, Recommendation, Generation, GenerationAttempt, QualityEvaluation, Export, Share, Job, LearningRecord, CostEntry, AnalyticsEvent |
 | `db/` | Schema + typed repository (JSON/boolean hydration, atomic job claiming) |
 | `core/media/` | ffmpeg/ffprobe wrappers (proxy spec, frames, Ken Burns stills, xfade, time-remap, stitch), sharp helpers, storage paths |
-| `core/analysis/` | Pixel features, boundary frame selection, zod schemas for vision output, heuristic analyzer, Claude analyzer, facade |
+| `core/analysis/` | Pixel features, boundary frame selection, zod schemas for vision output, heuristic analyzer, OpenAI analyzer, facade |
 | `core/recipes/` | The transition catalog (48+ structured recipes) and registry |
 | `core/director/` | Transition grammar (motivations, restraint, sound bridges) and footage curation (best moments, story order) |
 | `core/opportunities/` | Recipe × footage scoring, four lanes + Surprise me, wilder/smoother stepping |
 | `core/prompt/` | PromptIR compiler and provider dialects (kling, runway, generic) |
 | `core/providers/` | `TransitionProvider` interface, local/fal/runway implementations, registry, router |
-| `core/quality/` | Heuristic + Claude judges, pass criteria, retry policy |
+| `core/quality/` | Heuristic + OpenAI judges, pass criteria, retry policy |
 | `core/pipeline/` | Job runner, analyze job, generate job, human stage labels |
 | `core/learning/` | Per-generation learning records, learned model quality for the router |
 | `core/observability/` | Funnel, latency, quality, retry and cost metrics |

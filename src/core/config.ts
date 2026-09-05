@@ -22,12 +22,12 @@ export const config = {
   ffmpegPath: env("FFMPEG_PATH", "ffmpeg"),
   ffprobePath: env("FFPROBE_PATH", "ffprobe"),
 
-  anthropic: {
+  openai: {
     get enabled() {
-      return env("ANTHROPIC_API_KEY") !== "" || env("ANTHROPIC_AUTH_TOKEN") !== "";
+      return env("OPENAI_API_KEY") !== "";
     },
-    visionModel: env("SEAM_VISION_MODEL", "claude-opus-5"),
-    judgeModel: env("SEAM_JUDGE_MODEL", "claude-opus-5"),
+    visionModel: env("SEAM_VISION_MODEL", "gpt-5.4-mini"),
+    judgeModel: env("SEAM_JUDGE_MODEL", "gpt-5.4-mini"),
   },
   providers: {
     falKey: env("FAL_KEY"),
@@ -61,8 +61,8 @@ export const config = {
 
 export function describeRuntime() {
   return {
-    vision: config.anthropic.enabled ? `claude (${config.anthropic.visionModel})` : "heuristic (no ANTHROPIC_API_KEY)",
-    judge: config.anthropic.enabled ? `claude (${config.anthropic.judgeModel})` : "heuristic",
+    vision: config.openai.enabled ? `OpenAI (${config.openai.visionModel})` : "heuristic (no OPENAI_API_KEY)",
+    judge: config.openai.enabled ? `OpenAI (${config.openai.judgeModel})` : "heuristic",
     providers: [
       "local (ffmpeg, always on)",
       config.providers.falKey ? "fal (Kling 2.1)" : null,

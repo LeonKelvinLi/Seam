@@ -22,9 +22,19 @@ With no API keys Seam runs fully local: heuristic visual analysis, a procedural 
 
 | Key | Unlocks |
 |-----|---------|
-| `ANTHROPIC_API_KEY` | Claude vision: subjects, shapes, motion, depth, materials, transition ideas in human language, and the quality judge |
+| `OPENAI_API_KEY` | OpenAI vision: subjects, shapes, motion, depth, materials, transition ideas in human language, and the quality judge |
 | `FAL_KEY` | Kling 2.1 (standard = preview tier, pro = final tier) via fal.ai, first + last frame |
 | `RUNWAYML_API_SECRET` | Runway Gen-4 Turbo, first + last keyframes |
+
+OpenAI vision and judging use `gpt-5.4-mini` through the Responses API with JPEG frame inputs,
+strict JSON schemas and low reasoning effort. `SEAM_VISION_MODEL` and `SEAM_JUDGE_MODEL` can override
+the defaults with a compatible model. Refused, incomplete or invalid responses fall back to the
+heuristic analyzer/judge; runtime labels record which actually ran. OpenAI token cost estimates
+cover GPT-5.4 Mini standard rates, including cached input; other model overrides currently have
+no cost estimate. These estimates are not billing totals. See the official
+[image input guide](https://developers.openai.com/api/docs/guides/images-vision),
+[structured output guide](https://developers.openai.com/api/docs/guides/structured-outputs) and
+[model pricing](https://developers.openai.com/api/docs/models/gpt-5.4-mini).
 
 Optional scripts:
 

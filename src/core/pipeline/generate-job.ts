@@ -117,7 +117,7 @@ export async function runGenerateJob(job: Job, report: Reporter) {
         Quality.create({ attemptId: attempt.id, judge: judged.judge, scores: judged.scores, passed: passes(judged.scores) });
         const cost = result.costUsd + judged.costUsd;
         if (result.costUsd > 0) Costs.add({ attemptId: attempt.id, generationId: gen.id, kind: "generation", providerId: model.providerId, modelId: model.id, units: result.rawDurationSec, usd: result.costUsd });
-        if (judged.costUsd > 0) Costs.add({ attemptId: attempt.id, generationId: gen.id, kind: "judge", providerId: "anthropic", modelId: config.anthropic.judgeModel, units: 1, usd: judged.costUsd });
+        if (judged.costUsd > 0) Costs.add({ attemptId: attempt.id, generationId: gen.id, kind: "judge", providerId: "openai", modelId: config.openai.judgeModel, units: 1, usd: judged.costUsd });
         const ok = passes(judged.scores);
         Attempts.update(attempt.id, { status: ok ? "succeeded" : "rejected", providerJobId: result.providerJobId, outputPath: bridgePath, costUsd: cost, durationMs: Date.now() - ta, params: { ...attempt.params, ...result.params } });
         attempt.recipeId = recipe.id; attempt.durationMs = Date.now() - ta; attempt.status = ok ? "succeeded" : "rejected";

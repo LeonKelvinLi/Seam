@@ -110,7 +110,7 @@ export async function runAnalyzeJob(job: Job, report: Reporter) {
     Recommendations.replaceForProject(projectId, recs.map((r) => ({ lane: r.lane, opportunityId: r.opportunity.id })));
 
     const costUsd = aRes.costUsd + bRes.costUsd + pairRes.costUsd;
-    if (costUsd > 0) Costs.add({ attemptId: null, generationId: null, kind: "analysis", providerId: "anthropic", modelId: config.anthropic.visionModel, units: 3, usd: costUsd });
+    if (costUsd > 0) Costs.add({ attemptId: null, generationId: null, kind: "analysis", providerId: "openai", modelId: config.openai.visionModel, units: 3, usd: costUsd });
     Projects.update(projectId, { status: "analyzed" });
     Events.track("analysis_completed", { userId: project.userId, projectId, props: { ms: Date.now() - t0, analyzer: pairRes.analyzer, top: opps[0]?.recipeId, costUsd } });
     log.info("analysis complete", { projectId, ms: Date.now() - t0, analyzer: pairRes.analyzer, top: opps.slice(0, 3).map((o) => `${o.recipeId}:${o.scores.overall}`) });

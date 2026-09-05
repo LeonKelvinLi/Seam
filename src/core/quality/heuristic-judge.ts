@@ -1,6 +1,6 @@
 /**
  * Model-free quality judge: compares the bridge's first/last frames to the boundary frames,
- * and looks for flicker / mush across sampled frames. Used alone when Claude is not configured,
+ * and looks for flicker / mush across sampled frames. Used alone when OpenAI is not configured,
  * and always for the procedural (local) provider.
  */
 import path from "node:path";
