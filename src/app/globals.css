@@ -1,0 +1,92 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #09090a;
+  --bg-2: #101012;
+  --fg: #f2f0ea;
+  --muted: #8b8b90;
+  --hair: rgba(255, 255, 255, 0.09);
+  --accent: #ff6a3d;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html { background: var(--bg); }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: -apple-system, "SF Pro Display", "SF Pro Text", Inter, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  font-size: 15px;
+  line-height: 1.45;
+}
+a { color: inherit; text-decoration: none; }
+button { font: inherit; color: inherit; cursor: pointer; background: none; border: 0; padding: 0; }
+video, img { display: block; max-width: 100%; }
+::selection { background: rgba(255, 106, 61, 0.35); }
+
+.display { letter-spacing: -0.035em; line-height: 0.98; font-weight: 600; }
+.mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; letter-spacing: 0.02em; }
+.muted { color: var(--muted); }
+.hair { border: 1px solid var(--hair); }
+.hair-t { border-top: 1px solid var(--hair); }
+.hair-b { border-bottom: 1px solid var(--hair); }
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  height: 44px; padding: 0 20px; border-radius: 999px; font-weight: 500; white-space: nowrap;
+  transition: transform 120ms ease, background 120ms ease, opacity 120ms ease;
+}
+.btn:active { transform: scale(0.98); }
+.btn:disabled { opacity: 0.45; cursor: default; }
+.btn-primary { background: var(--fg); color: #0b0b0c; }
+.btn-primary:hover { background: #fff; }
+.btn-ghost { border: 1px solid var(--hair); color: var(--fg); background: rgba(255,255,255,0.02); }
+.btn-ghost:hover { background: rgba(255,255,255,0.06); }
+.btn-sm { height: 36px; padding: 0 14px; font-size: 13px; }
+.btn-accent { background: var(--accent); color: #140a06; }
+.btn-accent:hover { filter: brightness(1.06); }
+
+.frame {
+  position: relative; overflow: hidden; border-radius: 14px; background: var(--bg-2);
+}
+.frame::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none; border-radius: inherit;
+  box-shadow: inset 0 0 0 1px var(--hair);
+}
+.grain::before {
+  content: ""; position: absolute; inset: 0; pointer-events: none; opacity: 0.06; mix-blend-mode: overlay; z-index: 2;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+}
+
+.seg { display: inline-flex; padding: 3px; border-radius: 999px; background: rgba(255,255,255,0.06); }
+.seg button { height: 32px; padding: 0 14px; border-radius: 999px; font-size: 13px; color: var(--muted); }
+.seg button[data-on="true"] { background: var(--fg); color: #0b0b0c; }
+
+.chip { height: 32px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--hair); font-size: 13px; color: var(--muted); white-space: nowrap; }
+.chip[data-on="true"] { color: var(--fg); border-color: rgba(255,255,255,0.4); }
+.chip:hover { color: var(--fg); }
+
+.dropzone { transition: border-color 150ms ease, background 150ms ease; }
+.dropzone[data-over="true"] { border-color: rgba(255,255,255,0.5); background: rgba(255,255,255,0.04); }
+
+input[type="range"] { -webkit-appearance: none; width: 100%; height: 2px; background: rgba(255,255,255,0.18); border-radius: 2px; outline: none; }
+input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: var(--fg); border: 0; }
+
+@keyframes pulse { 0%, 100% { opacity: 0.35; } 50% { opacity: 1; } }
+.pulse { animation: pulse 1.6s ease-in-out infinite; }
+@keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.rise { animation: rise 320ms ease both; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.spin { animation: spin 1s linear infinite; }
+
+/* Fallback demo scenes (used when no example media has been rendered yet) */
+@keyframes demo-dive { 0% { transform: scale(1); } 55% { transform: scale(2.6); opacity: 1; } 70% { opacity: 0; transform: scale(3.2); } 100% { opacity: 0; } }
+@keyframes demo-arrive { 0%, 55% { opacity: 0; transform: scale(1.5); } 75% { opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+@keyframes demo-cut-a { 0%, 49.9% { opacity: 1; } 50%, 100% { opacity: 0; } }
+@keyframes demo-cut-b { 0%, 49.9% { opacity: 0; } 50%, 100% { opacity: 1; } }
+.demo-after .scene-a { animation: demo-dive 3.2s cubic-bezier(.6,0,.4,1) infinite; }
+.demo-after .scene-b { animation: demo-arrive 3.2s cubic-bezier(.6,0,.4,1) infinite; }
+.demo-before .scene-a { animation: demo-cut-a 3.2s steps(1) infinite; }
+.demo-before .scene-b { animation: demo-cut-b 3.2s steps(1) infinite; }

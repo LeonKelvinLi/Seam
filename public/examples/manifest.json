@@ -1,0 +1,90 @@
+[
+  {
+    "id": "coffee-ocean",
+    "title": "Coffee → Ocean",
+    "a": "/examples/coffee-ocean/a.mp4",
+    "b": "/examples/coffee-ocean/b.mp4",
+    "before": "/examples/coffee-ocean/before.mp4",
+    "after": "/examples/coffee-ocean/after.mp4",
+    "poster": "/examples/coffee-ocean/poster.jpg",
+    "bridge": "/examples/coffee-ocean/bridge.mp4",
+    "generated": true
+  },
+  {
+    "id": "wheel-tunnel",
+    "title": "Car Wheel → Tunnel",
+    "a": "/examples/wheel-tunnel/a.mp4",
+    "b": "/examples/wheel-tunnel/b.mp4",
+    "before": "/examples/wheel-tunnel/before.mp4",
+    "after": "/examples/wheel-tunnel/after.mp4",
+    "poster": "/examples/wheel-tunnel/poster.jpg",
+    "bridge": "/examples/wheel-tunnel/bridge.mp4",
+    "generated": true
+  },
+  {
+    "id": "eye-space",
+    "title": "Eye → Space",
+    "a": "/examples/eye-space/a.mp4",
+    "b": "/examples/eye-space/b.mp4",
+    "before": "/examples/eye-space/before.mp4",
+    "after": "/examples/eye-space/after.mp4",
+    "poster": "/examples/eye-space/poster.jpg",
+    "bridge": "/examples/eye-space/bridge.mp4",
+    "generated": true
+  },
+  {
+    "id": "phone-city",
+    "title": "Phone → City",
+    "a": "/examples/phone-city/a.mp4",
+    "b": "/examples/phone-city/b.mp4",
+    "before": "/examples/phone-city/before.mp4",
+    "after": "/examples/phone-city/after.mp4",
+    "poster": "/examples/phone-city/poster.jpg",
+    "bridge": "/examples/phone-city/bridge.mp4",
+    "generated": true
+  },
+  {
+    "id": "door-beach",
+    "title": "Door → Beach",
+    "a": "/examples/door-beach/a.mp4",
+    "b": "/examples/door-beach/b.mp4",
+    "before": "/examples/door-beach/before.mp4",
+    "after": "/examples/door-beach/after.mp4",
+    "poster": "/examples/door-beach/poster.jpg",
+    "bridge": "/examples/door-beach/bridge.mp4",
+    "generated": true
+  },
+  {
+    "id": "window-clouds",
+    "title": "Airplane Window → Clouds",
+    "a": "/examples/window-clouds/a.mp4",
+    "b": "/examples/window-clouds/b.mp4",
+    "before": "/examples/window-clouds/before.mp4",
+    "after": "/examples/window-clouds/after.mp4",
+    "poster": "/examples/window-clouds/poster.jpg",
+    "bridge": "/examples/window-clouds/bridge.mp4",
+    "generated": true
+  },
+  {
+    "id": "steam-fog",
+    "title": "Food Steam → Mountain Fog",
+    "a": "/examples/steam-fog/a.mp4",
+    "b": "/examples/steam-fog/b.mp4",
+    "before": "/examples/steam-fog/before.mp4",
+    "after": "/examples/steam-fog/after.mp4",
+    "poster": "/examples/steam-fog/poster.jpg",
+    "bridge": "/examples/steam-fog/bridge.mp4",
+    "generated": true
+  },
+  {
+    "id": "mirror-outfit",
+    "title": "Mirror → Different Outfit",
+    "a": "/examples/mirror-outfit/a.mp4",
+    "b": "/examples/mirror-outfit/b.mp4",
+    "before": "/examples/mirror-outfit/before.mp4",
+    "after": "/examples/mirror-outfit/after.mp4",
+    "poster": "/examples/mirror-outfit/poster.jpg",
+    "bridge": "/examples/mirror-outfit/bridge.mp4",
+    "generated": true
+  }
+]

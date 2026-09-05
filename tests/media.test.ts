@@ -1,0 +1,46 @@
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import { ffmpeg, probe, extractFrames, stillWithMove, xfadeClips, normalizeBridge, stitch, makeProxy, extractFrameAt } from "@/core/media/ffmpeg";
+import { computeFeatures, loadRasters } from "@/core/analysis/features";
+import { heuristicJudge } from "@/core/quality/heuristic-judge";
+
+const spec = { width: 320, height: 180, fps: 24 };
+
+test("ffmpeg pipeline: proxy, frames, features, procedural bridge, stitch, judge", async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "seam-"));
+  const src = path.join(dir, "src.mp4");
+  await ffmpeg(["-f", "lavfi", "-i", "testsrc2=size=640x360:rate=30", "-t", "2", "-pix_fmt", "yuv420p", src]);
+  const info = await probe(src);
+  assert.ok(Math.abs(info.durationSec - 2) < 0.1 && info.width === 640 && !info.hasAudio);
+  const proxy = path.join(dir, "proxy.mp4");
+  await makeProxy(src, proxy, spec, false);
+  const pi = await probe(proxy);
+  assert.equal(pi.width, 320); assert.ok(pi.hasAudio, "proxy always has audio");
+  const frames = await extractFrames(proxy, path.join(dir, "frames"), 0.5, 2, 6, "t");
+  assert.ok(frames.length >= 6 && frames[0].t >= 0.5);
+  const r0 = await loadRasters(frames[0].path), r1 = await loadRasters(frames[1].path);
+  const f = computeFeatures(r1, r0);
+  assert.ok(f.sharpness > 0 && f.dominantColors.length === 3 && f.motion >= 0);
+  const fa = path.join(dir, "a.jpg"), fb = path.join(dir, "b.jpg");
+  await extractFrameAt(proxy, 1.9, fa); await extractFrameAt(proxy, 0.1, fb);
+  const ca = path.join(dir, "ca.mp4"), cb = path.join(dir, "cb.mp4"), bridge = path.join(dir, "bridge.mp4");
+  await stillWithMove(fa, ca, spec, 1.0, { zoomFrom: 1, zoomTo: 1.5, fx: 0.5, fy: 0.5 });
+  await stillWithMove(fb, cb, spec, 1.0, { zoomFrom: 1.5, zoomTo: 1, fx: 0.5, fy: 0.5 });
+  await xfadeClips(ca, cb, bridge, spec, "fade", 1.0);
+  const bi = await probe(bridge);
+  assert.ok(Math.abs(bi.durationSec - 1.0) < 0.15, `bridge duration ${bi.durationSec}`);
+  const norm = path.join(dir, "norm.mp4");
+  await normalizeBridge(bridge, norm, spec, 0.8);
+  const ni = await probe(norm);
+  assert.ok(Math.abs(ni.durationSec - 0.8) < 0.15 && ni.hasAudio, `normalized ${ni.durationSec}`);
+  const full = path.join(dir, "full.mp4");
+  await stitch(proxy, norm, proxy, full, spec, 0.12);
+  const fi = await probe(full);
+  assert.ok(Math.abs(fi.durationSec - (2 + 0.8 + 2 - 0.24)) < 0.2, `full ${fi.durationSec}`);
+  const q = await heuristicJudge(norm, fa, fb, dir);
+  assert.ok(q.startFidelity > 50 && q.endFidelity > 50, `fidelity ${q.startFidelity}/${q.endFidelity}`);
+  fs.rmSync(dir, { recursive: true, force: true });
+});
