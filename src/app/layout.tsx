@@ -11,20 +11,27 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body>
-        <header className="sticky top-0 z-40 backdrop-blur-md" style={{ background: "rgba(9,9,10,0.7)" }}>
-          <nav className="mx-auto flex h-14 max-w-6xl items-center justify-between px-5">
-            <Link href="/" className="flex items-center gap-2 font-semibold tracking-tight">
-              <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: "var(--accent)" }} />
-              Seam
+        <a className="skip-link" href="#main-content">Skip to content</a>
+        <header className="site-header">
+          <nav className="site-nav" aria-label="Main navigation">
+            <Link href="/" className="site-wordmark" aria-label="Seam home">
+              <svg className="site-mark" viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M4 4h9v9H4zM15 15h9v9h-9z" fill="currentColor" /><path d="M16 4h8v8M4 16v8h8" stroke="currentColor" strokeWidth="2" /></svg>
+              seam<span className="site-wordmark-period">.</span>
             </Link>
-            <div className="flex items-center gap-2">
-              <Link href="/library" className="btn btn-ghost btn-sm">Library</Link>
-              <Link href="/create" className="btn btn-primary btn-sm">Try it</Link>
+            <span className="site-nav-label mono">AI transition studio</span>
+            <div className="site-nav-actions">
+              <Link href="/library" className="site-nav-link">Explore transitions</Link>
+              <Link href="/create" className="btn btn-primary btn-sm">Open studio <span aria-hidden="true">↗</span></Link>
             </div>
           </nav>
         </header>
-        <main>{children}</main>
-        <footer className="mx-auto max-w-6xl px-5 py-10 text-xs muted">Seam · an AI transition director. Footage stays yours.</footer>
+        <main id="main-content" tabIndex={-1}>{children}</main>
+        <footer className="site-footer">
+          <Link href="/" className="site-footer-brand">seam<span>.</span></Link>
+          <p>Two clips. Infinite possibilities.<br /><span className="muted">Footage stays yours.</span></p>
+          <div className="site-footer-links"><Link href="/library">Transition library ↗</Link><Link href="/create">Open studio ↗</Link></div>
+          <span className="site-footer-note mono">FRAME A → FRAME B</span>
+        </footer>
       </body>
     </html>
   );

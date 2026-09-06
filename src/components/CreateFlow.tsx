@@ -139,26 +139,41 @@ export function CreateFlow() {
   const frames = { a: view?.boundary?.startFrameUrl ?? view?.assets.start?.thumbnailUrl ?? null, b: view?.boundary?.endFrameUrl ?? view?.assets.end?.thumbnailUrl ?? null };
 
   return (
-    <div className="mx-auto max-w-6xl px-5 pb-20 pt-8">
+    <div className="studio-shell mx-auto max-w-6xl px-5 pb-20">
+      <div className="studio-topline mono"><Link href="/">SEAM / STUDIO</Link><span><span className="studio-status-dot" /> YOUR NEXT GREAT CUT</span></div>
+      <ol className="studio-phase-rail" aria-label="Creation progress">
+        <li data-active={phase === "upload" || phase === "analyzing"} aria-current={phase === "upload" || phase === "analyzing" ? "step" : undefined}><span className="mono">01</span> Bring your clips</li>
+        <li data-active={phase === "choose"} aria-current={phase === "choose" ? "step" : undefined}><span className="mono">02</span> Find your transition</li>
+        <li data-active={phase === "generating" || phase === "ready" || phase === "failed"} aria-current={phase === "generating" || phase === "ready" || phase === "failed" ? "step" : undefined}><span className="mono">03</span> Make the cut</li>
+      </ol>
       {/* ---------------------------------------------------------------- upload / analyzing */}
       {(phase === "upload" || phase === "analyzing") && (
         <div className="rise">
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="studio-intro">
+            <h1 className="display">Two clips.<br /><span>One impossible shot.</span></h1>
+            <p>Bring the beginning and the end.<br />We’ll find a way through.</p>
+          </div>
+          <div className="studio-upload-grid grid gap-4 md:grid-cols-2">
             <DropZone role="start" asset={view?.assets.start ?? null} uploading={up.start.uploading} progress={up.start.progress} onFile={(f) => onFile("start", f)} disabled={phase === "analyzing"} />
             <DropZone role="end" asset={view?.assets.end ?? null} uploading={up.end.uploading} progress={up.end.progress} onFile={(f) => onFile("end", f)} disabled={phase === "analyzing"} />
           </div>
           {phase === "analyzing" ? (
-            <div className="mt-8 grid gap-6 md:grid-cols-[1fr_1fr]">
+            <div className="studio-analysis mt-8 grid gap-6 md:grid-cols-[1fr_1fr]">
               <Steps steps={ANALYZE_STEPS} current={view?.analysis.stageLabel || ANALYZE_STEPS[0]} />
               <p className="muted text-sm">We look at the last moments of your first clip and the first moments of your second, and design a cut that fits what is actually in the frame.</p>
             </div>
           ) : (
-            <div className="mt-6 flex flex-wrap items-center gap-3">
-              <span className="muted text-sm">{view?.assets.start || view?.assets.end ? "Add the other clip to continue." : "Any two clips or images. Video → video, image → video, video → image, image → image."}</span>
+            <div className="studio-upload-help mt-6">
+              <span className="muted text-sm">{view?.assets.start || view?.assets.end ? "Add the other clip to continue." : "Start with any two clips or images. Your transition begins here."}</span>
               {samples.length > 0 && !view?.assets.start && (
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="muted text-sm">Or try:</span>
-                  {samples.map((s) => <button key={s.id} className="chip" onClick={() => useSample(s.id)} disabled={busy}>{s.title}</button>)}
+                <div className="studio-samples">
+                  <div className="studio-samples-heading"><span className="mono muted">A LITTLE INSPIRATION</span><span className="muted text-xs">Try a sample pair</span></div>
+                  <div className="studio-samples-grid">
+                    {samples.map((s, i) => <button key={s.id} className="studio-sample" onClick={() => useSample(s.id)} disabled={busy}>
+                      <span className="studio-sample-images"><img src={s.aPoster} alt="" /><img src={s.bPoster} alt="" /><span aria-hidden="true">↗</span></span>
+                      <span className="studio-sample-caption"><span className="mono muted">0{i + 1}</span><span>{s.title}</span><span aria-hidden="true">→</span></span>
+                    </button>)}
+                  </div>
                 </div>
               )}
             </div>
@@ -186,12 +201,12 @@ export function CreateFlow() {
             ))}
           </div>
           {(() => { const s = view.recommendations.find((r) => r && r.lane === "surprise"); return s ? (
-            <div className="mt-8 flex flex-wrap items-center gap-4 hair rounded-2xl p-5">
+            <div className="studio-surprise mt-8 flex flex-wrap items-center gap-4 hair rounded-2xl p-5">
               <button className="btn btn-accent" onClick={() => generate({ intent: "surprise", opportunityId: s.opportunity.id })} disabled={busy}>Surprise me</button>
               <div className="text-sm"><span>{s.opportunity.title}.</span> <span className="muted">{s.opportunity.why}</span></div>
             </div>
           ) : null; })()}
-          {view.runtime.providers.length === 1 && <p className="mt-5 text-xs muted">Preview mode: no video model key is configured, so bridges are rendered procedurally. Add FAL_KEY or RUNWAYML_API_SECRET for generated camera moves.</p>}
+          {view.runtime.providers.length === 1 && <p className="mt-5 text-xs muted">Preview mode · These transitions use procedural effects. Generated camera moves become available when a video model is connected.</p>}
         </div>
       )}
 
@@ -272,7 +287,7 @@ export function CreateFlow() {
         <div className="rise max-w-xl">
           <h1 className="display text-3xl">That one didn't come together</h1>
           <p className="mt-3 muted">{gen.friendlyError ?? "We couldn't build that transition."}</p>
-          <div className="mt-6 flex gap-2">
+          <div className="mt-6 flex flex-wrap gap-2">
             <button className="btn btn-primary" onClick={() => generate({ intent: "smooth" })} disabled={busy}>Try a safer transition</button>
             <button className="btn btn-ghost" onClick={() => generate({ from: { generationId: gen.id, action: "another" } })} disabled={busy}>Try another idea</button>
             <button className="btn btn-ghost" onClick={reset}>Change clips</button>
@@ -286,5 +301,5 @@ export function CreateFlow() {
 }
 
 function Notice({ children }: { children: React.ReactNode }) {
-  return <div className="mt-4 rounded-xl px-4 py-3 text-sm" style={{ background: "rgba(255,106,61,0.12)", border: "1px solid rgba(255,106,61,0.3)" }}>{children}</div>;
+  return <div className="studio-notice mt-4 rounded-xl px-4 py-3 text-sm" role="status">{children}</div>;
 }
