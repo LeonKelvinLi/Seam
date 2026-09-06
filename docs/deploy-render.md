@@ -94,3 +94,18 @@ References checked 2026-09-05: [Render Docker](https://render.com/docs/docker),
 [Blueprint fields and compute plan IDs](https://render.com/docs/blueprint-spec),
 [persistent disk limitations](https://render.com/docs/disks). Next.js behavior was checked against this
 checkout's `node_modules/next/dist/docs/01-app/02-guides/self-hosting.md`.
+
+## Stripe (live objects created 2026-09-06)
+
+Live products, one-time prices and Payment Links exist in the BEASTY LLC Stripe account for the three
+credit packs (Starter $9/50, Pro $29/250, Studio $89/1000); their IDs and link URLs are non-secret and
+live in `render.yaml` and `.env.local`. A live webhook endpoint points at `https://seamcut.onrender.com/api/stripe/webhook`
+for `checkout.session.completed`. Two values must be pasted into Render → seamcut → Environment by a
+person, never committed:
+
+- `STRIPE_SECRET_KEY`: Stripe Dashboard → Developers → API keys (a restricted key with Checkout Sessions
+  write and Webhook read is enough).
+- `STRIPE_WEBHOOK_SECRET`: the signing secret of the endpoint above; it is stored locally in `.env.local`.
+
+Until both are set, the deployed pricing page uses the Payment Links and purchases are not credited.
+Payment Links redirect to `https://seamcut.onrender.com/account?paid=1` after checkout.

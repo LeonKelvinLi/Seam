@@ -33,5 +33,22 @@ services:
         value: /usr/bin/ffprobe
       - key: NEXT_TELEMETRY_DISABLED
         value: "1"
+      - key: SEAM_PUBLIC_URL
+        value: https://seamcut.onrender.com
+      - key: STRIPE_PRICE_STARTER
+        value: price_1UClYNLnwdL8dIyODfVjfTo7
+      - key: STRIPE_PRICE_PRO
+        value: price_1UClYRLnwdL8dIyOVdoCCNTH
+      - key: STRIPE_PRICE_STUDIO
+        value: price_1UClYTLnwdL8dIyOHJQfG3tx
+      - key: STRIPE_LINK_STARTER
+        value: https://buy.stripe.com/cNiaEYbeSbuscvvcWe9Zm00
+      - key: STRIPE_LINK_PRO
+        value: https://buy.stripe.com/3cIfZigzcbus0MNg8q9Zm01
+      - key: STRIPE_LINK_STUDIO
+        value: https://buy.stripe.com/6oUeVe1Ei0PO0MN8FY9Zm02
+# STRIPE_SECRET_KEY and STRIPE_WEBHOOK_SECRET are secrets: add them privately in Render's
+# Environment settings (never in this file). Without them the app falls back to Payment Links
+# and cannot verify webhooks, so purchases are not credited until both are set.
 # OPENAI_API_KEY is optional and must be added privately in Render's Environment
 # settings when paid visual analysis is intended. No keys are required for preview.
