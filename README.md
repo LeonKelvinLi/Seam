@@ -1,4 +1,4 @@
-# Seam
+# SeamCut
 
 **Turn any two clips into one impossible shot.** Upload two clips. AI figures out the transition.
 
@@ -69,6 +69,23 @@ npm test                               # unit + ffmpeg integration tests
    (start/end fidelity, subject consistency, continuity, artifacts, aesthetics), retried with calmer settings or a safer recipe, and the
    procedural bridge guarantees an output.
 6. **Stitch** — A is cut at the chosen frame, B resumed at its chosen frame, short video and audio crossfades at both seams.
+
+## Accounts and payments
+
+Accounts work with no extra setup: email + password (scrypt), sessions in SQLite, and a guest's projects are adopted on
+sign-in. Every new account starts with 5 credits; a preview transition costs 1 credit, a final-quality one costs 3, and a
+failed generation refunds its credit. Pages: `/signup`, `/login`, `/account`, `/pricing`. API: `/api/auth/{signup,login,logout,me}`.
+
+Stripe, two options (both grant credits through the same webhook):
+
+1. **Checkout sessions (recommended).** In the Stripe dashboard create three one-time Products/Prices (Starter $9 → 50 credits,
+   Pro $29 → 250, Studio $89 → 1,000), then set `STRIPE_SECRET_KEY` and `STRIPE_PRICE_STARTER|PRO|STUDIO` in `.env.local`.
+2. **Payment Links.** Create a Payment Link per pack in the dashboard and paste the URLs into `STRIPE_LINK_STARTER|PRO|STUDIO`.
+   The app appends `client_reference_id=<userId>` so the webhook can credit the right account.
+
+Then add a webhook endpoint in Stripe pointing at `https://<your-domain>/api/stripe/webhook` for the event
+`checkout.session.completed`, and put its signing secret in `STRIPE_WEBHOOK_SECRET`. For local testing:
+`stripe listen --forward-to localhost:3000/api/stripe/webhook`. Packs and prices live in `src/lib/server/billing.ts`.
 
 ## Sample and example media
 

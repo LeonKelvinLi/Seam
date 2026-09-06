@@ -1,0 +1,200 @@
+{
+  "ads": [
+    {
+      "id": "speed-chain-real",
+      "title": "Speed chain \u2014 real plates (Pexels wheel + tunnel), smooth r3 settings",
+      "bed": true,
+      "segs": [
+        {
+          "src": "data/ads/speed_flip.mp4",
+          "start": 0.6,
+          "fit": "cover",
+          "gain": 1.0,
+          "captions": [
+            {
+              "text": "5 RANDOM CLIPS. 0 CUTS.",
+              "from": 0.2,
+              "to": 1.9,
+              "pos": "top",
+              "size": 78
+            },
+            {
+              "text": "SPEED TRIES A BACKFLIP",
+              "from": 0.2,
+              "to": 2.2,
+              "pos": "lower",
+              "size": 72
+            }
+          ]
+        },
+        {
+          "src": "data/viral/bridges/a_crash_to_fall_v2.mp4",
+          "fit": "cover",
+          "mute": true,
+          "sfx": [
+            {
+              "kind": "whoosh",
+              "at": 0.05,
+              "gain": 0.9
+            },
+            {
+              "kind": "boom",
+              "at": 0.82,
+              "gain": 0.8
+            }
+          ],
+          "ramp": {
+            "head": 0.14,
+            "tail": 0.14,
+            "edgeSpeed": 1.4,
+            "midSpeed": 6.0
+          },
+          "sharpen": true
+        },
+        {
+          "src": "data/ads/adin_fall.mp4",
+          "start": 0.0,
+          "end": 2.2,
+          "fit": "cover",
+          "gain": 1.0,
+          "captions": [
+            {
+              "text": "ADIN'S 100FT CRANE JUMP",
+              "from": 0.25,
+              "to": 1.9,
+              "pos": "lower",
+              "size": 72
+            }
+          ]
+        },
+        {
+          "src": "data/viral/bridges/b_airbag_to_scream_mm.mp4",
+          "fit": "cover",
+          "mute": true,
+          "sfx": [
+            {
+              "kind": "whoosh",
+              "at": 0.55,
+              "gain": 0.8
+            },
+            {
+              "kind": "impact",
+              "at": 1.15,
+              "gain": 0.9
+            }
+          ],
+          "ramp": {
+            "head": 0.12,
+            "tail": 0.22,
+            "edgeSpeed": 1.15,
+            "midSpeed": 6.5
+          },
+          "sharpen": true
+        },
+        {
+          "src": "data/ads/speed_scream_v3.mp4",
+          "fit": "cover",
+          "gain": 1.0,
+          "captions": [
+            {
+              "text": "SPEED SCREAMING",
+              "from": 0.2,
+              "to": 1.3,
+              "pos": "lower",
+              "size": 72
+            }
+          ]
+        },
+        {
+          "src": "data/viral/bridges/c_scream_to_realwheel.mp4",
+          "fit": "cover",
+          "mute": true,
+          "sfx": [
+            {
+              "kind": "sub",
+              "at": 0.0,
+              "gain": 0.9
+            },
+            {
+              "kind": "whoosh",
+              "at": 0.5,
+              "gain": 0.8
+            },
+            {
+              "kind": "boom",
+              "at": 1.25,
+              "gain": 0.7
+            }
+          ],
+          "ramp": {
+            "head": 0.16,
+            "tail": 0.14,
+            "edgeSpeed": 1.3,
+            "midSpeed": 5.0
+          },
+          "sharpen": true
+        },
+        {
+          "src": "data/ads/wheel_real.mp4",
+          "fit": "cover",
+          "mute": true,
+          "captions": [
+            {
+              "text": "A CAR.",
+              "from": 0.15,
+              "to": 0.9,
+              "pos": "lower",
+              "size": 72
+            }
+          ]
+        },
+        {
+          "src": "data/viral/bridges/d_realwheel_to_realtunnel.mp4",
+          "ramp": {
+            "head": 0.14,
+            "tail": 0.14,
+            "edgeSpeed": 1.3,
+            "midSpeed": 5.0
+          },
+          "sharpen": true,
+          "fit": "cover",
+          "mute": true,
+          "sfx": [
+            {
+              "kind": "riser",
+              "at": 0.0,
+              "gain": 0.6
+            },
+            {
+              "kind": "boom",
+              "at": 1.15,
+              "gain": 0.9
+            }
+          ]
+        },
+        {
+          "src": "data/ads/tunnel_real.mp4",
+          "fit": "cover",
+          "mute": true,
+          "captions": [
+            {
+              "text": "A TUNNEL.",
+              "from": 0.15,
+              "to": 0.9,
+              "pos": "lower",
+              "size": 72
+            }
+          ]
+        }
+      ],
+      "endCard": {
+        "headline": "Connect\nliterally anything.",
+        "sub": "Any two clips. One impossible shot.",
+        "cta": "Made with Seam",
+        "hold": 2.2
+      },
+      "xfadeSec": 0.15,
+      "grain": 5
+    }
+  ]
+}

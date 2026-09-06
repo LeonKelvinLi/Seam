@@ -6,6 +6,8 @@ import { scoreOpportunities } from "@/core/opportunities/scorer";
 import { Events, Frames, Generations, Learning, Opportunities, PairAnalyses, Recommendations, VisualAnalyses, insert } from "@/db/repo";
 import { enqueue } from "@/core/pipeline/runner";
 import { newId, now } from "@/core/ids";
+import { Users } from "@/db/repo";
+import { CREDITS_PER_GENERATION } from "@/lib/server/billing";
 import { ownedProject } from "./access";
 
 export interface CreateGenerationInput {
@@ -86,8 +88,15 @@ export function createGeneration(input: CreateGenerationInput): Generation {
   const recipe = getRecipe(opp.recipeId);
   intent = intent ?? laneForIntensity(recipe.intensity);
 
+  const mode = input.mode ?? config.generation.defaultMode;
+  const cost = CREDITS_PER_GENERATION[mode];
+  if (!Users.spend(input.userId, cost)) {
+    const err = new Error("You're out of credits. Add a pack to keep generating.") as Error & { code?: string };
+    err.code = "NO_CREDITS";
+    throw err;
+  }
   const gen = Generations.create({
-    projectId: input.projectId, opportunityId: opp.id, recipeId: opp.recipeId, intent, fineTune, mode: input.mode ?? config.generation.defaultMode,
+    projectId: input.projectId, opportunityId: opp.id, recipeId: opp.recipeId, intent, fineTune, mode,
     status: "queued", stage: "queued", stageLabel: "Getting ready", progress: 0, friendlyError: null, result: null, jobId: null, parentGenerationId: parentId,
   });
   const job = enqueue("generate", { generationId: gen.id });

@@ -13,6 +13,31 @@ export type GenerationStatus = "queued" | "running" | "ready" | "failed";
 export interface User {
   id: string;
   createdAt: string;
+  email: string | null;
+  passwordHash: string | null;
+  credits: number;
+  plan: "free" | "starter" | "pro";
+  stripeCustomerId: string | null;
+  updatedAt: string | null;
+}
+
+export interface Session {
+  id: string;
+  userId: string;
+  createdAt: string;
+  expiresAt: string;
+}
+
+export interface Purchase {
+  id: string;
+  userId: string;
+  provider: "stripe";
+  externalId: string | null;
+  pack: string;
+  amountCents: number;
+  currency: string;
+  credits: number;
+  createdAt: string;
 }
 
 export interface Project {

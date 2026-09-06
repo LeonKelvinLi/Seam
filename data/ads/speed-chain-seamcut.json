@@ -1,0 +1,217 @@
+{
+  "ads": [
+    {
+      "id": "speed-chain-seamcut",
+      "title": "Speed chain — slower bridges, serif outro on real desk footage",
+      "bed": true,
+      "segs": [
+        {
+          "src": "data/ads/speed_flip.mp4",
+          "start": 0.6,
+          "fit": "cover",
+          "gain": 1,
+          "captions": [
+            {
+              "text": "5 RANDOM CLIPS. 0 CUTS.",
+              "from": 0.2,
+              "to": 1.9,
+              "pos": "top",
+              "size": 78
+            },
+            {
+              "text": "SPEED TRIES A BACKFLIP",
+              "from": 0.2,
+              "to": 2.2,
+              "pos": "lower",
+              "size": 72
+            }
+          ]
+        },
+        {
+          "src": "data/viral/bridges/a_crash_to_fall_v2.mp4",
+          "fit": "cover",
+          "mute": true,
+          "sfx": [
+            {
+              "kind": "whoosh",
+              "at": 0.06,
+              "gain": 0.9
+            },
+            {
+              "kind": "boom",
+              "at": 0.96,
+              "gain": 0.8
+            }
+          ],
+          "ramp": {
+            "head": 0.14,
+            "tail": 0.14,
+            "edgeSpeed": 1.3,
+            "midSpeed": 5
+          },
+          "sharpen": true
+        },
+        {
+          "src": "data/ads/adin_fall.mp4",
+          "start": 0,
+          "end": 2.2,
+          "fit": "cover",
+          "gain": 1,
+          "captions": [
+            {
+              "text": "ADIN'S 100FT CRANE JUMP",
+              "from": 0.25,
+              "to": 1.9,
+              "pos": "lower",
+              "size": 72
+            }
+          ]
+        },
+        {
+          "src": "data/viral/bridges/b_airbag_to_scream_mm.mp4",
+          "fit": "cover",
+          "mute": true,
+          "sfx": [
+            {
+              "kind": "whoosh",
+              "at": 0.63,
+              "gain": 0.8
+            },
+            {
+              "kind": "impact",
+              "at": 1.31,
+              "gain": 0.9
+            }
+          ],
+          "ramp": {
+            "head": 0.12,
+            "tail": 0.22,
+            "edgeSpeed": 1.1,
+            "midSpeed": 5.5
+          },
+          "sharpen": true
+        },
+        {
+          "src": "data/ads/speed_scream_v3.mp4",
+          "fit": "cover",
+          "gain": 1,
+          "captions": [
+            {
+              "text": "SPEED SCREAMING",
+              "from": 0.2,
+              "to": 1.3,
+              "pos": "lower",
+              "size": 72
+            }
+          ]
+        },
+        {
+          "src": "data/viral/bridges/c_scream_to_realwheel.mp4",
+          "fit": "cover",
+          "mute": true,
+          "sfx": [
+            {
+              "kind": "sub",
+              "at": 0,
+              "gain": 0.9
+            },
+            {
+              "kind": "whoosh",
+              "at": 0.59,
+              "gain": 0.8
+            },
+            {
+              "kind": "boom",
+              "at": 1.46,
+              "gain": 0.7
+            }
+          ],
+          "ramp": {
+            "head": 0.16,
+            "tail": 0.14,
+            "edgeSpeed": 1.2,
+            "midSpeed": 4.2
+          },
+          "sharpen": true
+        },
+        {
+          "src": "data/ads/wheel_real.mp4",
+          "fit": "cover",
+          "mute": true,
+          "captions": [
+            {
+              "text": "A CAR.",
+              "from": 0.15,
+              "to": 0.9,
+              "pos": "lower",
+              "size": 72
+            }
+          ]
+        },
+        {
+          "src": "data/viral/bridges/d_realwheel_to_realtunnel.mp4",
+          "ramp": {
+            "head": 0.14,
+            "tail": 0.14,
+            "edgeSpeed": 1.2,
+            "midSpeed": 4.2
+          },
+          "sharpen": true,
+          "fit": "cover",
+          "mute": true,
+          "sfx": [
+            {
+              "kind": "riser",
+              "at": 0,
+              "gain": 0.6
+            },
+            {
+              "kind": "boom",
+              "at": 1.35,
+              "gain": 0.9
+            }
+          ]
+        },
+        {
+          "src": "data/ads/tunnel_real.mp4",
+          "fit": "cover",
+          "mute": true,
+          "captions": [
+            {
+              "text": "A TUNNEL.",
+              "from": 0.15,
+              "to": 0.62,
+              "pos": "lower",
+              "size": 72
+            }
+          ]
+        }
+      ],
+      "endCard": {
+        "headline": "Same story.",
+        "headline2": "Better transitions.",
+        "sub": "REAL FOOTAGE. REAL RESULTS.",
+        "cta": "TRY SEAMCUT →",
+        "footer": "CREATE   /   CUT   /   CONNECT",
+        "hold": 2.8,
+        "style": "serif",
+        "bgClip": {
+          "src": "data/viral/stock/29267591.mp4",
+          "start": 4,
+          "blur": 2,
+          "dim": 0.1
+        },
+        "fadeSec": 0.6
+      },
+      "xfadeSec": 0.15,
+      "grain": 5,
+      "sfx": [
+        {
+          "kind": "sub",
+          "at": 14.75,
+          "gain": 0.45
+        }
+      ]
+    }
+  ]
+}

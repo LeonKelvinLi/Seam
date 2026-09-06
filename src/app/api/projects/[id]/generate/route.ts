@@ -16,6 +16,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
     });
     return json({ generation: generationView(gen) });
   } catch (e) {
-    return bad((e as Error).message, 422);
+    const err = e as Error & { code?: string };
+    return Response.json({ error: err.message, code: err.code ?? null }, { status: err.code === "NO_CREDITS" ? 402 : 422 });
   }
 }

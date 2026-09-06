@@ -1,0 +1,370 @@
+<title>Seam Ad Lab</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --bg: #F3F4F6; --bg-2: #FFFFFF; --ink: #15171D; --muted: #626775; --hair: rgba(21,23,29,0.12);
+    --marker: #F5C400; --marker-ink: #15171D; --no: #E5484D; --ok: #2F9E62; --warn: #D98B00; --mono-bg: #EEF0F4;
+    --shadow: 0 1px 0 rgba(21,23,29,0.06);
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0E0F13; --bg-2: #15171D; --ink: #EDEEF2; --muted: #9A9FAD; --hair: rgba(237,238,242,0.12);
+      --marker: #F5C400; --marker-ink: #15171D; --no: #FF6B6B; --ok: #4FCB86; --warn: #F2B13B; --mono-bg: #1B1E26;
+      --shadow: none; color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0E0F13; --bg-2: #15171D; --ink: #EDEEF2; --muted: #9A9FAD; --hair: rgba(237,238,242,0.12);
+    --marker: #F5C400; --marker-ink: #15171D; --no: #FF6B6B; --ok: #4FCB86; --warn: #F2B13B; --mono-bg: #1B1E26;
+    --shadow: none; color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: "IBM Plex Sans", -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; font-size: 15px; line-height: 1.5; }
+  a { color: inherit; text-decoration: underline; text-decoration-color: var(--hair); text-underline-offset: 3px; }
+  a:hover { text-decoration-color: currentColor; }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 24px 96px; }
+  .display { font-family: Anton, Impact, "Arial Narrow", sans-serif; font-weight: 400; letter-spacing: 0.005em; line-height: 0.95; text-transform: uppercase; text-wrap: balance; }
+  .mono { font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; }
+  .eyebrow { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+  .muted { color: var(--muted); }
+  .prose { max-width: 68ch; }
+  .prose p { margin: 0 0 12px; }
+  h1 { font-size: clamp(44px, 7vw, 92px); margin: 8px 0 20px; }
+  h2 { font-family: Anton, Impact, sans-serif; font-weight: 400; text-transform: uppercase; letter-spacing: 0.01em; font-size: 30px; margin: 0 0 6px; line-height: 1; }
+  h3 { font-size: 18px; font-weight: 600; margin: 0 0 6px; text-wrap: balance; }
+  section { padding-top: 56px; }
+  .marker { display: inline-block; background: var(--marker); color: var(--marker-ink); padding: 0 8px; }
+  header { padding-top: 56px; border-bottom: 1px solid var(--hair); padding-bottom: 32px; }
+  .stand { font-size: 19px; max-width: 62ch; }
+  .strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin-top: 28px; }
+  .strip div { border-top: 2px solid var(--ink); padding-top: 8px; }
+  .strip b { display: block; font-family: Anton, Impact, sans-serif; font-weight: 400; font-size: 34px; line-height: 1; }
+  .strip span { font-size: 13px; color: var(--muted); }
+
+  .scroll { overflow-x: auto; border: 1px solid var(--hair); background: var(--bg-2); box-shadow: var(--shadow); }
+  table { border-collapse: collapse; width: 100%; min-width: 1400px; font-size: 13px; }
+  th, td { text-align: left; vertical-align: top; padding: 10px 12px; border-bottom: 1px solid var(--hair); }
+  th { position: sticky; top: 0; background: var(--bg-2); font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); font-weight: 500; z-index: 1; }
+  td.num { font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+  tr.kept td:first-child { box-shadow: inset 4px 0 0 var(--marker); }
+  td .sub { display: block; color: var(--muted); font-size: 12px; }
+  .pill { display: inline-block; font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: 0.04em; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--hair); white-space: nowrap; }
+  .pill.no { color: var(--no); border-color: currentColor; }
+  .pill.ok { color: var(--ok); border-color: currentColor; }
+  .pill.warn { color: var(--warn); border-color: currentColor; }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 8px 20px; margin: 12px 0 18px; font-size: 13px; color: var(--muted); }
+  .legend i { display: inline-block; width: 10px; height: 10px; background: var(--marker); margin-right: 6px; vertical-align: -1px; }
+
+  .combos { display: grid; gap: 28px; margin-top: 20px; }
+  .combo { background: var(--bg-2); border: 1px solid var(--hair); box-shadow: var(--shadow); }
+  .combo-head { display: grid; grid-template-columns: 56px 1fr 1fr; gap: 0; border-bottom: 1px solid var(--hair); }
+  .combo-head > div { padding: 16px 18px; }
+  .combo-head .rank { font-family: Anton, Impact, sans-serif; font-size: 34px; line-height: 1; background: var(--marker); color: var(--marker-ink); display: flex; align-items: flex-start; justify-content: center; padding-top: 14px; }
+  .combo-head .clip + .clip { border-left: 1px solid var(--hair); }
+  .combo-head .lbl { font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+  .combo-head b { display: block; font-size: 16px; margin: 4px 0 2px; }
+  .combo-body { display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 0; }
+  .combo-body > div { padding: 18px; }
+  .combo-body > div + div { border-left: 1px solid var(--hair); }
+  .combo-title { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px 14px; padding: 14px 18px 0; }
+  .combo-title h3 { font-family: Anton, Impact, sans-serif; font-weight: 400; text-transform: uppercase; font-size: 24px; margin: 0; letter-spacing: 0.01em; }
+  ol.frames { margin: 8px 0 0; padding-left: 0; list-style: none; counter-reset: f; display: grid; gap: 6px; }
+  ol.frames li { position: relative; padding-left: 40px; counter-increment: f; }
+  ol.frames li::before { content: counter(f, decimal-leading-zero); position: absolute; left: 0; top: 2px; font-family: "IBM Plex Mono", monospace; font-size: 11px; color: var(--muted); letter-spacing: 0.06em; }
+  .prompt { background: var(--mono-bg); border-left: 3px solid var(--marker); padding: 12px 14px; font-family: "IBM Plex Mono", monospace; font-size: 12.5px; line-height: 1.55; white-space: pre-wrap; margin: 8px 0 0; }
+  .kv { display: grid; grid-template-columns: 110px 1fr; gap: 6px 12px; font-size: 13.5px; }
+  .kv dt { color: var(--muted); font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; padding-top: 3px; }
+  .kv dd { margin: 0; }
+  .score { font-family: Anton, Impact, sans-serif; font-size: 22px; line-height: 1; }
+
+  .final { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px; margin-top: 18px; }
+  .final > div { border-top: 3px solid var(--ink); padding-top: 10px; }
+  .final > div.hero { border-top-color: var(--marker); }
+  .final ul { margin: 6px 0 0; padding-left: 18px; }
+  .final li { margin: 4px 0; }
+
+  .formats { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; margin-top: 18px; }
+  .formats > div { background: var(--bg-2); border: 1px solid var(--hair); padding: 16px 18px; box-shadow: var(--shadow); }
+  .formats .lbl { font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+  .formats .q { font-family: Anton, Impact, sans-serif; font-size: 20px; text-transform: uppercase; margin: 6px 0 8px; line-height: 1.05; }
+
+  .timeline { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; margin: 16px 0 6px; }
+  .timeline > div { background: var(--bg-2); border: 1px solid var(--hair); padding: 10px 12px; font-size: 13px; }
+  .timeline .t { font-family: "IBM Plex Mono", monospace; font-size: 11px; color: var(--muted); letter-spacing: 0.06em; }
+  .timeline .hook { border-color: var(--marker); box-shadow: inset 0 3px 0 var(--marker); }
+
+  .rights { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; margin-top: 18px; }
+  .rights > div { border-top: 3px solid var(--hair); padding-top: 10px; }
+  .rights > div:first-child { border-top-color: var(--no); }
+  .rights > div:last-child { border-top-color: var(--ok); }
+  .rights ul { margin: 6px 0 0; padding-left: 18px; }
+  .sources { columns: 2; column-gap: 32px; font-size: 13px; }
+  .sources li { break-inside: avoid; margin-bottom: 4px; }
+  @media (max-width: 800px) {
+    .combo-head { grid-template-columns: 44px 1fr; } .combo-head .clip + .clip { border-left: 0; border-top: 1px solid var(--hair); grid-column: 2; }
+    .combo-body { grid-template-columns: 1fr; } .combo-body > div + div { border-left: 0; border-top: 1px solid var(--hair); }
+    .timeline { grid-template-columns: 1fr 1fr; } .sources { columns: 1; }
+  }
+  @media (prefers-reduced-motion: no-preference) { .combo { transition: border-color 160ms ease; } .combo:hover { border-color: var(--ink); } }
+  :focus-visible { outline: 2px solid var(--marker); outline-offset: 2px; }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Seam Ad Lab · research brief · 5 September 2026</div>
+    <h1 class="display">Impossible cuts <span class="marker">from internet moments</span></h1>
+    <p class="stand">The transition is the product demo. This brief finds the internet moments whose motion actually earns an AI transition, pairs them by visual continuity, writes the generative prompts, and marks the rights reality: every public celebrity clip below is a creative reference, not campaign footage. The recreation route for each pair is included.</p>
+    <div class="strip" id="strip"></div>
+  </header>
+
+  <section>
+    <h2>How clips were judged</h2>
+    <div class="prose">
+      <p>Every candidate was scored 1–10 on Recognition, Hook, Humor, Motion, Transition potential, Visual quality and Remix potential. The keep rule is the brief's: roughly the strongest fifth survives, and a lesser-known clip with incredible transition potential beats a famous face with none. Timestamps are exact where the moment is the whole short; for moments inside long streams the row says <em>confirm</em>, because no connected tool could scrub those streams this week.</p>
+      <p>Three footage tests decide the pairing: what is the dominant motion in the last half second, what object or shape is in frame, and what does the end frame leave behind (a colour, a silhouette, a hole in the frame). The next clip is chosen to continue exactly that.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Candidate pool</h2>
+    <div class="legend"><span><i></i>kept for pairing</span><span>Hook and Transition are the two scores that decide the shortlist; the seven sub-scores are in the row note.</span></div>
+    <div class="scroll"><table id="pool"></table></div>
+  </section>
+
+  <section>
+    <h2>Top 10 transition combinations</h2>
+    <p class="prose muted">Ranked by "would someone replay it and ask what tool made it". Frames are what the AI should generate in order; the prompt is the exact generative-video prompt in Seam's compiler language (source → camera → bridge → end → preserve → avoid).</p>
+    <div class="combos" id="combos"></div>
+  </section>
+
+  <section>
+    <h2>Final selection</h2>
+    <div class="final" id="final"></div>
+  </section>
+
+  <section>
+    <h2>Ad structure and formats</h2>
+    <div class="prose"><p>Eight to eighteen seconds. Start on the moment, never on a logo. Each transition must be more impressive than the last, and the product reveal only arrives after curiosity has been established.</p></div>
+    <div class="timeline">
+      <div class="hook"><div class="t">0.0–1.0 s</div>Recognisable moment, mid-action. No intro.</div>
+      <div><div class="t">1–4 s</div>First AI transition. Motivated by the motion already on screen.</div>
+      <div><div class="t">4–8 s</div>Second transition, noticeably bigger (environment or physics).</div>
+      <div><div class="t">8–12 s</div>Third transition, the escalation (scale or semantic morph).</div>
+      <div><div class="t">12–15 s</div>Reveal: one line of copy, three seconds of the interface, end card.</div>
+    </div>
+    <div class="formats" id="formats"></div>
+  </section>
+
+  <section>
+    <h2>Sound</h2>
+    <div class="prose">
+      <p>The original reaction audio is the joke; keep it wherever it lands, and let the transition sound answer it. A whoosh is only justified when something physically crosses the lens, a riser only when the camera is accelerating toward something, an impact only when matter changes state (chair → coaster harness, bottle → rocket). Ambience carries through the seam: room tone under the first frames of the new world, the new world's air fading in under the last frames of the old one. Sync the transformation to a speech accent or beat, and protect the comedic pause before the punchline. Per-combo notes are on each card.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Rights and the recreation plan</h2>
+    <div class="rights">
+      <div>
+        <h3>Not cleared (all creator clips above)</h3>
+        <ul>
+          <li>A publicly viewable clip is not a licence. Every row marked <span class="pill no">reference</span> is study material only.</li>
+          <li>Two rows carry a second layer: World Cup reactions have match broadcast on screen (FIFA and broadcaster rights); the WrestleMania splash is WWE property; the KSI song is a label master.</li>
+          <li>Prime bottles carry a trademark; recreate with unbranded bottles.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Three routes to a usable Clip A</h3>
+        <ul>
+          <li><b>Creator permission.</b> Speed, Kai, AMP, Sidemen and Adin all sell licensing through management; the Lamborghini jump and the Sidemen road trip are the creators' own uploads, the cleanest asks.</li>
+          <li><b>Recreate the beat.</b> A chair, a door, a ring light and a hired performer reproduce every kept moment for a few hundred dollars. The grammar is what we are borrowing, not the face.</li>
+          <li><b>Generate a look-alike.</b> A generic performer with no real likeness; the hero below was made this way today.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Cleared Clip B sources</h3>
+        <ul>
+          <li><b>NASA</b> footage is not copyrighted; in advertising, keep the insignia out, imply no endorsement, avoid identifiable people, and do not credit NASA on screen.</li>
+          <li><b>USGS</b> multimedia gallery is public domain: Kīlauea 2025 eruption video, Mount St. Helens 1980.</li>
+          <li><b>Pexels / Pixabay</b> licences allow commercial use without attribution; avoid depicted brands.</li>
+          <li><b>Your own users.</b> Format B and E turn comments into clips submitted under the product's terms.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="prose" style="margin-top:20px" id="hero-note"></div>
+  </section>
+
+  <section>
+    <h2>Sources</h2>
+    <ul class="sources" id="sources"></ul>
+  </section>
+</div>
+
+<script>
+const REF = { s: "reference", c: "high" };
+const POOL = [
+  { id:"speed-backflip", keep:true, clip:"IShowSpeed backflip into his setup", url:"https://knowyourmeme.com/memes/ishowspeed-backflip-fail", url2:"https://www.youtube.com/watch?v=Q9cAPbIwkkI", person:"IShowSpeed", when:"28 Dec 2024, Fortnite marathon with Kai Cenat · whole Short (~0:00–0:06)", what:"Stands on his chair, attempts a backflip, over-rotates and crashes into the desk and monitors.", why:"618k likes and 38k reposts in four days; spawned the Sonic-rings edit genre.", opp:"Mid-air rotation, then a hard impact with debris.", next:"Skydiver spin → ocean surface (Pexels aerial)", tr:"Hold the apex of the flip; the ceiling opens into sky and the same rotation becomes a skydiver's spin; the desk impact becomes hitting water.", sc:[10,10,10,10,9,6,10], hook:10, trans:9, rights:REF, note:"Webcam quality; 4:3-ish crop works vertical." },
+  { id:"kai-sparta", keep:true, clip:"Kai Cenat flies out of his chair (Sparta Remix reaction)", url:"https://www.tiktok.com/discover/kai-cenat-flying-out-of-chair-sparta-remix", person:"Kai Cenat", when:"2026 trend · whole clip (~0:00–0:05)", what:"Screams and launches backward out of his gaming chair, arms flailing.", why:"Became a remix template; dozens of Sparta Remix edits in the last weeks.", opp:"Backward tip plus upward launch, with the chair as a rideable object.", next:"Roller-coaster POV (Speed's scream) or a licensed coaster plate", tr:"The chair backrest grows into a coaster harness, the ceiling opens, the camera drops into a coaster dive.", sc:[10,9,9,9,10,7,10], hook:9, trans:10, rights:REF, note:"Best chair motion in the pool." },
+  { id:"fanum-door", keep:true, clip:"Fanum kicks down Kai's door for the cookies (the first Fanum tax)", url:"https://knowyourmeme.com/memes/fanum-tax", url2:"https://www.youtube.com/watch?v=FH6Lt9kLMfc", person:"Fanum, Kai Cenat", when:"23 Dec 2022 clip by KC3FEETT · door kick in the first seconds", what:"The door bursts open, Fanum barges in and takes the cookies.", why:"Origin of 'Fanum tax', Gen Z slang of 2023; Kai's compilation did 3.4M views.", opp:"A door bursting toward the camera is a literal portal, plus an object leaving frame.", next:"Any other creator's room, ideally one already mid-chaos", tr:"Camera rushes through the kicked door; the room beyond is a different viral room; the door edges slide out of frame.", sc:[10,9,9,8,10,6,9], hook:9, trans:10, rights:REF, note:"Door is dead-centre; perfect for a push-through." },
+  { id:"speed-lambo", keep:true, clip:"Speed jumps over his Ronaldo-themed Lamborghini", url:"https://www.complex.com/pop-culture/a/backwoodsaltar/ishowspeed-jumping-over-lamborghini-video", url2:"https://www.youtube.com/shorts/uTrzvUv7nGc", person:"IShowSpeed", when:"25 Jul 2024 · whole clip, three takes and a drone angle exist", what:"The car is driven at him, he leaps, it passes underneath, he lands and does the Siuuu.", why:"'Bro could've died'; xQc called it fake; his editor released the failed takes.", opp:"A body in flight while a fast object passes under the camera.", next:"W2S Harry landing on a moving car; or the car becomes a train", tr:"At the apex, the car passing beneath becomes a train, or the landing becomes another person's landing on a car roof.", sc:[9,9,7,10,9,9,8], hook:9, trans:9, rights:{s:"reference", c:"medium"}, note:"Speed's own upload; the cleanest permission ask in the pool." },
+  { id:"speed-coaster", keep:true, clip:"Speed screams so loud the stream mutes (fastest coasters)", url:"https://www.youtube.com/watch?v=ngZz_YEi5Ss", url2:"https://www.tiktok.com/discover/ishowspeed-roller-coaster", person:"IShowSpeed", when:"Coaster vlogs (US, Energylandia, Turkey) · timestamp to confirm inside the vlog", what:"Face-cam on the coaster, the scream clips the audio, the stream mutes.", why:"Audio meme; the Turkey ride where he seemingly passes out went viral separately.", opp:"Coaster drop, camera shake, a scream that can become any engine.", next:"Landing point for Kai's chair; or a drone dive into a canyon", tr:"The coaster drop continues into a drone dive; the scream becomes jet noise.", sc:[9,8,8,9,8,7,8], hook:8, trans:8, rights:REF, note:"Theme park property release needed on top of creator rights." },
+  { id:"speed-wc", keep:true, clip:"Speed's World Cup reaction: backflip, Siuuu, collapses in tears", url:"https://www.complex.com/pop-culture/a/markelibert/ishowspeed-ronaldo-2026-world-cup-goal-reaction", person:"IShowSpeed", when:"2026 World Cup R16, Portugal 2–1 Croatia · after the goal, timestamp to confirm", what:"Backflip, the Siuuu jump, then drops to the floor crying.", why:"Sports and streamer worlds crossing; emotional payoff after years of Ronaldo content.", opp:"Upward Siuuu jump with hands up, then a collapse to the floor.", next:"Stadium fireworks, then grass (Pexels)", tr:"As he jumps, the ceiling becomes a stadium sky with fireworks; he lands on grass.", sc:[10,9,8,9,8,7,9], hook:9, trans:8, rights:{s:"reference", c:"high"}, note:"Match broadcast on his screen adds FIFA/broadcaster rights." },
+  { id:"speed-neves", keep:false, clip:"Speed leaps from his seat at João Neves's goal", url:"https://www.complex.com/pop-culture/a/markelibert/ishowspeed-ronaldo-2026-world-cup-goal-reaction", person:"IShowSpeed", when:"2026 World Cup, Portugal vs DR Congo · timestamp to confirm", what:"Leaps out of the seat screaming.", why:"Went viral before the Croatia game.", opp:"Upward leap.", next:"Same as the Siuuu row", tr:"Merged into the Siuuu row; weaker version of the same motion.", sc:[9,8,7,8,7,7,7], hook:8, trans:7, rights:REF, note:"Duplicate motion; dropped." },
+  { id:"kai-hurdles", keep:true, clip:"Kai Cenat hurdles a row of chairs (Animal Company) and wipes out", url:"https://www.youtube.com/shorts/WX4HIPsxnk0", url2:"https://www.youtube.com/shorts/e7gLq8-GoJ8", person:"Kai Cenat", when:"2026 · whole Short (~0:00–0:08)", what:"Sprints across the room, hurdles a line of chairs, clips one and crashes.", why:"Chaos with a VR-game tie-in; recreations ('how accurate was I?') followed.", opp:"Horizontal sprint, a hurdle, and a fall.", next:"Olympic hurdles or rooftop parkour (Pexels)", tr:"Mid-hurdle, the room stretches into a running track; the chairs become hurdles; the fall lands on a rooftop.", sc:[9,8,9,9,8,6,8], hook:8, trans:8, rights:REF, note:"" },
+  { id:"druski-chair", keep:true, clip:"Druski breaks Kai's chair", url:"https://www.tiktok.com/@kc3videos/video/7442367317956218155", person:"Druski, Kai Cenat", when:"Nov 2024 · whole clip", what:"The chair collapses under Druski; he drops straight down.", why:"Two big comedic personalities, one broken chair.", opp:"A sudden vertical drop.", next:"Adin Ross's 100-ft crane drop", tr:"The floor gives way under the chair; the drop becomes a freefall.", sc:[8,8,9,7,8,6,7], hook:8, trans:8, rights:REF, note:"" },
+  { id:"kai-food", keep:false, clip:"Kai falls off his chair and drops all his food", url:"https://www.tiktok.com/@clippedode/video/7342376325669326122", person:"Kai Cenat", when:"Mar 2024 · whole clip", what:"Tips over; the food flies.", why:"Classic Kai chair moment.", opp:"Objects scattering.", next:"Food → planets?", tr:"Scatter morph; weaker than the Sparta fly-out.", sc:[8,7,8,7,6,6,6], hook:7, trans:6, rights:REF, note:"Dropped: same chair beat, less motion." },
+  { id:"fanum-dive", keep:false, clip:"Fanum dives into someone ('why he dive into him')", url:"https://www.tiktok.com/@amptiktokworrd/video/7419416687268662558", person:"Fanum", when:"Sep 2024 · whole clip", what:"Full horizontal dive into another person.", why:"Absurd commitment.", opp:"Horizontal dive.", next:"Pool dive → water → clouds", tr:"Dive continues into water; water becomes clouds.", sc:[8,7,9,8,8,6,7], hook:7, trans:8, rights:REF, note:"Held in reserve for the freefall chain." },
+  { id:"xqc-jumpscare", keep:false, clip:"xQc almost falls off his chair (jumpscare)", url:"https://www.youtube.com/watch?v=vvJh7EkUkF0", url2:"https://www.dexerto.com/entertainment/xqc-gets-scared-during-stream-he-almost-jumps-chair-378069/", person:"xQc", when:"May 2022 (MoistCr1tikal scream) · whole clip", what:"Jolts backward and nearly tips.", why:"Signature reaction.", opp:"A jolt; not much travel.", next:"Whiplash into a punch", tr:"Too little motion to carry a generative move.", sc:[8,7,8,6,6,6,6], hook:7, trans:6, rights:REF, note:"Dropped." },
+  { id:"adin-crane", keep:true, clip:"Adin Ross jumps off a 100-ft crane onto an airbag", url:"https://www.tiktok.com/@kickclipper_/video/7509255792789409046", person:"Adin Ross (with Travis Pastrana)", when:"May 2025 · whole clip", what:"Hesitates, then drops; the airbag catches him.", why:"Fear of heights paid off on camera.", opp:"A long vertical freefall.", next:"Ocean surface, underwater, clouds", tr:"The airbag becomes the ocean surface; the splash becomes clouds seen from above.", sc:[8,8,7,9,9,7,7], hook:8, trans:9, rights:REF, note:"Kick stream; stunt footage may carry a second owner." },
+  { id:"water-ride", keep:false, clip:"Adin, xQc and SSB nearly drown on a water ride", url:"https://sportskeeda.com/esports/news-this-s-t-got-crying-fans-react-adin-ross-xqc-ssb-members-nearly-drown-water-ride-amusement-park", person:"Adin Ross, xQc", when:"27 Feb 2024 IRL stream", what:"The boat swamps; everyone gets soaked.", why:"Group chaos.", opp:"A splash that fills the lens.", next:"Ocean", tr:"Splash → underwater; reserve clip for the freefall chain.", sc:[8,8,8,8,8,5,7], hook:8, trans:8, rights:REF, note:"Low resolution; reserve." },
+  { id:"harry-car", keep:true, clip:"W2S Harry launches onto a moving car and falls", url:"https://www.tiktok.com/discover/w2s-harry-car-flip-incident", person:"Harry (Sidemen)", when:"Sidemen $10,000 vs $100 Road Trip · timestamp to confirm", what:"Sprints, leaps onto the moving car for the tag, slides off hard, gets up.", why:"'They thought Harry got run over.'", opp:"A leap that lands on a car roof.", next:"Speed's Lamborghini leap (body continuation)", tr:"Speed's jump lands as Harry's jump; two people, one arc.", sc:[8,8,9,9,8,8,7], hook:8, trans:8, rights:{s:"reference", c:"medium"}, note:"Sidemen's own channel; permission route exists." },
+  { id:"mrbeast-blast", keep:true, clip:"MrBeast: five people run toward camera, explosion behind", url:"https://www.tiktok.com/discover/mr-beast-explosion", person:"MrBeast crew", when:"MrBeast challenge video · timestamp to confirm", what:"Group runs toward the lens; a fireball erupts behind them in slow motion.", why:"Cinematic scale on a creator channel.", opp:"A fireball that fills the frame.", next:"Kīlauea lava fountain (USGS, public domain)", tr:"The fireball becomes a lava fountain; the runners' silhouettes are swallowed by the glow.", sc:[10,9,5,9,9,10,7], hook:9, trans:9, rights:{s:"reference", c:"high"}, note:"MrBeast licensing is unlikely; recreate with stock pyro." },
+  { id:"prime-bottles", keep:true, clip:"Crowd pelts KSI and Logan Paul with Prime bottles (staged)", url:"https://www.youtube.com/watch?v=rKknYhyG8qA", url2:"https://www.sportskeeda.com/esports/news-masterclass-marketing-logan-paul-reveals-recent-prime-bottle-attack-ksi-staged-publicity", person:"KSI, Logan Paul", when:"Jun 2023, Copenhagen · bottles fly in the first seconds", what:"Bottles fly at the stage and lens.", why:"Later revealed as a staged marketing stunt.", opp:"Objects flying toward the lens.", next:"Rocket launch (NASA, public domain)", tr:"A bottle fills the frame and morphs into a rocket lifting off.", sc:[9,8,7,8,8,7,6], hook:8, trans:8, rights:{s:"reference", c:"high"}, note:"Prime trademark on the bottles; recreate unbranded." },
+  { id:"ksi-thick", keep:true, clip:"KSI, 'Thick of It': from the screen to the ring to the pen to the king", url:"https://knowyourmeme.com/memes/ksis-thick-of-it", person:"KSI", when:"3 Oct 2024 music video · the lyric", what:"The lyric names four worlds in a row.", why:"Mocked into a copypasta; instantly recognisable line.", opp:"The lyric is a four-environment transition chain.", next:"Screen → boxing ring → studio (pen) → throne (king)", tr:"Four generative environment transformations on the four beats of the line.", sc:[9,7,9,6,9,9,9], hook:7, trans:9, rights:{s:"reference", c:"high"}, note:"Label master and video; only a look-alike parody with cleared audio." },
+  { id:"speed-frog", keep:false, clip:"Speed frog-splashes Logan Paul through a table (WrestleMania 42)", url:"https://www.espn.com/video/clip/_/id/48525530", person:"IShowSpeed, Logan Paul", when:"19 Apr 2026", what:"Leaps from the top rope, flies, crashes through the announce table.", why:"Streamer in a WWE main-card moment.", opp:"A perfect flight arc.", next:"Dive into a pool", tr:"WWE footage is never cleared; recreate the arc with a performer.", sc:[9,9,7,10,9,10,7], hook:9, trans:9, rights:{s:"reference", c:"high"}, note:"Dropped on rights alone." },
+  { id:"speed-scared", keep:true, clip:"The 'Speed scared' face", url:"https://www.yahoo.com/entertainment/articles/where-speed-scared-meme-viral-180722020.html", person:"IShowSpeed", when:"Reaction GIF, various streams", what:"Wide-eyed frozen stare.", why:"One of the most used reaction images of the last two years.", opp:"A still face invites a scale zoom into the eye.", next:"Space (scale zoom) or the end of a rocket flight", tr:"Push into the eye; the pupil becomes a tunnel into space.", sc:[9,7,8,3,7,6,9], hook:7, trans:7, rights:REF, note:"Kept as an end frame, not an opener." },
+  { id:"xqc-usb", keep:false, clip:"xQc: 'I have AMP's whole net worth on a USB stick'", url:"https://www.tiktok.com/discover/react-to-xqc-saying-he-got-amp-whole-network", person:"xQc", when:"May 2026", what:"Holds up a USB stick.", why:"Streamer drama of the month.", opp:"A held object; no motion.", next:"Zoom into the USB port", tr:"Dialogue beat; a hard cut is the right edit.", sc:[8,7,8,3,5,6,8], hook:7, trans:5, rights:REF, note:"Dropped; example of where a cut wins." },
+  { id:"ksi-ai-friends", keep:false, clip:"KSI tells Logan and MrBeast about his AI friends (Impaulsive)", url:"https://www.tiktok.com/@podcasts_and_clipz/video/7422211890245307681", person:"KSI, Logan Paul, MrBeast", when:"Oct 2024", what:"Podcast bit; they cannot tell if he is joking.", why:"Three of the biggest creators laughing at each other.", opp:"None; talking heads.", next:"—", tr:"Clean cut only; transitions would hurt the joke.", sc:[9,6,8,2,3,8,5], hook:6, trans:3, rights:REF, note:"Kept as the 'hard cut is better' reference." },
+];
+
+const COMBOS = [
+  { rank:1, name:"Ejector Seat", a:"Kai flies backward out of his chair (Sparta Remix)", aId:"kai-sparta", b:"Speed screaming on the fastest coaster, stream muting", bId:"speed-coaster", hero:true,
+    frames:["Kai's scream starts; the chair tips past 45°; hold the original audio.","The backrest lengthens into a coaster harness and the desk drops away; RGB strips become track lights.","The ceiling peels open into daylight sky; the camera keeps tilting back with the chair.","Gravity flips: the chair crests a coaster hill and the drop begins, motion blur streaking the room.","The drop lands in Speed's face-cam on the real coaster; his scream takes over as the audio clips."],
+    prompt:"SOURCE: streamer in a gaming chair tipping backward, screaming, RGB-lit room, webcam framing.\nCAMERA: locked webcam that begins tilting back with the chair, then accelerates into a roller-coaster POV drop.\nBRIDGE: the chair's backrest extends into a padded coaster harness while the desk and monitors fall away; the ceiling opens into bright sky; the chair crests a coaster hill and plunges; track and sky streak with motion blur.\nEND: settles on a face-cam view of a person screaming on a real roller coaster, bright daylight.\nPRESERVE: the subject's identity, hoodie and hand positions until the crest; lighting direction from screen-left.\nAVOID: extra limbs, duplicated chairs, warped face, text, cuts, changing the subject's clothes.",
+    why:"The backward tip is already the first frame of a coaster drop; the chair is the object that transforms, so nothing is invented, only extended. Two recognisable screams meet mid-fall.", diff:"Hero", ad:10, sound:"Kai's scream unbroken into Speed's; harness click on the transform; wind rises through the drop; no music.", format:"B: 'Give our AI a harder transition.'", rights:"Both clips reference-only. Recreate: performer in chair on a small tip rig; Clip B from a licensed coaster POV (Pexels) or a shot-on-phone ride." },
+  { rank:2, name:"Fanum Tax Portal", a:"Fanum kicks down Kai's door (first Fanum tax)", aId:"fanum-door", b:"Speed mid-backflip into his setup", bId:"speed-backflip",
+    frames:["The door slams open toward the lens; Fanum's silhouette fills the doorway.","The camera pushes through the doorway instead of stopping; the frame of the door slides past the edges.","Beyond the door is not Kai's room: the walls re-form into Speed's setup, monitors first.","Speed is already at the top of his backflip; the push settles as his rotation continues.","He crashes into the desk; hard cut is allowed here because the impact is the joke."],
+    prompt:"SOURCE: a bedroom door bursting open toward the camera, a person stepping through, dim room.\nCAMERA: fast push-through the doorway, easing as it lands.\nBRIDGE: the camera passes the door frame; the room beyond rebuilds itself into a different streamer bedroom with monitors and a ring light; a person is mid-backflip at the top of the frame.\nEND: matches the destination frame with the subject mid-rotation above a desk.\nPRESERVE: doorway edges as the wipe, warm light spilling from the door.\nAVOID: two doors, duplicated people, cuts, distorted hands.",
+    why:"A kicked door is a wipe the footage already performed. Cause and effect across two creators (someone barges in, someone flips) reads as a punchline, not an effect.", diff:"Medium", ad:9, sound:"Door impact kept; room tone crossfades under the push; Speed's crash audio arrives dry.", format:"D: memes into movies.", rights:"Both reference-only. Recreate the door kick on set; the flip lands with a performer or the look-alike route." },
+  { rank:3, name:"Sonic Rings", a:"Speed's backflip into the desk", aId:"speed-backflip", b:"Aerial ocean surface (Pexels)", bId:null,
+    frames:["Speed leaves the chair; freeze the rotation for two frames at the apex.","The ceiling dissolves into open sky as the camera tilts up with him.","His body keeps the same spin as a skydiver, room lights becoming sun flares.","The desk impact becomes the ocean surface rushing up; white water fills the frame.","Camera surfaces into a calm aerial ocean shot."],
+    prompt:"SOURCE: a person mid-backflip in a dim RGB-lit bedroom, webcam framing.\nCAMERA: tilts up and follows the rotation, then dives.\nBRIDGE: the room ceiling opens into blue sky; the same rotation continues as a skydiver's spin against sun flare; the descent hits water and white spray fills the frame.\nEND: aerial view of a calm ocean surface, matching the destination frame.\nPRESERVE: the subject's spin direction and speed, hoodie colour, lighting from the left.\nAVOID: extra limbs, cuts, changing subject count, warped face.",
+    why:"Rotation is the rarest motion in the pool and the easiest to continue. The desk hit becomes the water hit, so the joke survives the transition.", diff:"Medium", ad:9, sound:"Original audio until the apex; wind replaces room tone; the crash foley is replaced by a water slap.", format:"C: normal editor vs AI (show a whip cut first).", rights:"A reference-only; B cleared (Pexels licence)." },
+  { rank:4, name:"Two Landings", a:"Speed leaps over the moving Lamborghini", aId:"speed-lambo", b:"Harry launches onto a moving car and falls", bId:"harry-car",
+    frames:["Speed is at the apex; the car passes underneath.","The camera drops toward the car roof with him.","The roof he lands on is a different car on a different road; daylight matches.","Harry's body takes over the landing in the same pose and direction.","Harry slides off and hits the tarmac; hold the Sidemen reaction."],
+    prompt:"SOURCE: a person at the apex of a jump above a passing sports car, daylight, drone angle.\nCAMERA: follows the descent, lowering toward the car roof.\nBRIDGE: the car roof beneath him becomes a different moving car on a rural road; his silhouette lands as a different person in the same pose, same direction of travel.\nEND: the second person sliding off the moving car onto the road.\nPRESERVE: direction of travel, daylight, the arc of the jump.\nAVOID: two people at once, duplicated cars, cuts, morphing faces.",
+    why:"Body-motion continuation between two people is the transition viewers replay: same arc, same landing, different human. Both are the creators' own uploads, so permission is realistic.", diff:"Medium", ad:9, sound:"Engine pass carries through; landing impact on the roof; Sidemen laughter tail.", format:"A: 'These clips have nothing in common.'", rights:"Both reference-only but creator-owned; the best pair to license outright." },
+  { rank:5, name:"Siuuu Stadium", a:"Speed's Siuuu jump and collapse after the Croatia goal", aId:"speed-wc", b:"Stadium fireworks, then pitch grass (Pexels)", bId:null,
+    frames:["He rises into the Siuuu with both arms up.","The ceiling becomes a stadium sky; fireworks burst behind his silhouette.","He lands, and the floor under his feet is grass under floodlights.","He collapses in tears onto the pitch.","Wide out to the stadium."],
+    prompt:"SOURCE: a person leaping into a celebration pose with both arms up in a bedroom, screen glow.\nCAMERA: slight tilt up with the jump, then a pull back.\nBRIDGE: the ceiling turns into a night stadium sky with fireworks; on landing the floor is floodlit grass; the bedroom walls become stands full of people.\nEND: the person kneeling on the pitch in a full stadium.\nPRESERVE: the celebration pose and timing, the subject's clothing, warm screen light on his face.\nAVOID: extra limbs, crowd faces morphing, text, cuts.",
+    why:"An upward jump is a free tilt; the collapse to the floor gives the second surface (grass) a reason to exist.", diff:"Medium", ad:8, sound:"His scream stays; crowd roar fades up under the fireworks; no music.", format:"D.", rights:"A carries creator and broadcaster rights (match on screen); recreate the celebration with a performer; B cleared." },
+  { rank:6, name:"Freefall Chain", a:"Druski's chair collapses", aId:"druski-chair", b:"Adin's 100-ft crane drop → water ride splash", bId:"adin-crane",
+    frames:["The chair snaps; Druski drops.","The floor gives way beneath him; the room's walls streak upward.","The fall is now Adin leaving the crane platform, same vertical speed.","The airbag becomes a water surface; the splash from the water ride fills the frame.","Bubbles clear to a wide aerial of the sea."],
+    prompt:"SOURCE: a person dropping straight down as a chair breaks in a dim room.\nCAMERA: locked, then falls with the subject.\nBRIDGE: the floor opens; walls streak upward; the drop continues as a person falling from a crane platform in daylight; the landing surface becomes water and a huge splash fills the frame.\nEND: clearing spray over open sea from above.\nPRESERVE: vertical speed and the subject's upright-to-tumbling posture.\nAVOID: duplicated people, extra limbs, cuts, sudden lighting jumps except at the water.",
+    why:"Three creators linked by one physical rule (things fall). Each hand-off happens on a surface change, which is what the eye accepts.", diff:"Hero", ad:9, sound:"Chair crack, then a long air rush; the splash is the only impact; keep Adin's yell.", format:"D.", rights:"All reference-only; recreate as one stunt performer with a mat and a pool." },
+  { rank:7, name:"Blast to Lava", a:"MrBeast crew running from an explosion", aId:"mrbeast-blast", b:"Kīlauea lava fountain (USGS, public domain)", bId:null,
+    frames:["Runners toward the lens; the fireball blooms behind them.","The fireball expands past the runners and fills the frame.","Inside the glow the texture becomes molten rock.","The camera pulls back from a lava fountain at night.","Wide of the eruption."],
+    prompt:"SOURCE: people running toward the camera with a large explosion behind them, slow motion, dusk.\nCAMERA: slow push into the fireball, then a pull back.\nBRIDGE: the fireball swallows the runners; its texture becomes molten lava; the camera pulls back to reveal a lava fountain erupting at night.\nEND: wide shot of the volcanic eruption matching the destination frame.\nPRESERVE: the orange-white palette and the glow's light direction.\nAVOID: people visible after the fireball, text, cuts, cartoon fire.",
+    why:"Fire to lava is a material bridge with no identity to preserve, so it is the safest big-look transition in the set.", diff:"Easy", ad:8, sound:"Explosion tail rings into a deep rumble; no whoosh.", format:"A.", rights:"A reference-only (recreate with stock pyro); B cleared, public domain." },
+  { rank:8, name:"Office Hurdles", a:"Kai hurdles a row of chairs and wipes out", aId:"kai-hurdles", b:"Rooftop parkour or Olympic hurdles (Pexels)", bId:null,
+    frames:["Kai sprints left to right; first chair cleared.","The room elongates; the carpet becomes a running track with lane lines.","The chairs become hurdles; his stride continues.","The last hurdle is a rooftop edge; the crash becomes a roll onto gravel.","Wide of the city rooftops."],
+    prompt:"SOURCE: a person sprinting across a room and jumping over a line of chairs, webcam framing.\nCAMERA: pans with the runner, widening as the space grows.\nBRIDGE: the room stretches into an outdoor running track; the chairs become hurdles; the final hurdle becomes a rooftop ledge and the runner rolls onto gravel.\nEND: wide rooftop with city behind, matching the destination frame.\nPRESERVE: running direction left to right, stride rhythm, the subject's clothing.\nAVOID: extra runners, duplicated chairs, cuts, distorted legs.",
+    why:"Direction of motion is the whole transition; nothing needs to morph except the room.", diff:"Medium", ad:8, sound:"Footsteps through; a stadium crowd swells; the roll lands with gravel foley.", format:"B.", rights:"A reference-only; B cleared." },
+  { rank:9, name:"Bottle Rocket", a:"Prime bottles flying at KSI and Logan (staged)", aId:"prime-bottles", b:"Rocket launch (NASA, public domain) → Speed's scared face", bId:"speed-scared",
+    frames:["A bottle flies at the lens and fills the frame.","Its cylinder becomes a rocket body; the label becomes fuselage panels.","The rocket lifts off from a pad, exhaust filling the lower frame.","The rocket climbs into a dark pupil that opens to a wide-eyed face.","Hold on the scared face as the end card."],
+    prompt:"SOURCE: an unbranded plastic bottle thrown toward the camera at a crowded event, stage lights.\nCAMERA: locked, then tilts up with the rocket.\nBRIDGE: the bottle fills the frame and its cylinder becomes a rocket standing on a launch pad; the rocket lifts off with flame and smoke; it climbs into a black circle that widens into a human pupil.\nEND: extreme close-up of a wide-eyed frightened face, matching the destination frame.\nPRESERVE: the bottle's colour on the rocket, upward motion.\nAVOID: logos, text, extra rockets, cuts, warped eyes.",
+    why:"Semantic morph (cylinder to rocket) plus a scale zoom, both in one upward line. The reaction face lands the joke.", diff:"Medium", ad:8, sound:"Crowd noise cuts to a sub rumble on ignition; silence before the eye.", format:"A.", rights:"A reference-only and trademarked; recreate with plain bottles; B (NASA) cleared with no insignia; end face recreated." },
+  { rank:10, name:"Screen, Ring, Pen, King", a:"KSI's 'from the screen to the ring to the pen to the king'", aId:"ksi-thick", b:"Four look-alike worlds generated in sequence", bId:null,
+    frames:["A gamer at a screen; camera pushes into the monitor.","Inside the screen is a boxing ring under lights; the camera lands ringside.","The ring canvas becomes a recording studio floor; a mic stand rises.","The studio becomes a throne room; the camera settles on an empty throne.","End card over the throne."],
+    prompt:"SOURCE: a person gaming at a monitor in a bedroom.\nCAMERA: four continuous push-throughs, one per beat.\nBRIDGE: the monitor glass becomes the ropes of a boxing ring; the canvas becomes a studio floor with a microphone; the studio walls become a throne room.\nEND: an ornate throne in a dark hall, matching the destination frame.\nPRESERVE: one continuous forward motion; the same performer's silhouette until the ring.\nAVOID: any real person's likeness, text, cuts, duplicated microphones.",
+    why:"The lyric is literally a list of environments. Cutting the transformations on the four words makes the meme the edit.", diff:"Hero", ad:8, sound:"Only usable with a licensed or original voice reading the line; otherwise instrumental-free, four impacts on the four words.", format:"E: 'What should we connect next?'", rights:"Song and video are label property; this is a parody structure with original audio, cleared performer, and no likeness." },
+];
+
+const FINAL = [
+  { k:"Safest", items:["Blast to Lava (#7): B is public domain, no identity to hold.","Bottle Rocket (#9): object morph with unbranded props and NASA plates.","Sonic Rings (#3): one performer, one rotation, licensed ocean plate."] },
+  { k:"Funniest", items:["Fanum Tax Portal (#2): the door kick lands on someone else's disaster.","Two Landings (#4): one jump, two humans, one bad landing.","Freefall Chain (#6): three people obeying gravity in one take."] },
+  { k:"Most impossible", items:["Ejector Seat (#1): a gaming chair becomes a coaster mid-scream.","Office Hurdles (#8): the room becomes a track becomes a rooftop.","Screen, Ring, Pen, King (#10): four worlds on four words."] },
+  { k:"Hero", hero:true, items:["Ejector Seat (#1). The chair tip is already the first frame of a coaster drop, both audios are famous screams, and the transform happens on the object the viewer is looking at. It is the one people will replay and ask what made it."] },
+];
+
+const FORMATS = [
+  { lbl:"Format A", q:"We connected two clips that should never match", body:"Blast to Lava, Bottle Rocket, Two Landings. Text: 'These clips have absolutely nothing in common.' Reveal at 12 s." },
+  { lbl:"Format B", q:"Name a harder transition", body:"Ejector Seat as the hero, Office Hurdles as the follow-up. Overlay: 'Give our AI a harder transition.' Comments become the next brief." },
+  { lbl:"Format C", q:"Normal editor vs AI", body:"Show the whip or zoom cut first (two seconds), then 'Our AI:' and Sonic Rings. The contrast is the ad." },
+  { lbl:"Format D", q:"Turning memes into movies", body:"Fanum Tax Portal → Freefall Chain → Siuuu Stadium as one continuous take. Caption: 'We gave internet clips a $100M movie budget.'" },
+  { lbl:"Format E", q:"What should we connect next?", body:"End on two thumbnails, 'A or B?', and Screen-Ring-Pen-King as the example of a viewer-chosen chain." },
+];
+
+const SOURCES = [
+  ["Know Your Meme: IShowSpeed Backflip Fail","https://knowyourmeme.com/memes/ishowspeed-backflip-fail"],
+  ["IShowSpeed's painful backflip (YouTube Short)","https://www.youtube.com/watch?v=Q9cAPbIwkkI"],
+  ["Kai Cenat flying out of chair, Sparta Remix (TikTok)","https://www.tiktok.com/discover/kai-cenat-flying-out-of-chair-sparta-remix"],
+  ["Know Your Meme: Fanum Tax","https://knowyourmeme.com/memes/fanum-tax"],
+  ["Complex: Speed jumps over the Lamborghini","https://www.complex.com/pop-culture/a/backwoodsaltar/ishowspeed-jumping-over-lamborghini-video"],
+  ["Sportskeeda: xQc calls the Lamborghini clip fake","https://www.sportskeeda.com/us/streamers/news-xqc-says-ishowspeed-s-viral-clip-jumping-ronaldo-themed-lamborghini-fake"],
+  ["iShowSpeed rides the fastest coasters in America","https://www.youtube.com/watch?v=ngZz_YEi5Ss"],
+  ["Sportskeeda: Speed seemingly passes out on a coaster in Turkey","https://www.sportskeeda.com/us/streamers/news-video-ishowspeed-seemingly-passing-roller-coaster-ride-turkey-goes-viral"],
+  ["Complex: Speed's 2026 World Cup reaction","https://www.complex.com/pop-culture/a/markelibert/ishowspeed-ronaldo-2026-world-cup-goal-reaction"],
+  ["Kai Cenat hurdling chairs, Animal Company (YouTube Short)","https://www.youtube.com/shorts/WX4HIPsxnk0"],
+  ["Druski breaks Kai's chair (TikTok)","https://www.tiktok.com/@kc3videos/video/7442367317956218155"],
+  ["Kai falls off chair, drops food (TikTok)","https://www.tiktok.com/@clippedode/video/7342376325669326122"],
+  ["Fanum dives into someone (TikTok)","https://www.tiktok.com/@amptiktokworrd/video/7419416687268662558"],
+  ["Dexerto: xQc almost jumps out of his chair","https://www.dexerto.com/entertainment/xqc-gets-scared-during-stream-he-almost-jumps-chair-378069/"],
+  ["Adin Ross 100-ft crane jump (TikTok)","https://www.tiktok.com/@kickclipper_/video/7509255792789409046"],
+  ["Sportskeeda: Adin, xQc and SSB water ride","https://sportskeeda.com/esports/news-this-s-t-got-crying-fans-react-adin-ross-xqc-ssb-members-nearly-drown-water-ride-amusement-park"],
+  ["W2S Harry car incident (TikTok)","https://www.tiktok.com/discover/w2s-harry-car-flip-incident"],
+  ["MrBeast explosion clips (TikTok)","https://www.tiktok.com/discover/mr-beast-explosion"],
+  ["KSI and Logan Paul pelted with Prime bottles (YouTube)","https://www.youtube.com/watch?v=rKknYhyG8qA"],
+  ["Sportskeeda: the Prime bottle stunt was staged","https://www.sportskeeda.com/esports/news-masterclass-marketing-logan-paul-reveals-recent-prime-bottle-attack-ksi-staged-publicity"],
+  ["Know Your Meme: KSI's Thick of It","https://knowyourmeme.com/memes/ksis-thick-of-it"],
+  ["ESPN: Speed frog splash on Logan Paul","https://www.espn.com/video/clip/_/id/48525530"],
+  ["Yahoo: where the 'Speed scared' meme is from","https://www.yahoo.com/entertainment/articles/where-speed-scared-meme-viral-180722020.html"],
+  ["KSI's AI friends, Impaulsive clip (TikTok)","https://www.tiktok.com/@podcasts_and_clipz/video/7422211890245307681"],
+  ["NASA advertising guidelines","https://www.nasa.gov/nasa-brand-center/advertising-guidelines/"],
+  ["NASA images and media guidelines","https://www.nasa.gov/nasa-brand-center/images-and-media/"],
+  ["USGS multimedia gallery (public domain)","https://www.usgs.gov/products/multimedia-gallery"],
+  ["USGS: Kīlauea summit eruption video, 16 Jan 2025","https://www.usgs.gov/media/videos/january-16-2025-kilauea-summit-eruption-video"],
+  ["Pexels licence: commercial use","https://help.pexels.com/hc/en-us/articles/360042295214-Can-I-use-the-photos-and-videos-for-a-commercial-project"],
+];
+
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const byId = Object.fromEntries(POOL.map((p) => [p.id, p]));
+
+document.getElementById("strip").innerHTML = [
+  [POOL.length, "candidates researched"], [POOL.filter((p) => p.keep).length, "kept for pairing"], [COMBOS.length, "ranked combinations"],
+  [POOL.filter((p) => p.rights.s !== "reference").length, "creator clips cleared"], [3, "public-domain / licensed B sources"],
+].map(([n, l]) => `<div><b>${n}</b><span>${l}</span></div>`).join("");
+
+const head = ["#", "Clip / source", "Person", "When / timestamp", "What happens", "Why it is viral", "Transition opportunity", "Suggested next clip", "Proposed AI transition", "Hook", "Trans.", "Rights"];
+document.getElementById("pool").innerHTML =
+  `<thead><tr>${head.map((h) => `<th>${h}</th>`).join("")}</tr></thead><tbody>` +
+  POOL.map((p, i) => `<tr class="${p.keep ? "kept" : ""}">
+    <td class="num">${i + 1}</td>
+    <td><a href="${esc(p.url)}" target="_blank" rel="noopener">${esc(p.clip)}</a>${p.url2 ? ` <a class="muted" href="${esc(p.url2)}" target="_blank" rel="noopener">(2)</a>` : ""}<span class="sub">R ${p.sc[0]} · H ${p.sc[1]} · Hu ${p.sc[2]} · M ${p.sc[3]} · T ${p.sc[4]} · V ${p.sc[5]} · X ${p.sc[6]}${p.note ? " · " + esc(p.note) : ""}</span></td>
+    <td>${esc(p.person)}</td><td>${esc(p.when)}</td><td>${esc(p.what)}</td><td>${esc(p.why)}</td><td>${esc(p.opp)}</td><td>${esc(p.next)}</td><td>${esc(p.tr)}</td>
+    <td class="num">${p.hook}</td><td class="num">${p.trans}</td>
+    <td><span class="pill ${p.rights.s === "reference" ? "no" : "ok"}">${esc(p.rights.s)}</span><span class="sub">confidence ${esc(p.rights.c)}</span></td>
+  </tr>`).join("") + "</tbody>";
+
+document.getElementById("combos").innerHTML = COMBOS.map((c) => `<article class="combo" id="c${c.rank}">
+  <div class="combo-title"><h3>${esc(c.name)}</h3>${c.hero ? '<span class="pill warn">hero</span>' : ""}<span class="pill">${esc(c.diff)}</span><span class="muted" style="font-size:13px">Ad potential <span class="score">${c.ad}</span>/10</span></div>
+  <div class="combo-head" style="margin-top:12px">
+    <div class="rank">${c.rank}</div>
+    <div class="clip"><div class="lbl">Clip A</div><b>${esc(c.a)}</b><span class="muted" style="font-size:12.5px">${c.aId && byId[c.aId] ? esc(byId[c.aId].when) : ""}</span></div>
+    <div class="clip"><div class="lbl">Clip B</div><b>${esc(c.b)}</b><span class="muted" style="font-size:12.5px">${c.bId && byId[c.bId] ? esc(byId[c.bId].when) : "Licensed or public-domain plate"}</span></div>
+  </div>
+  <div class="combo-body">
+    <div>
+      <div class="lbl mono muted" style="letter-spacing:.08em;text-transform:uppercase;font-size:11px">Transition, frame by frame</div>
+      <ol class="frames">${c.frames.map((f) => `<li>${esc(f)}</li>`).join("")}</ol>
+      <div class="lbl mono muted" style="letter-spacing:.08em;text-transform:uppercase;font-size:11px;margin-top:14px">Prompt</div>
+      <pre class="prompt">${esc(c.prompt)}</pre>
+    </div>
+    <div>
+      <dl class="kv">
+        <dt>Why it works</dt><dd>${esc(c.why)}</dd>
+        <dt>Sound</dt><dd>${esc(c.sound)}</dd>
+        <dt>Format</dt><dd>${esc(c.format)}</dd>
+        <dt>Rights path</dt><dd>${esc(c.rights)}</dd>
+      </dl>
+    </div>
+  </div>
+</article>`).join("");
+
+document.getElementById("final").innerHTML = FINAL.map((f) => `<div class="${f.hero ? "hero" : ""}"><div class="eyebrow">${esc(f.k)}</div><ul>${f.items.map((i) => `<li>${esc(i)}</li>`).join("")}</ul></div>`).join("");
+document.getElementById("formats").innerHTML = FORMATS.map((f) => `<div><div class="lbl">${esc(f.lbl)}</div><div class="q">${esc(f.q)}</div><div>${esc(f.body)}</div></div>`).join("");
+document.getElementById("sources").innerHTML = SOURCES.map(([t, u]) => `<li><a href="${esc(u)}" target="_blank" rel="noopener">${esc(t)}</a></li>`).join("");
+document.getElementById("hero-note").innerHTML = `<p><b>Recreated hero, cleared by construction.</b> To prove the route, a generic performer was generated (no real likeness): a streamer jumping out of his chair, and a rocket lifting off, then a first/last-frame bridge between them. Assets live in the Seam repo under <span class="mono">public/ads/hero-recreated/</span>. The same two-still plus bridge recipe rebuilds any combination above without touching creator footage.</p>`;
+</script>

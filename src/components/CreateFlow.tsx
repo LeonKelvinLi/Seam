@@ -28,6 +28,7 @@ export function CreateFlow() {
   const [showFineTune, setShowFineTune] = useState(false);
   const [videoMode, setVideoMode] = useState<"full" | "bridge">("full");
   const [copied, setCopied] = useState(false);
+  const [needCredits, setNeedCredits] = useState(false);
   const autoRecipe = useRef<string | null>(params.get("recipe"));
   const analyzeRequested = useRef<string | null>(null);
   const uploadQueue = useRef(createProjectUploadQueue<{ state: ProjectView }>(params.get("p")));
@@ -97,7 +98,11 @@ export function CreateFlow() {
       setGen(r.generation);
       setFineTune(r.generation.fineTune);
       setUrl(projectId, r.generation.id);
-    } catch (e) { setError((e as Error).message); } finally { setBusy(false); }
+    } catch (e) {
+      const msg = (e as Error).message;
+      setError(/out of credits/i.test(msg) ? "You're out of credits." : msg);
+      if (/out of credits/i.test(msg)) setNeedCredits(true);
+    } finally { setBusy(false); }
   }, [projectId, setUrl]);
 
   // Library pick (?recipe=) fires once analysis is done.
@@ -314,7 +319,7 @@ export function CreateFlow() {
         </div>
       )}
 
-      {error && <Notice>{error}</Notice>}
+      {error && <Notice>{error} {needCredits && <Link href="/pricing" className="underline">Add credits</Link>}</Notice>}
     </div>
   );
 }

@@ -1,12 +1,14 @@
 import { cookies } from "next/headers";
 import { newId } from "@/core/ids";
-import { Users } from "@/db/repo";
+import { Sessions, Users } from "@/db/repo";
 
 const COOKIE = "seam_uid";
 
-/** Anonymous user identity via a long-lived cookie. Swap for real auth later without touching routes. */
+/** Signed-in account if there is a session, otherwise a guest identity kept in a long-lived cookie. */
 export async function getUserId(): Promise<string> {
   const jar = await cookies();
+  const sid = jar.get("seam_session")?.value;
+  if (sid) { const s = Sessions.get(sid); if (s && Users.get(s.userId)) return s.userId; }
   let id = jar.get(COOKIE)?.value;
   if (!id || !/^usr_[a-z0-9]{12}$/.test(id)) {
     id = newId("usr");

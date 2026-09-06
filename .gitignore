@@ -1,7 +1,10 @@
 node_modules
 .next
 out
-data/
+data/*
+!data/ads/
+data/ads/*
+!data/ads/*.json
 .env
 .env.local
 *.log
@@ -11,3 +14,4 @@ public/samples/*.jpg
 public/examples/*/
 public/library/*.mp4
 tsconfig.tsbuildinfo
+public/ads/

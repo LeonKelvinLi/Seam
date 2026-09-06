@@ -7,7 +7,7 @@ import { mediaUrl } from "@/core/media/storage";
 import { getRecipe, publicRecipe } from "@/core/recipes/registry";
 import { LANE_COPY, LANE_ORDER } from "@/core/opportunities/recommend";
 import { allModels } from "@/core/providers/registry";
-import { find, Assets, Frames, Generations, Opportunities, PairAnalyses, Projects, Recommendations } from "@/db/repo";
+import { find, Assets, Frames, Generations, Opportunities, PairAnalyses, Projects, Recommendations, Users } from "@/db/repo";
 import type { Asset, Generation, Job, TransitionOpportunity } from "@/core/types";
 
 export function assetView(a: Asset | undefined) {
@@ -72,6 +72,7 @@ export function projectView(projectId: string) {
     opportunities: opps.slice(0, 12).map(opportunityView),
     generations: Generations.forProject(projectId).map(generationView),
     runtime: { ...describeRuntime(), defaultMode: config.generation.defaultMode },
+    credits: Users.get(project.userId)?.credits ?? 0,
   };
 }
 

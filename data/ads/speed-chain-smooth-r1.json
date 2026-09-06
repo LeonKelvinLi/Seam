@@ -1,0 +1,161 @@
+{
+  "ads": [
+    {
+      "id": "speed-chain-smooth-r1",
+      "title": "Speed chain \u2014 smooth round 1 (ramps + 4-frame blends + grain)",
+      "bed": true,
+      "segs": [
+        {
+          "src": "data/ads/speed_flip.mp4",
+          "start": 0.6,
+          "fit": "cover",
+          "gain": 1.0,
+          "captions": [
+            {
+              "text": "5 CLIPS. 0 CUTS.",
+              "from": 0.25,
+              "to": 1.5,
+              "pos": "lower",
+              "size": 86
+            }
+          ]
+        },
+        {
+          "src": "data/viral/bridges/a_crash_to_fall_v2.mp4",
+          "fit": "cover",
+          "mute": true,
+          "sfx": [
+            {
+              "kind": "whoosh",
+              "at": 0.05,
+              "gain": 0.9
+            },
+            {
+              "kind": "boom",
+              "at": 0.82,
+              "gain": 0.8
+            }
+          ],
+          "ramp": {
+            "head": 0.14,
+            "tail": 0.14,
+            "edgeSpeed": 1.4,
+            "midSpeed": 6.0
+          },
+          "sharpen": true
+        },
+        {
+          "src": "data/ads/adin_fall.mp4",
+          "start": 0.0,
+          "end": 2.2,
+          "fit": "cover",
+          "gain": 1.0
+        },
+        {
+          "src": "data/viral/bridges/b_airbag_to_scream_mm.mp4",
+          "fit": "cover",
+          "mute": true,
+          "sfx": [
+            {
+              "kind": "whoosh",
+              "at": 0.55,
+              "gain": 0.8
+            },
+            {
+              "kind": "impact",
+              "at": 1.15,
+              "gain": 0.9
+            }
+          ],
+          "ramp": {
+            "head": 0.14,
+            "tail": 0.14,
+            "edgeSpeed": 1.4,
+            "midSpeed": 6.0
+          },
+          "sharpen": true
+        },
+        {
+          "src": "data/ads/speed_scream_v3.mp4",
+          "fit": "cover",
+          "gain": 1.0
+        },
+        {
+          "src": "data/viral/bridges/c_scream_to_wheel_mm.mp4",
+          "fit": "cover",
+          "mute": true,
+          "sfx": [
+            {
+              "kind": "sub",
+              "at": 0.0,
+              "gain": 0.9
+            },
+            {
+              "kind": "whoosh",
+              "at": 0.5,
+              "gain": 0.8
+            },
+            {
+              "kind": "boom",
+              "at": 1.25,
+              "gain": 0.7
+            }
+          ],
+          "ramp": {
+            "head": 0.14,
+            "tail": 0.14,
+            "edgeSpeed": 1.4,
+            "midSpeed": 6.0
+          },
+          "sharpen": true
+        },
+        {
+          "src": "data/ads/wheel.mp4",
+          "start": 2.03,
+          "end": 3.03,
+          "fit": "cover",
+          "mute": true
+        },
+        {
+          "src": "data/ads/wheel_tunnel_bridge.mp4",
+          "fit": "cover",
+          "mute": true,
+          "sfx": [
+            {
+              "kind": "riser",
+              "at": 0.0,
+              "gain": 0.6
+            },
+            {
+              "kind": "boom",
+              "at": 0.95,
+              "gain": 0.9
+            }
+          ],
+          "ramp": {
+            "head": 0.14,
+            "tail": 0.14,
+            "edgeSpeed": 1.4,
+            "midSpeed": 2.6
+          },
+          "sharpen": true
+        },
+        {
+          "src": "data/ads/tunnel.mp4",
+          "start": 0.0,
+          "end": 1.0,
+          "fit": "cover",
+          "mute": true
+        }
+      ],
+      "endCard": {
+        "headline": "Connect\nliterally anything.",
+        "sub": "Any two clips. One impossible shot.",
+        "cta": "Made with Seam",
+        "hold": 2.2
+      },
+      "xfadeSec": 0.13,
+      "grain": 5
+    }
+  ]
+}

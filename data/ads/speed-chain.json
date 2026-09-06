@@ -1,0 +1,26 @@
+{
+  "ads": [
+    {
+      "id": "speed-chain",
+      "title": "Speed chain — 5 clips, 0 cuts",
+      "bed": true,
+      "segs": [
+        { "src": "data/ads/speed_flip.mp4", "start": 0.4, "fit": "cover", "gain": 1.0,
+          "captions": [{ "text": "5 CLIPS. 0 CUTS.", "from": 0.25, "to": 1.6, "pos": "top", "size": 86 }] },
+        { "src": "data/viral/bridges/a_crash_to_fall_v2.mp4", "speed": 5, "fit": "cover", "mute": true,
+          "sfx": [{ "kind": "whoosh", "at": 0.0, "gain": 0.9 }, { "kind": "boom", "at": 0.55, "gain": 0.8 }] },
+        { "src": "data/ads/adin_fall.mp4", "fit": "cover", "gain": 1.0 },
+        { "src": "data/viral/bridges/b_airbag_to_scream_v2.mp4", "speed": 5, "fit": "cover", "mute": true,
+          "sfx": [{ "kind": "impact", "at": 0.0, "gain": 0.9 }, { "kind": "whoosh", "at": 0.25, "gain": 0.7 }] },
+        { "src": "data/ads/speed_scream_v3.mp4", "fit": "cover", "gain": 1.0 },
+        { "src": "data/viral/bridges/c_scream_to_wheel_v3.mp4", "speed": 5, "fit": "cover", "mute": true,
+          "sfx": [{ "kind": "sub", "at": 0.0, "gain": 0.9 }, { "kind": "whoosh", "at": 0.3, "gain": 0.8 }] },
+        { "src": "data/ads/wheel.mp4", "start": 0.0, "end": 1.2, "fit": "cover", "mute": true },
+        { "src": "data/ads/wheel_tunnel_bridge.mp4", "speed": 2.5, "fit": "cover", "mute": true,
+          "sfx": [{ "kind": "riser", "at": -0.9, "gain": 0.6 }, { "kind": "boom", "at": 0.7, "gain": 0.9 }] },
+        { "src": "data/ads/tunnel.mp4", "start": 0.0, "end": 1.2, "fit": "cover", "mute": true }
+      ],
+      "endCard": { "headline": "Connect\nliterally anything.", "sub": "Any two clips. One impossible shot.", "cta": "Made with Seam", "hold": 2.4 }
+    }
+  ]
+}

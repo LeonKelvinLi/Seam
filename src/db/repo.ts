@@ -6,12 +6,12 @@ import { db } from "./client";
 import { newId, now } from "@/core/ids";
 import type {
   Asset, AnalyticsEvent, CostEntry, ExtractedFrame, Generation, GenerationAttempt, Job, JobType,
-  LearningRecord, PairAnalysisRecord, Project, QualityEvaluation, Recommendation, Share,
+  LearningRecord, PairAnalysisRecord, Project, Purchase, QualityEvaluation, Recommendation, Session, Share,
   TransitionOpportunity, User, VisualAnalysis, Export,
 } from "@/core/types";
 
 export type Table =
-  | "users" | "projects" | "assets" | "frames" | "visualAnalyses" | "pairAnalyses" | "opportunities"
+  | "users" | "sessions" | "purchases" | "projects" | "assets" | "frames" | "visualAnalyses" | "pairAnalyses" | "opportunities"
   | "recommendations" | "generations" | "attempts" | "qualityEvaluations" | "exports" | "shares"
   | "jobs" | "learningRecords" | "costs" | "events";
 
@@ -92,8 +92,47 @@ export const Users = {
   ensure(id: string): User {
     const u = get<User>("users", id);
     if (u) return u;
-    return insert<User>("users", { id, createdAt: now() });
+    return insert<User>("users", { id, createdAt: now(), email: null, passwordHash: null, credits: 5, plan: "free", stripeCustomerId: null, updatedAt: null });
   },
+  get: (id: string) => get<User>("users", id),
+  byEmail: (email: string) => find<User>("users", "email=?", [email.toLowerCase()], "createdAt ASC", 1)[0],
+  createAccount(email: string, passwordHash: string): User {
+    return insert<User>("users", { id: newId("usr"), createdAt: now(), email: email.toLowerCase(), passwordHash, credits: 5, plan: "free", stripeCustomerId: null, updatedAt: now() });
+  },
+  update(id: string, patch: Partial<User>) { update("users", id, { ...patch, updatedAt: now() }); },
+  /** Atomically spend credits; returns false when the balance is too low. */
+  spend(id: string, amount: number): boolean {
+    const r = db().prepare("UPDATE users SET credits=credits-?, updatedAt=? WHERE id=? AND credits>=?").run(amount, now(), id, amount);
+    return r.changes === 1;
+  },
+  grant(id: string, amount: number) { db().prepare("UPDATE users SET credits=credits+?, updatedAt=? WHERE id=?").run(amount, now(), id); },
+  /** Move a guest's projects, generations and events onto an account. */
+  adopt(guestId: string, userId: string) {
+    if (guestId === userId) return;
+    for (const t of ["projects", "events"]) db().prepare(`UPDATE ${t} SET userId=? WHERE userId=?`).run(userId, guestId);
+  },
+};
+
+export const Sessions = {
+  create(userId: string, days = 30): Session {
+    const t = new Date();
+    return insert<Session>("sessions", { id: newId("", 32), userId, createdAt: t.toISOString(), expiresAt: new Date(t.getTime() + days * 86400_000).toISOString() });
+  },
+  get(id: string): Session | undefined {
+    const s = get<Session>("sessions", id);
+    if (!s) return undefined;
+    if (s.expiresAt < now()) { remove("sessions", "id=?", [id]); return undefined; }
+    return s;
+  },
+  destroy: (id: string) => remove("sessions", "id=?", [id]),
+};
+
+export const Purchases = {
+  record(p: Omit<Purchase, "id" | "createdAt">): Purchase | null {
+    if (p.externalId && find<Purchase>("purchases", "externalId=?", [p.externalId]).length) return null; // idempotent
+    return insert<Purchase>("purchases", { ...p, id: newId("pur"), createdAt: now() });
+  },
+  forUser: (userId: string) => find<Purchase>("purchases", "userId=?", [userId], "createdAt DESC"),
 };
 
 export const Projects = {
