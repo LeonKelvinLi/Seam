@@ -7,7 +7,7 @@ local ffmpeg provider. OpenAI remains the optional visual analyzer; no Anthropic
 
 - `Dockerfile`: Node 22 on Debian Bookworm, ffmpeg/ffprobe, Linux-built SQLite and sharp dependencies,
   a production Next.js build, and `next start` on `0.0.0.0:$PORT` (default `10000`).
-- `render.yaml`: a `1c-2g` web service, 10 GB persistent disk at `/var/data`, app data at
+- `render.yaml`: a `1c-2g` web service named `seamcut`, 10 GB persistent disk at `/var/data`, app data at
   `/var/data/seam`, one local preview attempt, and `/api/runtime` health checks. Auto-deploys are off
   so the tested commit can be deployed deliberately.
 - `.dockerignore`: an explicit allowlist. Local `.env*`, SQLite files, uploads, marketing ads, source
@@ -77,7 +77,7 @@ server-only and out of Git. The public upload/generate/download/share flow does 
 
 The disk is available only at runtime and only to this service's single instance. Render services with
 persistent disks cannot horizontally scale and do not have zero-downtime deploys. The in-process job
-runner and SQLite therefore remain together. The blueprint allows up to 300 seconds for shutdown;
+runner and SQLite therefore remain together. Render does not allow a custom shutdown delay on services with a disk, so the default applies;
 that is not a guarantee that an active ffmpeg job survives a redeploy.
 
 The app buffers uploads and can run two media jobs concurrently. The `1c-2g` plan provides more room

@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: seam-preview
+    name: seamcut
     runtime: docker
     plan: 1c-2g
     region: oregon
@@ -8,7 +8,6 @@ services:
     dockerContext: .
     autoDeployTrigger: "off"
     healthCheckPath: /api/runtime
-    maxShutdownDelaySeconds: 300
     disk:
       name: seam-data
       mountPath: /var/data
