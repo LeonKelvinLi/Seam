@@ -3,9 +3,10 @@ import { DEFAULT_FINE_TUNE, type FineTune, type Generation, type GenerationMode,
 import { getRecipe, hasRecipe } from "@/core/recipes/registry";
 import { stepIntent } from "@/core/opportunities/recommend";
 import { scoreOpportunities } from "@/core/opportunities/scorer";
-import { Events, Frames, Generations, Learning, Opportunities, PairAnalyses, Projects, Recommendations, VisualAnalyses, insert } from "@/db/repo";
+import { Events, Frames, Generations, Learning, Opportunities, PairAnalyses, Recommendations, VisualAnalyses, insert } from "@/db/repo";
 import { enqueue } from "@/core/pipeline/runner";
 import { newId, now } from "@/core/ids";
+import { ownedProject } from "./access";
 
 export interface CreateGenerationInput {
   projectId: string;
@@ -38,7 +39,7 @@ export function ensureOpportunityForRecipe(projectId: string, recipeId: string):
 }
 
 export function createGeneration(input: CreateGenerationInput): Generation {
-  const project = Projects.get(input.projectId);
+  const project = ownedProject(input.projectId, input.userId);
   if (!project) throw new Error("project not found");
   if (project.status !== "analyzed") throw new Error("analysis not finished");
   const opps = Opportunities.forProject(input.projectId);
@@ -49,7 +50,7 @@ export function createGeneration(input: CreateGenerationInput): Generation {
 
   if (input.from) {
     const parent = Generations.get(input.from.generationId);
-    if (!parent) throw new Error("parent generation not found");
+    if (!parent || parent.projectId !== input.projectId) throw new Error("parent generation not found");
     parentId = parent.id;
     fineTune = { ...parent.fineTune, ...(input.fineTune ?? {}) };
     const parentOpp = Opportunities.get(parent.opportunityId) ?? opps[0];
@@ -72,6 +73,7 @@ export function createGeneration(input: CreateGenerationInput): Generation {
     intent = intent ?? parent.intent;
   } else if (input.opportunityId) {
     opp = Opportunities.get(input.opportunityId);
+    if (!opp || opp.projectId !== input.projectId) throw new Error("transition opportunity not found");
   } else if (input.recipeId) {
     if (!hasRecipe(input.recipeId)) throw new Error("unknown recipe");
     opp = ensureOpportunityForRecipe(input.projectId, input.recipeId);

@@ -1,12 +1,16 @@
 import { computeMetrics } from "@/core/observability/metrics";
 import { describeRuntime } from "@/core/config";
+import { headers } from "next/headers";
+import { notFound } from "next/navigation";
+import { opsAccessAllowed } from "@/lib/server/ops-access";
 
 export const dynamic = "force-dynamic";
 
 const usd = (v: number) => `$${v.toFixed(3)}`;
 const ms = (v: number) => (v ? `${(v / 1000).toFixed(1)}s` : "–");
 
-export default function OpsPage() {
+export default async function OpsPage() {
+  if (!opsAccessAllowed((await headers()).get("authorization"))) notFound();
   const m = computeMetrics();
   const rt = describeRuntime();
   return (

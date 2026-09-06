@@ -6,11 +6,13 @@ import { imageSize, thumbnail } from "@/core/media/image";
 import { extForMime, kindForMime, storage } from "@/core/media/storage";
 import { Assets, Events, Projects, insert } from "@/db/repo";
 import type { Asset, AssetRole } from "@/core/types";
+import { ownedProject } from "./access";
 
 const MAX_BYTES = 500 * 1024 * 1024;
 
 export async function ingestFile(args: { projectId: string; userId: string; role: AssetRole; buffer: Buffer; originalName: string; mime: string }): Promise<Asset> {
   const { projectId, role, buffer, originalName, mime } = args;
+  if (!ownedProject(projectId, args.userId)) throw new Error("project not found");
   const kind = kindForMime(mime, originalName);
   if (!kind) throw new Error("Please upload an MP4, MOV, WebM, JPG, PNG or WebP file.");
   if (buffer.length > MAX_BYTES) throw new Error("That file is over 500 MB.");

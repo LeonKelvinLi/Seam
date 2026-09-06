@@ -4,7 +4,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Seam — turn any two clips into one impossible shot",
-  description: "Upload two clips. AI figures out the transition.",
+  description: "Keep your footage. Generate only the transition between your shots.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -20,7 +20,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </Link>
             <span className="site-nav-label mono">AI transition studio</span>
             <div className="site-nav-actions">
-              <Link href="/library" className="site-nav-link">Explore transitions</Link>
+              <Link href="/library" className="site-nav-link" aria-label="Transition library">Explore transitions</Link>
               <Link href="/create" className="btn btn-primary btn-sm">Open studio <span aria-hidden="true">↗</span></Link>
             </div>
           </nav>

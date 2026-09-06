@@ -1,0 +1,38 @@
+services:
+  - type: web
+    name: seam-preview
+    runtime: docker
+    plan: 1c-2g
+    region: oregon
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    autoDeployTrigger: "off"
+    healthCheckPath: /api/runtime
+    maxShutdownDelaySeconds: 300
+    disk:
+      name: seam-data
+      mountPath: /var/data
+      sizeGB: 10
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: SEAM_DATA_DIR
+        value: /var/data/seam
+      - key: SEAM_DEFAULT_MODE
+        value: preview
+      - key: SEAM_FORCE_PROVIDER
+        value: local
+      - key: SEAM_MAX_ATTEMPTS
+        value: "1"
+      - key: SEAM_VISION_MODEL
+        value: gpt-5.4-mini
+      - key: SEAM_JUDGE_MODEL
+        value: gpt-5.4-mini
+      - key: FFMPEG_PATH
+        value: /usr/bin/ffmpeg
+      - key: FFPROBE_PATH
+        value: /usr/bin/ffprobe
+      - key: NEXT_TELEMETRY_DISABLED
+        value: "1"
+# OPENAI_API_KEY is optional and must be added privately in Render's Environment
+# settings when paid visual analysis is intended. No keys are required for preview.

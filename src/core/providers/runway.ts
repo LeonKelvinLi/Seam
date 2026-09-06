@@ -1,5 +1,5 @@
 /**
- * Runway provider — Gen-4 Turbo image_to_video with first + last keyframes.
+ * Runway provider — Gen-4 Turbo image_to_video accepts a first frame only.
  * POST /v1/image_to_video -> poll GET /v1/tasks/{id} until SUCCEEDED.
  */
 import { config } from "@/core/config";
@@ -15,7 +15,7 @@ const VERSION = "2024-11-06";
 export const RUNWAY_MODELS: ModelSpec[] = [
   {
     id: "runway:gen4-turbo", providerId: "runway", endpoint: "gen4_turbo", label: "Runway Gen-4 Turbo",
-    supportsLastFrame: true, durations: [5, 10], costPerSecondUsd: 0.05, tier: "both",
+    supportsLastFrame: false, durations: [5, 10], costPerSecondUsd: 0.05, tier: "both",
     strengths: { fpv: 0.7, morph: 0.6, human: 0.75, environment: 0.75, product: 0.7, generic: 0.75 },
     dialect: "runway", latencyEstimateSec: 90,
   },
@@ -46,10 +46,7 @@ export const runwayProvider: TransitionProvider = {
     const duration = model.durations[0] ?? 5;
     const body = {
       model: model.endpoint,
-      promptImage: [
-        { uri: await jpegDataUri(req.firstFramePath, 1280), position: "first" },
-        { uri: await jpegDataUri(req.lastFramePath, 1280), position: "last" },
-      ],
+      promptImage: await jpegDataUri(req.firstFramePath, 1280),
       promptText: req.prompt.positive,
       ratio: RATIOS[req.aspectRatio],
       duration,

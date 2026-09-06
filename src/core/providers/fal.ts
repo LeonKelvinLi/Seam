@@ -1,5 +1,5 @@
 /**
- * fal.ai provider — Kling 2.1 image-to-video with `tail_image_url` (first + last frame).
+ * fal.ai provider — Kling 2.1 image-to-video; only Pro accepts `tail_image_url`.
  * Uses the queue API directly: submit -> poll status_url -> fetch response_url -> download video.
  */
 import { config } from "@/core/config";
@@ -15,7 +15,7 @@ const KLING_STRENGTHS = { fpv: 0.75, morph: 0.7, human: 0.8, environment: 0.8, p
 export const FAL_MODELS: ModelSpec[] = [
   {
     id: "fal:kling-2.1-standard", providerId: "fal", endpoint: "fal-ai/kling-video/v2.1/standard/image-to-video",
-    label: "Kling 2.1 Standard", supportsLastFrame: true, durations: [5, 10], costPerSecondUsd: 0.05, tier: "preview",
+    label: "Kling 2.1 Standard", supportsLastFrame: false, durations: [5, 10], costPerSecondUsd: 0.05, tier: "preview",
     strengths: { ...KLING_STRENGTHS, fpv: 0.65 }, dialect: "kling", latencyEstimateSec: 150,
   },
   {
@@ -48,7 +48,7 @@ export const falProvider: TransitionProvider = {
     const input = {
       prompt: req.prompt.positive,
       image_url: await jpegDataUri(req.firstFramePath, 1280),
-      tail_image_url: await jpegDataUri(req.lastFramePath, 1280),
+      ...(model.supportsLastFrame ? { tail_image_url: await jpegDataUri(req.lastFramePath, 1280) } : {}),
       duration: String(duration),
       negative_prompt: req.prompt.negative ?? "blur, distort, low quality",
       cfg_scale: Math.round((0.35 + (1 - req.motionStrength) * 0.3) * 100) / 100,

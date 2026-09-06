@@ -34,13 +34,13 @@ export function Library() {
   };
 
   return (
-    <div className="mx-auto max-w-6xl px-5 pb-20 pt-8">
+    <div className="library-shell mx-auto max-w-6xl px-5 pb-20 pt-8">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <h1 className="display text-3xl md:text-4xl">Transitions</h1>
         {projectId ? <Link href={`/create?p=${projectId}`} className="btn btn-ghost btn-sm">Back to your clips</Link> : <span className="muted text-sm">Pick one, then bring your clips.</span>}
       </div>
-      <div className="mt-6 flex gap-2 overflow-x-auto pb-2">
-        {cats.map((c) => <button key={c.tag} className="chip" data-on={c.tag === tag} onClick={() => setTag(c.tag)}>{c.emoji} {c.label}</button>)}
+      <div className="library-filters mt-6 flex gap-2 overflow-x-auto pb-2" role="group" aria-label="Transition categories">
+        {cats.map((c) => <button key={c.tag} className="chip" data-on={c.tag === tag} aria-pressed={c.tag === tag} onClick={() => setTag(c.tag)}>{c.emoji} {c.label}</button>)}
       </div>
       {error && <div className="mt-4 text-sm" style={{ color: "var(--accent)" }}>{error}</div>}
       <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
@@ -52,20 +52,33 @@ export function Library() {
 
 function RecipeCard({ recipe, onUse, busy, cta }: { recipe: Recipe; onUse: () => void; busy: boolean; cta: string }) {
   const v = useRef<HTMLVideoElement | null>(null);
+  const [playing, setPlaying] = useState(false);
+  useEffect(() => {
+    const video = v.current;
+    if (!video) return;
+    const pauseWhenHidden = () => { if (document.hidden) video.pause(); };
+    const observer = new IntersectionObserver(([entry]) => { if (!entry.isIntersecting) video.pause(); });
+    observer.observe(video);
+    document.addEventListener("visibilitychange", pauseWhenHidden);
+    return () => { observer.disconnect(); document.removeEventListener("visibilitychange", pauseWhenHidden); video.pause(); };
+  }, [recipe.previewUrl]);
   return (
-    <div className="group">
-      <div className="frame grain aspect-video" onMouseEnter={() => v.current?.play().catch(() => {})} onMouseLeave={() => { if (v.current) { v.current.pause(); v.current.currentTime = 0; } }}>
+    <div className="recipe-card group">
+      <div className="recipe-preview frame grain aspect-video" onPointerEnter={(e) => { if (e.pointerType === "mouse" && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) void v.current?.play().catch(() => {}); }} onPointerLeave={(e) => { if (e.pointerType === "mouse") v.current?.pause(); }}>
         {recipe.previewUrl ? (
-          <video ref={v} src={recipe.previewUrl} muted loop playsInline preload="metadata" className="h-full w-full object-cover" />
+          <>
+            <video ref={v} src={recipe.previewUrl} muted loop playsInline preload="metadata" onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)} aria-hidden="true" className="h-full w-full object-cover" />
+            <button className="recipe-preview-toggle" aria-label={`${playing ? "Pause" : "Play"} ${recipe.name} preview`} aria-pressed={playing} onClick={() => { const video = v.current; if (video) { if (video.paused) void video.play().catch(() => {}); else video.pause(); } }}><span><span aria-hidden="true">{playing ? "Ⅱ" : "▷"}</span>{playing ? "Pause preview" : "Play preview"}</span></button>
+          </>
         ) : (
           <div className="absolute inset-0 flex items-center justify-center text-4xl" style={{ background: "linear-gradient(135deg,#1a1a1d,#0c0c0e)" }}>
             <span className="transition-transform duration-500 group-hover:scale-125">{GLYPH[recipe.local.kind] ?? "→"}</span>
           </div>
         )}
-        <div className="absolute left-3 top-3 mono uppercase" style={{ color: "rgba(255,255,255,0.7)" }}>{recipe.category}</div>
-        <div className="absolute right-3 top-3 mono" style={{ color: "rgba(255,255,255,0.5)" }}>{Math.round(recipe.intensity * 100)}</div>
+        <div className="recipe-preview-label absolute left-3 top-3 mono uppercase">{recipe.category}</div>
+        <div className="recipe-preview-label absolute right-3 top-3 mono">{Math.round(recipe.intensity * 100)}</div>
       </div>
-      <div className="mt-3 flex items-start justify-between gap-3">
+      <div className="recipe-details mt-3 flex items-start justify-between gap-3">
         <div>
           <div className="text-lg leading-tight">{recipe.name}</div>
           <div className="mt-1 muted text-sm">{recipe.description}</div>

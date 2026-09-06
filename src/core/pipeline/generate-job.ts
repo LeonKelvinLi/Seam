@@ -15,6 +15,7 @@ import { getProvider } from "@/core/providers/registry";
 import { LOCAL_MODEL } from "@/core/providers/local";
 import type { ModelSpec, TransitionRequest } from "@/core/providers/types";
 import { judgeTransition, passes } from "@/core/quality/judge";
+import { selectPassingCandidate } from "@/core/quality/selection";
 import { planNextAttempt, saferRecipeFor, type AttemptOutcome } from "@/core/quality/retry-policy";
 import { recordGeneration, learnedModelQuality } from "@/core/learning/records";
 import type { ExtractedFrame, FineTune, FrameAnalysis, Generation, GenerationAttempt, Job, QualityScores } from "@/core/types";
@@ -121,7 +122,7 @@ export async function runGenerateJob(job: Job, report: Reporter) {
         const ok = passes(judged.scores);
         Attempts.update(attempt.id, { status: ok ? "succeeded" : "rejected", providerJobId: result.providerJobId, outputPath: bridgePath, costUsd: cost, durationMs: Date.now() - ta, params: { ...attempt.params, ...result.params } });
         attempt.recipeId = recipe.id; attempt.durationMs = Date.now() - ta; attempt.status = ok ? "succeeded" : "rejected";
-        if (!best || judged.scores.overall > best.scores.overall) best = { attempt, bridgePath, scores: judged.scores, model, recipe, durationSec };
+        best = selectPassingCandidate(best, { attempt, bridgePath, scores: judged.scores, model, recipe, durationSec });
         if (model.providerId === "local" && n > 1) fellBackToLocal = true;
         if (ok) break;
         log.warn("quality rejected", { gen: gen.id, n, overall: judged.scores.overall, issues: judged.scores.issues });
@@ -142,7 +143,7 @@ export async function runGenerateJob(job: Job, report: Reporter) {
       if (next.suggestion) suggestion = next.suggestion;
     }
 
-    // Guarantee an output: procedural bridge with the safest recipe.
+    // If every candidate failed, try a procedural bridge with the safest recipe.
     if (!best) {
       const safe = saferRecipeFor(recipe, opps);
       const durationSec = durationFor(safe, fineTune);
@@ -163,10 +164,12 @@ export async function runGenerateJob(job: Job, report: Reporter) {
       const bridgePath = path.join(dir, `fallback_bridge.mp4`);
       await normalizeBridge(result.outputPath, bridgePath, spec, durationSec);
       const judged = await judgeTransition({ bridgePath, sourceFrame: frameA.path, destFrame: frameB.path, recipe: safe, prompt: prompt.positive, tmpDir: dir, cheap: true });
-      Quality.create({ attemptId: attempt.id, judge: judged.judge, scores: judged.scores, passed: true });
-      Attempts.update(attempt.id, { status: "succeeded", outputPath: bridgePath, durationMs: Date.now() - ta });
-      attempt.durationMs = Date.now() - ta; attempt.status = "succeeded";
-      best = { attempt, bridgePath, scores: judged.scores, model: LOCAL_MODEL, recipe: safe, durationSec };
+      const ok = passes(judged.scores);
+      Quality.create({ attemptId: attempt.id, judge: judged.judge, scores: judged.scores, passed: ok });
+      Attempts.update(attempt.id, { status: ok ? "succeeded" : "rejected", outputPath: bridgePath, durationMs: Date.now() - ta });
+      attempt.durationMs = Date.now() - ta; attempt.status = ok ? "succeeded" : "rejected";
+      best = selectPassingCandidate(best, { attempt, bridgePath, scores: judged.scores, model: LOCAL_MODEL, recipe: safe, durationSec });
+      if (!best) throw new Error("The fallback transition failed the quality checks");
       fellBackToLocal = true;
       suggestion = suggestion ?? `This footage is fighting the ${getRecipe(gen.recipeId).name.toLowerCase()}. A ${safe.name.toLowerCase()} will likely look cleaner.`;
     }

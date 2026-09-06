@@ -2,6 +2,7 @@ import { getUserId, bad, json } from "@/lib/server/session";
 import { ingestFile } from "@/lib/server/ingest";
 import { assetView, projectView } from "@/lib/server/views";
 import { Events, Projects } from "@/db/repo";
+import { ownedProject } from "@/lib/server/access";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -16,7 +17,8 @@ export async function POST(req: Request) {
     projectId = String(form.get("projectId") ?? "");
     if (!(file instanceof File)) return bad("No file received.");
     if (role !== "start" && role !== "end") return bad("role must be start or end");
-    let project = projectId ? Projects.get(projectId) : undefined;
+    let project = projectId ? ownedProject(projectId, userId) : undefined;
+    if (projectId && !project) return bad("Project not found", 404);
     if (!project) {
       const isSecond = Projects.countForUser(userId) >= 1;
       project = Projects.create(userId, file.name.replace(/\.[^.]+$/, ""));

@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { GenerationView, ProjectView } from "@/lib/server/views";
 import { DEFAULT_FINE_TUNE, type FineTune } from "@/core/types";
 import { api, track, uploadFile } from "@/lib/api";
+import { createProjectUploadQueue } from "@/lib/project-uploads";
 import { DropZone } from "./DropZone";
 import { Steps } from "./Steps";
 import { LaneCard } from "./LaneCard";
@@ -29,6 +30,8 @@ export function CreateFlow() {
   const [copied, setCopied] = useState(false);
   const autoRecipe = useRef<string | null>(params.get("recipe"));
   const analyzeRequested = useRef<string | null>(null);
+  const uploadQueue = useRef(createProjectUploadQueue<{ state: ProjectView }>(params.get("p")));
+  const loadingSample = useRef(false);
 
   const projectId = view?.project.id ?? null;
 
@@ -61,13 +64,13 @@ export function CreateFlow() {
 
   // Auto-analyze when both clips are present.
   useEffect(() => {
-    if (!view || !projectId) return;
+    if (!view || !projectId || up.start.uploading || up.end.uploading || uploadQueue.current.pending) return;
     const ready = view.assets.start && view.assets.end;
     if (ready && view.project.status === "draft" && analyzeRequested.current !== projectId + view.assets.start!.id + view.assets.end!.id) {
       analyzeRequested.current = projectId + view.assets.start!.id + view.assets.end!.id;
       api<{ state: ProjectView }>(`/api/projects/${projectId}/analyze`, { method: "POST", json: {} }).then((r) => setView(r.state)).catch((e) => setError(e.message));
     }
-  }, [view, projectId]);
+  }, [view, projectId, up.start.uploading, up.end.uploading]);
 
   // Poll analysis.
   useEffect(() => {
@@ -103,19 +106,31 @@ export function CreateFlow() {
   }, [phase, generate]);
 
   const onFile = async (role: "start" | "end", file: File) => {
+    if (loadingSample.current) return;
+    const queue = uploadQueue.current;
     setError(null);
     setUp((u) => ({ ...u, [role]: { uploading: true, progress: 0 } }));
     track("upload_started", { role, type: file.type, bytes: file.size }, { projectId: projectId ?? undefined });
     try {
-      const r = (await uploadFile(file, role, projectId, (p) => setUp((u) => ({ ...u, [role]: { uploading: true, progress: p } })))) as { state: ProjectView };
+      const r = await queue.run((id) => uploadFile(file, role, id, (p) => {
+        if (queue === uploadQueue.current) setUp((u) => ({ ...u, [role]: { uploading: true, progress: p } }));
+      }) as Promise<{ state: ProjectView }>);
+      if (queue !== uploadQueue.current) return;
       setView(r.state); setGen(null); setUrl(r.state.project.id, null);
-    } catch (e) { setError((e as Error).message); } finally { setUp((u) => ({ ...u, [role]: { uploading: false, progress: 0 } })); }
+    } catch (e) { if (queue === uploadQueue.current) setError((e as Error).message); }
+    finally { if (queue === uploadQueue.current) setUp((u) => ({ ...u, [role]: { uploading: false, progress: 0 } })); }
   };
 
   const useSample = async (id: string) => {
+    if (uploadQueue.current.pending || loadingSample.current) return;
+    loadingSample.current = true;
     setError(null); setBusy(true);
-    try { const v = await api<ProjectView>("/api/samples", { method: "POST", json: { pairId: id } }); setView(v); setGen(null); setUrl(v.project.id, null); }
-    catch (e) { setError((e as Error).message); } finally { setBusy(false); }
+    try {
+      const v = await api<ProjectView>("/api/samples", { method: "POST", json: { pairId: id } });
+      uploadQueue.current = createProjectUploadQueue(v.project.id);
+      setView(v); setGen(null); setUrl(v.project.id, null);
+    } catch (e) { setError((e as Error).message); }
+    finally { loadingSample.current = false; setBusy(false); }
   };
 
   const feedback = (action: string) => gen && void api(`/api/generations/${gen.id}/feedback`, { method: "POST", json: { action } }).catch(() => {});
@@ -134,7 +149,11 @@ export function CreateFlow() {
       setCopied(true); setTimeout(() => setCopied(false), 2000);
     } catch (e) { setError((e as Error).message); }
   };
-  const reset = () => { setView(null); setGen(null); setError(null); analyzeRequested.current = null; setUrl(null, null); };
+  const reset = () => {
+    uploadQueue.current = createProjectUploadQueue();
+    setUp({ start: { uploading: false, progress: 0 }, end: { uploading: false, progress: 0 } });
+    setView(null); setGen(null); setError(null); analyzeRequested.current = null; setUrl(null, null);
+  };
 
   const frames = { a: view?.boundary?.startFrameUrl ?? view?.assets.start?.thumbnailUrl ?? null, b: view?.boundary?.endFrameUrl ?? view?.assets.end?.thumbnailUrl ?? null };
 
@@ -154,8 +173,8 @@ export function CreateFlow() {
             <p>Bring the beginning and the end.<br />We’ll find a way through.</p>
           </div>
           <div className="studio-upload-grid grid gap-4 md:grid-cols-2">
-            <DropZone role="start" asset={view?.assets.start ?? null} uploading={up.start.uploading} progress={up.start.progress} onFile={(f) => onFile("start", f)} disabled={phase === "analyzing"} />
-            <DropZone role="end" asset={view?.assets.end ?? null} uploading={up.end.uploading} progress={up.end.progress} onFile={(f) => onFile("end", f)} disabled={phase === "analyzing"} />
+            <DropZone role="start" asset={view?.assets.start ?? null} uploading={up.start.uploading} progress={up.start.progress} onFile={(f) => onFile("start", f)} disabled={phase === "analyzing" || busy} />
+            <DropZone role="end" asset={view?.assets.end ?? null} uploading={up.end.uploading} progress={up.end.progress} onFile={(f) => onFile("end", f)} disabled={phase === "analyzing" || busy} />
           </div>
           {phase === "analyzing" ? (
             <div className="studio-analysis mt-8 grid gap-6 md:grid-cols-[1fr_1fr]">
@@ -169,7 +188,7 @@ export function CreateFlow() {
                 <div className="studio-samples">
                   <div className="studio-samples-heading"><span className="mono muted">A LITTLE INSPIRATION</span><span className="muted text-xs">Try a sample pair</span></div>
                   <div className="studio-samples-grid">
-                    {samples.map((s, i) => <button key={s.id} className="studio-sample" onClick={() => useSample(s.id)} disabled={busy}>
+                    {samples.map((s, i) => <button key={s.id} className="studio-sample" onClick={() => useSample(s.id)} disabled={busy || up.start.uploading || up.end.uploading}>
                       <span className="studio-sample-images"><img src={s.aPoster} alt="" /><img src={s.bPoster} alt="" /><span aria-hidden="true">↗</span></span>
                       <span className="studio-sample-caption"><span className="mono muted">0{i + 1}</span><span>{s.title}</span><span aria-hidden="true">→</span></span>
                     </button>)}
@@ -190,7 +209,7 @@ export function CreateFlow() {
               <h1 className="display text-3xl md:text-4xl">Recommended for your clips</h1>
               {view.boundary?.narrative ? <p className="mt-2 muted max-w-2xl">{view.boundary.narrative}</p> : null}
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Link href={`/library?p=${view.project.id}`} className="btn btn-ghost btn-sm">Browse all transitions</Link>
               <button className="btn btn-ghost btn-sm" onClick={reset}>Change clips</button>
             </div>
@@ -234,8 +253,8 @@ export function CreateFlow() {
           <div className="flex flex-wrap items-end justify-between gap-3">
             <h1 className="display text-3xl md:text-4xl">Your transition is ready</h1>
             <div className="seg">
-              <button data-on={videoMode === "full"} onClick={() => setVideoMode("full")}>Full edit</button>
-              <button data-on={videoMode === "bridge"} onClick={() => setVideoMode("bridge")}>Transition only</button>
+              <button data-on={videoMode === "full"} aria-pressed={videoMode === "full"} onClick={() => setVideoMode("full")}>Full edit</button>
+              <button data-on={videoMode === "bridge"} aria-pressed={videoMode === "bridge"} onClick={() => setVideoMode("bridge")}>Transition only</button>
             </div>
           </div>
           <div className="frame grain mt-5 aspect-video bg-black">

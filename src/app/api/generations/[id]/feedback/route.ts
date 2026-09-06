@@ -1,12 +1,13 @@
 import { bad, getUserId, json } from "@/lib/server/session";
-import { Events, Generations, Learning } from "@/db/repo";
+import { Events, Learning } from "@/db/repo";
+import { ownedGeneration } from "@/lib/server/access";
 
 const ACTIONS = new Set(["download_full", "download_bridge", "share", "copy_link", "export_failed"]);
 
 export async function POST(req: Request, ctx: { params: Promise<{ id: string }> }) {
   const { id } = await ctx.params;
   const userId = await getUserId();
-  const g = Generations.get(id);
+  const g = ownedGeneration(id, userId);
   if (!g) return bad("Generation not found", 404);
   const { action } = (await req.json().catch(() => ({}))) as { action?: string };
   if (!action || !ACTIONS.has(action)) return bad("unknown action");

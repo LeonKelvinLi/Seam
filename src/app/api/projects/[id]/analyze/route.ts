@@ -2,11 +2,12 @@ import { bad, getUserId, json } from "@/lib/server/session";
 import { Assets, Events, Projects } from "@/db/repo";
 import { enqueue } from "@/core/pipeline/runner";
 import { latestAnalyzeJob, projectView } from "@/lib/server/views";
+import { ownedProject } from "@/lib/server/access";
 
 export async function POST(_req: Request, ctx: { params: Promise<{ id: string }> }) {
   const { id } = await ctx.params;
   const userId = await getUserId();
-  const project = Projects.get(id);
+  const project = ownedProject(id, userId);
   if (!project) return bad("Project not found", 404);
   if (!Assets.byRole(id, "start") || !Assets.byRole(id, "end")) return bad("Upload both clips first.");
   const running = latestAnalyzeJob(id);
