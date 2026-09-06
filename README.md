@@ -1,5 +1,7 @@
 # SeamCut
 
+Live preview deployment: https://seamcut.onrender.com (Render Docker service `seamcut`, see `docs/deploy-render.md`; deploys are manual from the Render dashboard).
+
 **Turn any two clips into one impossible shot.** Upload two clips. AI figures out the transition.
 
 Seam is an AI transition director: it looks at the end of clip A and the start of clip B, decides which
