@@ -12,7 +12,9 @@
     "test": "node --import tsx --test tests/**/*.test.ts",
     "samples": "tsx scripts/make-samples.ts",
     "pipeline:smoke": "tsx scripts/smoke.ts",
-    "e2e": "tsx scripts/e2e.ts"
+    "e2e": "tsx scripts/e2e.ts",
+    "secrets:push": "node scripts/push-secrets.mjs --apply",
+    "secrets:check": "node scripts/push-secrets.mjs"
   },
   "dependencies": {
     "better-sqlite3": "^12.2.0",

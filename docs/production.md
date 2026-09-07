@@ -22,14 +22,32 @@ verified on the live service. "Owner" means only the account owner can complete 
 | Free trial | Every new guest or account gets exactly 3 preview runs (`FREE_TRIAL_RUNS`); the fourth run returns 402 and the studio shows an inline paywall with the packs. New guest identities are capped at 10 per IP per day. |
 | Flow test | `npm run e2e` (`scripts/e2e.ts`) drives the real product against any base URL: two uploads → boundary frames (last frame of clip A, first frame of clip B) → analysis → 3 runs → 4th refused → balance 0. CI runs it against a production build with the ffmpeg provider; run it against the live URL after every deploy. |
 
-## Owner steps (secrets never go in Git or the blueprint)
+## Owner steps: keys (about ten minutes)
 
-Render → seamcut → Environment:
+Secrets are never typed into web forms by the assistant and never committed. Paste each one into the local `.env.local`
+(same folder as `package.json`), then run one command that pushes them to Render and redeploys without printing any value:
 
-1. `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` (the latter is in local `.env.local`). Without them purchases complete on Stripe but are not credited.
-2. `HIGGSFIELD_API_KEY_ID` + `HIGGSFIELD_API_KEY_SECRET` (create a key at the Higgsfield developer platform; API usage bills the Higgsfield account), `FAL_KEY` (top up fal first), `RUNWAYML_API_SECRET`, `OPENAI_API_KEY` to move from ffmpeg previews to AI bridges and real visual analysis. Paste the same Higgsfield pair into local `.env.local` and run `SEAM_FORCE_PROVIDER= npm run e2e` against a local production server to watch the first real AI runs.
-3. `SEAM_SUPPORT_EMAIL` so the legal pages show a contact address; `SEAM_OPS_TOKEN` for `/ops`.
-4. Custom domain: add it in Render → Settings → Custom Domains, then set `SEAM_PUBLIC_URL` and update the Stripe webhook URL and payment-link redirects to the new host.
+```bash
+npm run secrets:check   # shows which keys are set locally, sends nothing
+npm run secrets:push    # upserts them on the Render service and starts a deploy
+```
+
+Keys and where they come from:
+
+| Key | Where to create it | What it unlocks |
+|---|---|---|
+| `HIGGSFIELD_API_KEY_ID`, `HIGGSFIELD_API_KEY_SECRET` | Higgsfield developer platform → API keys (docs.higgsfield.ai/docs/authentication) | DoP and Veo 3.1 two-frame AI bridges, billed to your Higgsfield credits |
+| `STRIPE_SECRET_KEY` | Stripe Dashboard → Developers → API keys → restricted key with Checkout Sessions write | Server-side checkout and webhook verification |
+| `STRIPE_WEBHOOK_SECRET` | already in `.env.local` (created 2026-09-06 for the live endpoint) | Credits granted after payment |
+| `FAL_KEY` | already in `.env.local`; top up fal.ai/dashboard/billing first | Kling 2.1 Pro bridges |
+| `OPENAI_API_KEY` | already in `.env.local` | Vision analysis and judging |
+| `RENDER_API_KEY` | Render → Account settings → API keys | Lets the push script write the values above |
+| `SEAM_SUPPORT_EMAIL`, `SEAM_OPS_TOKEN` | your choice | Contact address on legal pages; `/ops` access |
+
+After the deploy, `https://seamcut.onrender.com/api/runtime` lists the active providers, and
+`E2E_BASE_URL=https://seamcut.onrender.com npm run e2e` proves three AI runs and the paywall on the live service.
+A custom domain is added in Render → Settings → Custom Domains; then set `SEAM_PUBLIC_URL` and update the Stripe
+webhook URL and payment-link redirects to the new host.
 
 ## Known gaps
 
