@@ -3,7 +3,8 @@ import { ingestFile } from "@/lib/server/ingest";
 import { assetView, projectView } from "@/lib/server/views";
 import { Events, Projects } from "@/db/repo";
 import { ownedProject } from "@/lib/server/access";
-import { LIMITS, rateLimit, tooMany } from "@/lib/server/ratelimit";
+import { LIMITS, clientIp, rateLimit, tooMany } from "@/lib/server/ratelimit";
+import { cookies } from "next/headers";
 
 const MAX_UPLOAD_BYTES = 500 * 1024 * 1024;
 
@@ -11,6 +12,12 @@ export const runtime = "nodejs";
 export const maxDuration = 300;
 
 export async function POST(req: Request) {
+  // A brand-new visitor gets free runs; cap how many fresh guest identities one address can mint per day.
+  const jar = await cookies();
+  if (!jar.get("seam_session") && !jar.get("seam_uid")) {
+    const g = rateLimit(`guest:${clientIp(req)}`, LIMITS.guest);
+    if (!g.ok) return tooMany(g.retryAfterSec);
+  }
   const userId = await getUserId();
   const rl = rateLimit(`upload:${userId}`, LIMITS.upload);
   if (!rl.ok) return tooMany(rl.retryAfterSec);

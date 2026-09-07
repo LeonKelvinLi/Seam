@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { GenerationView, ProjectView } from "@/lib/server/views";
 import { DEFAULT_FINE_TUNE, type FineTune } from "@/core/types";
 import { api, track, uploadFile } from "@/lib/api";
+import { Paywall } from "@/components/Paywall";
 import { createProjectUploadQueue } from "@/lib/project-uploads";
 import { DropZone } from "./DropZone";
 import { Steps } from "./Steps";
@@ -213,6 +214,7 @@ export function CreateFlow() {
             <div>
               <h1 className="display text-3xl md:text-4xl">Recommended for your clips</h1>
               {view.boundary?.narrative ? <p className="mt-2 muted max-w-2xl">{view.boundary.narrative}</p> : null}
+              <p className="mt-2 mono text-xs muted" aria-live="polite">{view.credits} run{view.credits === 1 ? "" : "s"} left · 1 credit per preview</p>
             </div>
             <div className="flex flex-wrap gap-2">
               <Link href={`/library?p=${view.project.id}`} className="btn btn-ghost btn-sm">Browse all transitions</Link>
@@ -319,7 +321,8 @@ export function CreateFlow() {
         </div>
       )}
 
-      {error && <Notice>{error} {needCredits && <Link href="/pricing" className="underline">Add credits</Link>}</Notice>}
+      {error && !needCredits && <Notice>{error}</Notice>}
+      {needCredits && <Paywall freeRuns={3} />}
     </div>
   );
 }

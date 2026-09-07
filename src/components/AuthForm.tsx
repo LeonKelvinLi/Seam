@@ -22,7 +22,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
   return (
     <div className="mx-auto max-w-sm px-5 pb-20 pt-16">
       <h1 className="display text-3xl">{mode === "login" ? "Welcome back." : "Create your account."}</h1>
-      <p className="mt-2 muted text-sm">{mode === "login" ? "Your projects and credits are waiting." : "5 free transitions. Your guest projects come with you."}</p>
+      <p className="mt-2 muted text-sm">{mode === "login" ? "Your projects and credits are waiting." : "3 free runs. Your guest projects come with you."}</p>
       <form onSubmit={submit} className="mt-8 space-y-3">
         <input className="w-full rounded-xl px-4 py-3 outline-none hair" style={{ background: "var(--bg-2)" }} type="email" required placeholder="Email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} />
         <input className="w-full rounded-xl px-4 py-3 outline-none hair" style={{ background: "var(--bg-2)" }} type="password" required minLength={8} placeholder={mode === "signup" ? "Password (8+ characters)" : "Password"} autoComplete={mode === "signup" ? "new-password" : "current-password"} value={password} onChange={(e) => setPassword(e.target.value)} />

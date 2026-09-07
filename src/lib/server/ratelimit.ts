@@ -12,6 +12,7 @@ export const LIMITS = {
   upload: { max: 40, windowMs: 60 * 60_000 },      // uploads per user per hour
   generate: { max: 30, windowMs: 60 * 60_000 },    // generations per user per hour
   api: { max: 600, windowMs: 60_000 },             // generic burst guard per IP
+  guest: { max: 10, windowMs: 24 * 60 * 60_000 },  // new guest identities (each with free runs) per IP per day
 } as const satisfies Record<string, Limit>;
 
 export function rateLimit(key: string, limit: Limit, now = Date.now()): { ok: boolean; retryAfterSec: number; remaining: number } {

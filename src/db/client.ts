@@ -4,7 +4,7 @@ import { config } from "@/core/config";
 
 const SCHEMA = `
 CREATE TABLE IF NOT EXISTS users (
-  id TEXT PRIMARY KEY, createdAt TEXT NOT NULL, email TEXT UNIQUE, passwordHash TEXT, credits INTEGER NOT NULL DEFAULT 5,
+  id TEXT PRIMARY KEY, createdAt TEXT NOT NULL, email TEXT UNIQUE, passwordHash TEXT, credits INTEGER NOT NULL DEFAULT 3,
   plan TEXT NOT NULL DEFAULT 'free', stripeCustomerId TEXT, updatedAt TEXT
 );
 CREATE TABLE IF NOT EXISTS sessions (
@@ -122,7 +122,7 @@ export function db(): Database.Database {
   // Additive migrations for databases created before accounts existed.
   const cols = new Set((instance.prepare("PRAGMA table_info(users)").all() as { name: string }[]).map((c) => c.name));
   const add = (col: string, ddl: string) => { if (!cols.has(col)) instance.exec(`ALTER TABLE users ADD COLUMN ${col} ${ddl}`); };
-  add("email", "TEXT"); add("passwordHash", "TEXT"); add("credits", "INTEGER NOT NULL DEFAULT 5"); add("plan", "TEXT NOT NULL DEFAULT 'free'");
+  add("email", "TEXT"); add("passwordHash", "TEXT"); add("credits", "INTEGER NOT NULL DEFAULT 3"); add("plan", "TEXT NOT NULL DEFAULT 'free'");
   add("stripeCustomerId", "TEXT"); add("updatedAt", "TEXT");
   instance.exec("CREATE UNIQUE INDEX IF NOT EXISTS users_email ON users(email)");
   // Recover jobs left "running" by a previous process (dev restarts, crashes).

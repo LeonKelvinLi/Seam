@@ -88,16 +88,19 @@ export function remove(table: Table, where: string, params: unknown[] = []): voi
 
 /* ---------- Convenience accessors ---------- */
 
+/** Free trial: every new account or guest can run this many preview transitions before buying credits. */
+export const FREE_TRIAL_RUNS = 3;
+
 export const Users = {
   ensure(id: string): User {
     const u = get<User>("users", id);
     if (u) return u;
-    return insert<User>("users", { id, createdAt: now(), email: null, passwordHash: null, credits: 5, plan: "free", stripeCustomerId: null, updatedAt: null });
+    return insert<User>("users", { id, createdAt: now(), email: null, passwordHash: null, credits: FREE_TRIAL_RUNS, plan: "free", stripeCustomerId: null, updatedAt: null });
   },
   get: (id: string) => get<User>("users", id),
   byEmail: (email: string) => find<User>("users", "email=?", [email.toLowerCase()], "createdAt ASC", 1)[0],
   createAccount(email: string, passwordHash: string): User {
-    return insert<User>("users", { id: newId("usr"), createdAt: now(), email: email.toLowerCase(), passwordHash, credits: 5, plan: "free", stripeCustomerId: null, updatedAt: now() });
+    return insert<User>("users", { id: newId("usr"), createdAt: now(), email: email.toLowerCase(), passwordHash, credits: FREE_TRIAL_RUNS, plan: "free", stripeCustomerId: null, updatedAt: now() });
   },
   update(id: string, patch: Partial<User>) { update("users", id, { ...patch, updatedAt: now() }); },
   /** Atomically spend credits; returns false when the balance is too low. */
