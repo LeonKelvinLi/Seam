@@ -72,5 +72,6 @@ export function describeRuntime() {
       config.providers.higgsfieldKeyId && config.providers.higgsfieldKeySecret ? "higgsfield (DoP, Veo 3.1 first→last)" : null,
     ].filter(Boolean),
     mode: config.generation.defaultMode,
+    forcedProvider: config.providers.force || null,
   };
 }
