@@ -13,7 +13,7 @@ export async function getUserId(): Promise<string> {
   if (!id || !/^usr_[a-z0-9]{12}$/.test(id)) {
     id = newId("usr");
     try {
-      jar.set(COOKIE, id, { httpOnly: true, sameSite: "lax", path: "/", maxAge: 60 * 60 * 24 * 365 });
+      jar.set(COOKIE, id, { httpOnly: true, sameSite: "lax", path: "/", maxAge: 60 * 60 * 24 * 365, secure: process.env.NODE_ENV === "production" });
     } catch {
       /* read-only context (server component) */
     }

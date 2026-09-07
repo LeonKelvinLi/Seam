@@ -3,12 +3,19 @@ import { ingestFile } from "@/lib/server/ingest";
 import { assetView, projectView } from "@/lib/server/views";
 import { Events, Projects } from "@/db/repo";
 import { ownedProject } from "@/lib/server/access";
+import { LIMITS, rateLimit, tooMany } from "@/lib/server/ratelimit";
+
+const MAX_UPLOAD_BYTES = 500 * 1024 * 1024;
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
 
 export async function POST(req: Request) {
   const userId = await getUserId();
+  const rl = rateLimit(`upload:${userId}`, LIMITS.upload);
+  if (!rl.ok) return tooMany(rl.retryAfterSec);
+  const declared = Number(req.headers.get("content-length") ?? 0);
+  if (declared > MAX_UPLOAD_BYTES + 64 * 1024) return bad("That file is over 500 MB.", 413);
   let projectId = "";
   try {
     const form = await req.formData();

@@ -280,6 +280,10 @@ export const Jobs = {
     return row ? (hydrate<Job>("jobs", row) as Job) : undefined;
   },
   queuedCount: () => (db().prepare("SELECT COUNT(*) c FROM jobs WHERE status='queued'").get() as { c: number }).c,
+  /** After a crash or deploy, jobs left 'running' belong to a dead process: put them back in the queue. */
+  requeueStale(): number {
+    return db().prepare("UPDATE jobs SET status='queued', stage='queued', stageLabel='Queued', progress=0, updatedAt=? WHERE status='running'").run(now()).changes;
+  },
 };
 
 export const Learning = {

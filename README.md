@@ -97,3 +97,7 @@ stand-ins for any pair that is missing; `scripts/import-generated.ts mapping.jso
 (`a` must end on the bridge's first frame, `b` must start on its last frame; set `reverseA` when `a` was generated from that frame).
 
 See `ARCHITECTURE.md` for the module map, data model and the multi-clip director plan.
+
+## Production
+
+Deployed on Render from `render.yaml`; see `docs/deploy-render.md` for the blueprint and `docs/production.md` for the readiness checklist, owner steps and known gaps.

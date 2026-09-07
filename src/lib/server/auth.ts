@@ -42,7 +42,7 @@ export async function signIn(user: User) {
   if (guest && guest !== user.id && Users.get(guest)) Users.adopt(guest, user.id);
   const s = Sessions.create(user.id);
   jar.set(SESSION_COOKIE, s.id, { httpOnly: true, sameSite: "lax", path: "/", maxAge: 60 * 60 * 24 * 30, secure: process.env.NODE_ENV === "production" });
-  jar.set(GUEST_COOKIE, user.id, { httpOnly: true, sameSite: "lax", path: "/", maxAge: 60 * 60 * 24 * 365 });
+  jar.set(GUEST_COOKIE, user.id, { httpOnly: true, sameSite: "lax", path: "/", maxAge: 60 * 60 * 24 * 365, secure: process.env.NODE_ENV === "production" });
 }
 
 export async function signOut() {
