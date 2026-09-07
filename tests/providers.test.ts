@@ -91,8 +91,11 @@ test("two-endpoint routing excludes Standard and Gen-4 Turbo in both generation 
   for (const provider of PROVIDERS) t.mock.method(provider, "isAvailable", () => true);
   for (const mode of ["preview", "final"] as const) {
     const models = routeModels({ recipe: getRecipe("liquid-transform"), mode });
-    assert.deepEqual(models.map((model) => model.id), ["fal:kling-2.1-pro", LOCAL_MODEL.id]);
-    assert.equal(models.every((model) => model.supportsLastFrame), true);
+    const ids = models.map((model) => model.id);
+    assert.equal(models.every((model) => model.supportsLastFrame), true, "only two-endpoint models may bridge");
+    assert.ok(!ids.includes("fal:kling-2.1-standard") && !ids.includes("runway:gen4-turbo"), "first-frame-only models are excluded");
+    assert.ok(ids.includes("fal:kling-2.1-pro") && ids.some((id) => id.startsWith("higgsfield:")), "every bridge-capable provider is offered");
+    assert.equal(ids[ids.length - 1], LOCAL_MODEL.id, "ffmpeg closes the list as the safety net");
   }
   config.providers.force = "runway";
   assert.deepEqual(routeModels({ recipe: getRecipe("liquid-transform"), mode: "preview" }).map((model) => model.providerId), ["local"]);

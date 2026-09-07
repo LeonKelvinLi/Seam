@@ -2,9 +2,10 @@ import { config } from "@/core/config";
 import { falProvider } from "./fal";
 import { localProvider } from "./local";
 import { runwayProvider } from "./runway";
+import { higgsfieldProvider } from "./higgsfield";
 import type { ModelSpec, ProviderId, TransitionProvider } from "./types";
 
-export const PROVIDERS: TransitionProvider[] = [localProvider, falProvider, runwayProvider];
+export const PROVIDERS: TransitionProvider[] = [localProvider, falProvider, runwayProvider, higgsfieldProvider];
 
 export function getProvider(id: ProviderId): TransitionProvider {
   const p = PROVIDERS.find((x) => x.id === id);

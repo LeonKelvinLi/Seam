@@ -45,7 +45,7 @@ services:
         value: https://buy.stripe.com/3cIfZigzcbus0MNg8q9Zm01
       - key: STRIPE_LINK_STUDIO
         value: https://buy.stripe.com/6oUeVe1Ei0PO0MN8FY9Zm02
-# Provider keys (FAL_KEY, RUNWAYML_API_SECRET, OPENAI_API_KEY) are secrets: add them privately in Render's
+# Provider keys (FAL_KEY, RUNWAYML_API_SECRET, HIGGSFIELD_API_KEY_ID + HIGGSFIELD_API_KEY_SECRET, OPENAI_API_KEY) are secrets: add them privately in Render's
 # Environment settings to turn on AI bridges and vision analysis; without them the router stays on local ffmpeg.
 # STRIPE_SECRET_KEY and STRIPE_WEBHOOK_SECRET are secrets: add them privately in Render's
 # Environment settings (never in this file). Without them the app falls back to Payment Links

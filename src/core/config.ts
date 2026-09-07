@@ -32,7 +32,9 @@ export const config = {
   providers: {
     falKey: env("FAL_KEY"),
     runwaySecret: env("RUNWAYML_API_SECRET"),
-    force: env("SEAM_FORCE_PROVIDER") as "" | "local" | "fal" | "runway",
+    higgsfieldKeyId: env("HIGGSFIELD_API_KEY_ID"),
+    higgsfieldKeySecret: env("HIGGSFIELD_API_KEY_SECRET"),
+    force: env("SEAM_FORCE_PROVIDER") as "" | "local" | "fal" | "runway" | "higgsfield",
   },
   generation: {
     maxAttempts: num("SEAM_MAX_ATTEMPTS", 3),
@@ -67,6 +69,7 @@ export function describeRuntime() {
       "local (ffmpeg, always on)",
       config.providers.falKey ? "fal (Kling 2.1)" : null,
       config.providers.runwaySecret ? "runway (Gen-4 Turbo)" : null,
+      config.providers.higgsfieldKeyId && config.providers.higgsfieldKeySecret ? "higgsfield (DoP, Veo 3.1 first→last)" : null,
     ].filter(Boolean),
     mode: config.generation.defaultMode,
   };

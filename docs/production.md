@@ -18,7 +18,7 @@ verified on the live service. "Owner" means only the account owner can complete 
 | SEO/share | `robots.txt`, `sitemap.xml`, Open Graph/Twitter card with `public/brand/og.png`, favicon. |
 | Errors | Branded 404 and error boundaries. |
 | CI | GitHub Actions: typecheck, tests, deploy-asset manifest check, production build on every push. |
-| Providers | Blueprint no longer forces the local provider; adding FAL_KEY / RUNWAYML_API_SECRET / OPENAI_API_KEY turns on AI bridges and vision analysis. Retries set to 2. The only wired model that accepts both boundary frames is Kling 2.1 Pro via fal (about $0.45 per 5 s); Runway Gen-4 Turbo takes a first frame only and Gen-3 Alpha Turbo was sunset on 2026-07-30, so AI bridges depend on the fal account having balance. ffmpeg remains the fallback when a provider fails or no key is set. |
+| Providers | Blueprint no longer forces the local provider; adding FAL_KEY / RUNWAYML_API_SECRET / OPENAI_API_KEY turns on AI bridges and vision analysis. Retries set to 2. Bridge-capable models (both boundary frames): Higgsfield DoP Lite/Standard and Veo 3.1 Fast first→last via the Higgsfield developer API (`HIGGSFIELD_API_KEY_ID` + `HIGGSFIELD_API_KEY_SECRET`, src/core/providers/higgsfield.ts), and Kling 2.1 Pro via fal (about $0.45 per 5 s). Runway Gen-4 Turbo takes a first frame only and Gen-3 Alpha Turbo was sunset on 2026-07-30. ffmpeg remains the fallback when a provider fails or no key is set. Higgsfield per-model prices are estimates until the first live call; refine `costPerSecondUsd` from the API's estimate endpoint. |
 | Free trial | Every new guest or account gets exactly 3 preview runs (`FREE_TRIAL_RUNS`); the fourth run returns 402 and the studio shows an inline paywall with the packs. New guest identities are capped at 10 per IP per day. |
 | Flow test | `npm run e2e` (`scripts/e2e.ts`) drives the real product against any base URL: two uploads → boundary frames (last frame of clip A, first frame of clip B) → analysis → 3 runs → 4th refused → balance 0. CI runs it against a production build with the ffmpeg provider; run it against the live URL after every deploy. |
 
@@ -27,7 +27,7 @@ verified on the live service. "Owner" means only the account owner can complete 
 Render → seamcut → Environment:
 
 1. `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` (the latter is in local `.env.local`). Without them purchases complete on Stripe but are not credited.
-2. `FAL_KEY`, `RUNWAYML_API_SECRET`, `OPENAI_API_KEY` to move from ffmpeg previews to AI bridges and real visual analysis.
+2. `HIGGSFIELD_API_KEY_ID` + `HIGGSFIELD_API_KEY_SECRET` (create a key at the Higgsfield developer platform; API usage bills the Higgsfield account), `FAL_KEY` (top up fal first), `RUNWAYML_API_SECRET`, `OPENAI_API_KEY` to move from ffmpeg previews to AI bridges and real visual analysis. Paste the same Higgsfield pair into local `.env.local` and run `SEAM_FORCE_PROVIDER= npm run e2e` against a local production server to watch the first real AI runs.
 3. `SEAM_SUPPORT_EMAIL` so the legal pages show a contact address; `SEAM_OPS_TOKEN` for `/ops`.
 4. Custom domain: add it in Render → Settings → Custom Domains, then set `SEAM_PUBLIC_URL` and update the Stripe webhook URL and payment-link redirects to the new host.
 

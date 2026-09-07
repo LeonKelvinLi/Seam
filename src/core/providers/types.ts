@@ -3,7 +3,7 @@ import type { ModelClass, TransitionRecipe } from "@/core/recipes/types";
 import type { PromptDialect } from "@/core/prompt/compiler";
 import type { GenerationMode } from "@/core/types";
 
-export type ProviderId = "local" | "fal" | "runway";
+export type ProviderId = "local" | "fal" | "runway" | "higgsfield";
 
 export interface ModelSpec {
   /** Globally unique, e.g. "fal:kling-2.1-pro". */
