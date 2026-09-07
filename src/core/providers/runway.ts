@@ -1,5 +1,6 @@
 /**
- * Runway provider — Gen-4 Turbo image_to_video accepts a first frame only.
+ * Runway provider. Gen-4 Turbo image_to_video accepts a first frame only (Gen-3 Alpha Turbo, which took a last frame,
+ * was sunset on 2026-07-30). The two-image request path stays for the next Runway model that accepts an end frame.
  * POST /v1/image_to_video -> poll GET /v1/tasks/{id} until SUCCEEDED.
  */
 import { config } from "@/core/config";
@@ -22,6 +23,8 @@ export const RUNWAY_MODELS: ModelSpec[] = [
 ];
 
 const RATIOS: Record<TransitionRequest["aspectRatio"], string> = { "16:9": "1280:720", "9:16": "720:1280", "1:1": "960:960" };
+// Gen-3 Alpha only renders these two frames; square requests take the landscape frame and are cropped when the bridge is normalised.
+const RATIOS_GEN3: Record<TransitionRequest["aspectRatio"], string> = { "16:9": "1280:768", "9:16": "768:1280", "1:1": "1280:768" };
 
 async function rw<T>(path: string, init: RequestInit): Promise<T> {
   const res = await fetch(`${BASE}${path}`, {
@@ -44,11 +47,15 @@ export const runwayProvider: TransitionProvider = {
   isAvailable: () => config.providers.runwaySecret !== "",
   async generateTransition(req: TransitionRequest, model: ModelSpec): Promise<TransitionResult> {
     const duration = model.durations[0] ?? 5;
+    const first = await jpegDataUri(req.firstFramePath, 1280);
+    const promptImage = model.supportsLastFrame && req.lastFramePath
+      ? [{ uri: first, position: "first" }, { uri: await jpegDataUri(req.lastFramePath, 1280), position: "last" }]
+      : first;
     const body = {
       model: model.endpoint,
-      promptImage: await jpegDataUri(req.firstFramePath, 1280),
+      promptImage,
       promptText: req.prompt.positive,
-      ratio: RATIOS[req.aspectRatio],
+      ratio: (model.endpoint === "gen3a_turbo" ? RATIOS_GEN3 : RATIOS)[req.aspectRatio],
       duration,
     };
     req.onProgress?.("Sending frames to the video model");

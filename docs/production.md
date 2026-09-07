@@ -18,7 +18,9 @@ verified on the live service. "Owner" means only the account owner can complete 
 | SEO/share | `robots.txt`, `sitemap.xml`, Open Graph/Twitter card with `public/brand/og.png`, favicon. |
 | Errors | Branded 404 and error boundaries. |
 | CI | GitHub Actions: typecheck, tests, deploy-asset manifest check, production build on every push. |
-| Providers | Blueprint no longer forces the local provider; adding FAL_KEY / RUNWAYML_API_SECRET / OPENAI_API_KEY turns on AI bridges and vision analysis. Retries set to 2. |
+| Providers | Blueprint no longer forces the local provider; adding FAL_KEY / RUNWAYML_API_SECRET / OPENAI_API_KEY turns on AI bridges and vision analysis. Retries set to 2. The only wired model that accepts both boundary frames is Kling 2.1 Pro via fal (about $0.45 per 5 s); Runway Gen-4 Turbo takes a first frame only and Gen-3 Alpha Turbo was sunset on 2026-07-30, so AI bridges depend on the fal account having balance. ffmpeg remains the fallback when a provider fails or no key is set. |
+| Free trial | Every new guest or account gets exactly 3 preview runs (`FREE_TRIAL_RUNS`); the fourth run returns 402 and the studio shows an inline paywall with the packs. New guest identities are capped at 10 per IP per day. |
+| Flow test | `npm run e2e` (`scripts/e2e.ts`) drives the real product against any base URL: two uploads → boundary frames (last frame of clip A, first frame of clip B) → analysis → 3 runs → 4th refused → balance 0. CI runs it against a production build with the ffmpeg provider; run it against the live URL after every deploy. |
 
 ## Owner steps (secrets never go in Git or the blueprint)
 
@@ -30,6 +32,8 @@ Render → seamcut → Environment:
 4. Custom domain: add it in Render → Settings → Custom Domains, then set `SEAM_PUBLIC_URL` and update the Stripe webhook URL and payment-link redirects to the new host.
 
 ## Known gaps
+
+- The fal account is locked for exhausted balance (seen 2026-09-07), so Kling bridges fail until it is topped up; the router falls back to Runway Gen-3 Alpha Turbo and then ffmpeg.
 
 - No password reset or email verification yet; both need an email provider (Resend or Postmark key). Until then, account recovery is manual.
 - Single instance with a disk: deploys cause a short outage and the service cannot scale horizontally. Fine for launch; move SQLite to Postgres and files to object storage before scaling.
