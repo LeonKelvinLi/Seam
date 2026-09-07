@@ -50,3 +50,13 @@ cp /var/data/seam/backups/seam-YYYYMMDD.sqlite /var/data/seam/seam.sqlite
 ```
 
 Restart the service afterwards.
+
+## Provider trial: Higgsfield Cinema Studio 3.0 (2026-09-07)
+
+Tested through the Higgsfield MCP on the app's own sample pair (coffee cup last frame → ocean first frame), 4 s at 720p, 20 credits.
+Result `data/ads-tmp/hf_trial.mp4`, sheet `data/ads-tmp/hf_judge.jpg`. Judgment on the WOW rubric (30/25/15/15/10/5):
+seamless 27, wow 20, originality 11, motion 13, endpoint 9, visual 5 = 85. First frame reproduces the cup frame almost exactly,
+last frame lands on the ocean frame, and the bridge is motivated: a ripple on the coffee, push into the surface, the rim
+becomes the horizon at sunset, the sea widens. Weak spot: two mid frames read as a dark band with a bright edge. This is on par with
+the MiniMax bridges used in the ad and better on endpoint accuracy, so Higgsfield is the preferred production bridge once the
+developer API key is set; DoP/Veo are wired now, Cinema Studio can be added when its endpoint path is confirmed in the API.
