@@ -4,6 +4,7 @@ import { localProvider } from "./local";
 import { runwayProvider } from "./runway";
 import { higgsfieldProvider } from "./higgsfield";
 import type { ModelSpec, ProviderId, TransitionProvider } from "./types";
+import { providerCoolingDown } from "./cooldown";
 
 export const PROVIDERS: TransitionProvider[] = [localProvider, falProvider, runwayProvider, higgsfieldProvider];
 
@@ -19,7 +20,7 @@ export function allModels(): ModelSpec[] {
 
 export function availableModels(): ModelSpec[] {
   const force = config.providers.force;
-  return PROVIDERS.filter((p) => p.isAvailable() && (!force || p.id === force)).flatMap((p) => p.models);
+  return PROVIDERS.filter((p) => p.isAvailable() && (!force || p.id === force) && !providerCoolingDown(p.id)).flatMap((p) => p.models);
 }
 
 export function getModel(id: string): ModelSpec {

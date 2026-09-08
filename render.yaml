@@ -6,7 +6,7 @@ services:
     region: oregon
     dockerfilePath: ./Dockerfile
     dockerContext: .
-    autoDeployTrigger: "off"
+    autoDeployTrigger: checksPass
     healthCheckPath: /api/runtime
     disk:
       name: seam-data

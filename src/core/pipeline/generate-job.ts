@@ -12,6 +12,8 @@ import { storage } from "@/core/media/storage";
 import { getRecipe } from "@/core/recipes/registry";
 import { compileIR, renderPrompt } from "@/core/prompt/compiler";
 import { routeModels } from "@/core/providers/router";
+import { ProviderError } from "@/core/providers/types";
+import { isBillingError, markProviderUnavailable } from "@/core/providers/cooldown";
 import { getProvider } from "@/core/providers/registry";
 import { LOCAL_MODEL } from "@/core/providers/local";
 import type { ModelSpec, TransitionRequest } from "@/core/providers/types";
@@ -131,6 +133,7 @@ export async function runGenerateJob(job: Job, report: Reporter) {
       } catch (e) {
         const msg = (e as Error).message;
         log.warn("attempt failed", { gen: gen.id, n, error: msg });
+        if (e instanceof ProviderError && !e.retryable && isBillingError(e.message)) { markProviderUnavailable(e.providerId); log.warn("provider parked", { provider: e.providerId, reason: "billing" }); }
         Attempts.update(attempt.id, { status: "failed", error: msg, durationMs: Date.now() - ta });
         attempt.status = "failed"; attempt.durationMs = Date.now() - ta;
         outcomes.push({ kind: "error", message: msg, scores: null, modelId: model.id });
