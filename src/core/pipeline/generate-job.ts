@@ -129,6 +129,8 @@ export async function runGenerateJob(job: Job, report: Reporter) {
         if (model.providerId === "local" && n > 1) fellBackToLocal = true;
         if (ok) break;
         log.warn("quality rejected", { gen: gen.id, n, overall: judged.scores.overall, issues: judged.scores.issues });
+        // A rejected model gets one shot per generation; the next attempt goes to the next-best bridge model for diversity.
+        exclude = [...new Set([...exclude, model.id])];
         outcomes.push({ kind: "quality", message: judged.scores.issues.join("; "), scores: judged.scores, modelId: model.id });
       } catch (e) {
         const msg = (e as Error).message;

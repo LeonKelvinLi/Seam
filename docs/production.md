@@ -78,3 +78,21 @@ last frame lands on the ocean frame, and the bridge is motivated: a ripple on th
 becomes the horizon at sunset, the sea widens. Weak spot: two mid frames read as a dark band with a bright edge. This is on par with
 the MiniMax bridges used in the ad and better on endpoint accuracy, so Higgsfield is the preferred production bridge once the
 developer API key is set; DoP/Veo are wired now, Cinema Studio can be added when its endpoint path is confirmed in the API.
+
+## Live AI verification (2026-09-08)
+
+After the Higgsfield developer balance was funded (160 credits), the flow test on the live service produced real AI bridges:
+run 1 Higgsfield DoP Lite accepted at quality 73 on the first attempt; run 2 two DoP attempts rejected at 63 and 66, then
+the ffmpeg fallback; run 3 rejected at 64, then accepted at 79. Boundary frames, the three-run trial and the 402 paywall held.
+
+What this showed and what changed:
+
+- A remapped bridge ends at exactly its duration, and a frame request at that instant made ffmpeg exit non-zero before the
+  fallback offsets could run; every AI attempt died there while procedural bridges carried one extra frame. Fixed in
+  `extractFrameAt` (each candidate is tried, the last one seeks from the end) with a regression test.
+- A rejected model is now excluded for the rest of that generation so the retry goes to the next-best bridge model.
+- Cost and latency profile: DoP Lite takes 190 to 410 s per call and about 4.5 Higgsfield credits (about $0.28); the OpenAI
+  judge accepts roughly half of its outputs at the default threshold of 70. Lower `SEAM_QUALITY_THRESHOLD` to 65 for more
+  AI results per credit, or keep 70 for stricter seams. Balance after the test: 133 credits.
+- `/api/runtime` now reports `version` (deployed commit), `forcedProvider`, `coolingDown` and `bridgeModels`; the
+  generation view carries `attemptLog` with per-attempt model, status, quality, duration and error, which the flow test prints.
