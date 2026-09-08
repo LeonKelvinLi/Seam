@@ -17,7 +17,7 @@ verified on the live service. "Owner" means only the account owner can complete 
 | Legal | `/terms`, `/privacy`, `/refunds` linked from the footer; written as a plain-English starting point for counsel review. |
 | SEO/share | `robots.txt`, `sitemap.xml`, Open Graph/Twitter card with `public/brand/og.png`, favicon. |
 | Errors | Branded 404 and error boundaries. |
-| CI | GitHub Actions: typecheck, tests, deploy-asset manifest check, production build on every push. |
+| CI | GitHub Actions: typecheck, tests, deploy-asset manifest check, production build and the end-to-end flow test on every push. Render deploys the branch automatically once those checks pass (`autoDeployTrigger: checksPass`). |
 | Providers | Blueprint no longer forces the local provider; adding FAL_KEY / RUNWAYML_API_SECRET / OPENAI_API_KEY turns on AI bridges and vision analysis. Retries set to 2. Bridge-capable models (both boundary frames): Higgsfield DoP Lite/Standard and Veo 3.1 Fast first→last via the Higgsfield developer API (`HIGGSFIELD_API_KEY_ID` + `HIGGSFIELD_API_KEY_SECRET`, src/core/providers/higgsfield.ts), and Kling 2.1 Pro via fal (about $0.45 per 5 s). Runway Gen-4 Turbo takes a first frame only and Gen-3 Alpha Turbo was sunset on 2026-07-30. ffmpeg remains the fallback when a provider fails or no key is set. Higgsfield per-model prices are estimates until the first live call; refine `costPerSecondUsd` from the API's estimate endpoint. |
 | Free trial | Every new guest or account gets exactly 3 preview runs (`FREE_TRIAL_RUNS`); the fourth run returns 402 and the studio shows an inline paywall with the packs. New guest identities are capped at 10 per IP per day. |
 | Flow test | `npm run e2e` (`scripts/e2e.ts`) drives the real product against any base URL: two uploads → boundary frames (last frame of clip A, first frame of clip B) → analysis → 3 runs → 4th refused → balance 0. CI runs it against a production build with the ffmpeg provider; run it against the live URL after every deploy. |
@@ -36,7 +36,7 @@ Keys and where they come from:
 
 | Key | Where to create it | What it unlocks |
 |---|---|---|
-| `HIGGSFIELD_API_KEY_ID`, `HIGGSFIELD_API_KEY_SECRET` | Higgsfield developer platform → API keys (docs.higgsfield.ai/docs/authentication) | DoP and Veo 3.1 two-frame AI bridges, billed to your Higgsfield credits |
+| `HIGGSFIELD_API_KEY_ID`, `HIGGSFIELD_API_KEY_SECRET` | set on Render 2026-09-07; the developer API has its own credit balance, which must be funded in the developer platform before bridges run | DoP and Veo 3.1 two-frame AI bridges |
 | `STRIPE_SECRET_KEY` | Stripe Dashboard → Developers → API keys → restricted key with Checkout Sessions write | Server-side checkout and webhook verification |
 | `STRIPE_WEBHOOK_SECRET` | already in `.env.local` (created 2026-09-06 for the live endpoint) | Credits granted after payment |
 | `FAL_KEY` | already in `.env.local`; top up fal.ai/dashboard/billing first | Kling 2.1 Pro bridges |
@@ -51,7 +51,7 @@ webhook URL and payment-link redirects to the new host.
 
 ## Known gaps
 
-- The fal account is locked for exhausted balance (seen 2026-09-07), so Kling bridges fail until it is topped up; the router falls back to Runway Gen-3 Alpha Turbo and then ffmpeg.
+- Provider balances (checked live 2026-09-07): the Higgsfield developer API answers `403 not_enough_credits` (its balance is separate from the web app that ran the trial), and fal is locked for exhausted balance. Until one of them is funded every run falls back to ffmpeg. After a billing failure a provider is parked for 10 minutes (`src/core/providers/cooldown.ts`) and `/api/runtime` lists it under `coolingDown`, so later runs skip straight to the fallback instead of re-uploading frames.
 
 - No password reset or email verification yet; both need an email provider (Resend or Postmark key). Until then, account recovery is manual.
 - Single instance with a disk: deploys cause a short outage and the service cannot scale horizontally. Fine for launch; move SQLite to Postgres and files to object storage before scaling.
