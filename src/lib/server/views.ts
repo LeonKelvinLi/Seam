@@ -7,7 +7,7 @@ import { mediaUrl } from "@/core/media/storage";
 import { getRecipe, publicRecipe } from "@/core/recipes/registry";
 import { LANE_COPY, LANE_ORDER } from "@/core/opportunities/recommend";
 import { allModels } from "@/core/providers/registry";
-import { find, Assets, Frames, Generations, Opportunities, PairAnalyses, Projects, Recommendations, Users } from "@/db/repo";
+import { find, Assets, Frames, Generations, Opportunities, PairAnalyses, Projects, Recommendations, Users, Attempts, Quality } from "@/db/repo";
 import type { Asset, Generation, Job, TransitionOpportunity } from "@/core/types";
 
 export function assetView(a: Asset | undefined) {
@@ -35,6 +35,7 @@ export function generationView(g: Generation) {
     stageLabel: g.stageLabel, progress: g.progress, friendlyError: g.friendlyError, fineTune: g.fineTune, mode: g.mode,
     title: opp?.title ?? r.name, why: opp?.why ?? r.description, parentGenerationId: g.parentGenerationId, createdAt: g.createdAt,
     motivatedBy: opp?.hints.motivatedBy ?? null, sound: opp?.hints.sound ?? r.sound,
+    attemptLog: Attempts.forGeneration(g.id).map((a) => ({ n: a.n, providerId: a.providerId, modelId: a.modelId, status: a.status, error: a.error, durationMs: a.durationMs, costUsd: a.costUsd, quality: Quality.forAttempt(a.id)[0]?.scores?.overall ?? null })),
     result: g.result ? {
       fullUrl: mediaUrl(g.result.fullPath), bridgeUrl: mediaUrl(g.result.bridgePath), posterUrl: mediaUrl(g.result.posterPath),
       bridgeDurationSec: g.result.bridgeDurationSec, fullDurationSec: g.result.fullDurationSec, cutA: g.result.cutA, cutB: g.result.cutB,

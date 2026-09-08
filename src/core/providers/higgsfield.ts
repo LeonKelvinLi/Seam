@@ -65,9 +65,17 @@ function authHeader(): string {
   return `Key ${config.providers.higgsfieldKeyId}:${config.providers.higgsfieldKeySecret}`;
 }
 
+async function fetchWithRetry(url: string, init: RequestInit, tries = 3): Promise<Response> {
+  let last: unknown;
+  for (let i = 0; i < tries; i++) {
+    try { return await fetch(url, init); } catch (e) { last = e; await new Promise((r) => setTimeout(r, 1500 * (i + 1))); }
+  }
+  throw new ProviderError(`higgsfield network error: ${(last as Error)?.message ?? String(last)}`, true, "higgsfield");
+}
+
 async function hf<T>(path: string, init: RequestInit): Promise<T> {
   const url = path.startsWith("http") ? path : `${HIGGSFIELD_BASE}${path}`;
-  const res = await fetch(url, { ...init, headers: { Authorization: authHeader(), "Content-Type": "application/json", ...(init.headers ?? {}) } });
+  const res = await fetchWithRetry(url, { ...init, headers: { Authorization: authHeader(), "Content-Type": "application/json", ...(init.headers ?? {}) } });
   if (!res.ok) {
     const text = await res.text();
     throw new ProviderError(`higgsfield ${res.status}: ${text.slice(0, 300)}`, res.status === 429 || res.status >= 500, "higgsfield");

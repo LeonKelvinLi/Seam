@@ -173,11 +173,18 @@ export async function extractFrames(video: string, outDir: string, startSec: num
 /** Extract one frame. Seeking onto the very last frame can yield nothing, so step back and retry. */
 export async function extractFrameAt(video: string, t: number, output: string) {
   fs.rmSync(output, { force: true });
-  for (const tt of [t, t - 0.08, t - 0.25, 0]) {
-    await ffmpeg(["-ss", Math.max(0, tt).toFixed(3), "-i", video, "-frames:v", "1", "-q:v", "2", output]);
+  // A request at or past the last frame (t == duration after time-remapping) makes ffmpeg exit non-zero with an
+  // empty output; each candidate is tried in turn and the final one seeks from the end of the file.
+  const candidates: string[][] = [t, t - 0.08, t - 0.25, 0].map((tt) => ["-ss", Math.max(0, tt).toFixed(3), "-i", video]);
+  candidates.splice(1, 0, ["-sseof", "-0.05", "-i", video]);
+  let lastError: unknown = null;
+  for (const input of candidates) {
+    try {
+      await ffmpeg([...input, "-frames:v", "1", "-q:v", "2", output]);
+    } catch (e) { lastError = e; }
     if (fs.existsSync(output) && fs.statSync(output).size > 0) return output;
   }
-  throw new Error(`could not extract a frame at ${t.toFixed(2)}s from ${path.basename(video)}`);
+  throw new Error(`could not extract a frame at ${t.toFixed(2)}s from ${path.basename(video)}${lastError ? `: ${(lastError as Error).message.slice(0, 120)}` : ""}`);
 }
 
 /** Frames at evenly spaced fractions of a clip (used by the quality judge). */

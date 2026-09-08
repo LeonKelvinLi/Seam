@@ -10,6 +10,7 @@ import path from "node:path";
 
 const BASE = (process.env.E2E_BASE_URL ?? "http://localhost:3000").replace(/\/$/, "");
 const FREE_RUNS = Number(process.env.E2E_FREE_RUNS ?? 3);
+const RUNS = Number(process.env.E2E_RUNS ?? FREE_RUNS);
 const A = process.env.E2E_CLIP_A ?? path.join(process.cwd(), "public/samples/coffee-ocean-a.mp4");
 const B = process.env.E2E_CLIP_B ?? path.join(process.cwd(), "public/samples/coffee-ocean-b.mp4");
 const jar = new Map<string, string>();
@@ -66,7 +67,7 @@ async function main() {
   log(`credits before runs: ${view.credits}`);
   if (view.credits !== FREE_RUNS) fail(`fresh guest should have ${FREE_RUNS} free runs, has ${view.credits}`);
 
-  for (let run = 1; run <= FREE_RUNS; run++) {
+  for (let run = 1; run <= RUNS; run++) {
     const g = await call(`/api/projects/${projectId}/generate`, { method: "POST", headers: { "content-type": "application/json" }, body: "{}" });
     if (g.status !== 200) fail(`generate run ${run}: ${g.status} ${JSON.stringify(g.body).slice(0, 200)}`);
     const genId = g.body.generation.id;
@@ -82,7 +83,9 @@ async function main() {
     if (!media.ok || bytes < 50_000) fail(`run ${run} result not downloadable (${media.status}, ${bytes} bytes)`);
     if (!(gen.result.bridgeDurationSec > 0)) fail(`run ${run} has no bridge`);
     log(`run ${run} ready: ${gen.result.providerId}/${gen.result.modelLabel}, bridge ${gen.result.bridgeDurationSec}s, full ${gen.result.fullDurationSec}s, ${(bytes / 1e6).toFixed(1)} MB, quality ${gen.result.quality?.overall ?? "n/a"}, attempts ${gen.result.attempts}`);
+    for (const a of gen.attemptLog ?? []) log(`   attempt ${a.n} ${a.modelId} → ${a.status}${a.quality != null ? ` quality ${a.quality}` : ""} in ${Math.round((a.durationMs ?? 0) / 1000)}s${a.error ? ` :: ${String(a.error).slice(0, 160)}` : ""}`);
   }
+  if (RUNS < FREE_RUNS) { log(`stopped after ${RUNS} run(s); paywall not tested`); console.log("E2E PASSED"); return; }
   const blocked = await call(`/api/projects/${projectId}/generate`, { method: "POST", headers: { "content-type": "application/json" }, body: "{}" });
   if (blocked.status !== 402 || blocked.body?.code !== "NO_CREDITS") fail(`run ${FREE_RUNS + 1} should be refused with 402 NO_CREDITS, got ${blocked.status} ${JSON.stringify(blocked.body).slice(0, 120)}`);
   // Guests are not "users" on the account endpoint; the project view carries the balance for both.
