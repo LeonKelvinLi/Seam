@@ -309,6 +309,8 @@ export const Jobs = {
   queuedCount: () => (db().prepare("SELECT COUNT(*) c FROM jobs WHERE status='queued'").get() as { c: number }).c,
   /** After a crash or deploy, jobs left 'running' belong to a dead process: put them back in the queue. */
   requeueStale(): number {
+    // Attempts that were mid-flight belong to the dead process too; close them so the re-run starts clean.
+    db().prepare("UPDATE attempts SET status='failed', error='interrupted by a restart' WHERE status='running'").run();
     return db().prepare("UPDATE jobs SET status='queued', stage='queued', stageLabel='Queued', progress=0, updatedAt=? WHERE status='running'").run(now()).changes;
   },
 };
