@@ -73,8 +73,11 @@ async function main() {
     if (g.status !== 200) fail(`generate run ${run}: ${g.status} ${JSON.stringify(g.body).slice(0, 200)}`);
     const genId = g.body.generation.id;
     let gen: any = null;
-    for (let i = 0; i < 400; i++) {
-      await sleep(1500);
+    // Video-model queues vary from 3 to 15 minutes; allow 20 before calling a run stuck.
+    const RUN_TIMEOUT_MS = Number(process.env.E2E_RUN_TIMEOUT_MS ?? 20 * 60_000);
+    const t1 = Date.now();
+    while (Date.now() - t1 < RUN_TIMEOUT_MS) {
+      await sleep(2000);
       gen = (await call(`/api/generations/${genId}`)).body?.generation;
       if (gen?.status === "ready" || gen?.status === "failed") break;
     }
