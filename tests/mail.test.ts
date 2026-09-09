@@ -25,6 +25,28 @@ function setMailEnv(t: { after: (fn: () => void) => void }, values: Record<strin
   t.after(() => apply(previous));
 }
 
+test("transactional replies use the configured support mailbox and omit Reply-To when unset", async (t) => {
+  setMailEnv(t, { RESEND_API_KEY: "test-key", SEAM_MAIL_FROM: "SeamCut <accounts@example.com>", SEAM_SUPPORT_EMAIL: " support@gmail.com " });
+  const requests: Record<string, unknown>[] = [];
+  t.mock.method(globalThis, "fetch", async (_input: unknown, init?: RequestInit) => {
+    requests.push(JSON.parse(String(init?.body)));
+    return Response.json({ id: "mail-test-id" });
+  });
+  const message = { to: "customer@example.com", subject: "Confirm email", text: "Confirmation message" };
+
+  assert.deepEqual(await sendMail(message), { sent: true, id: "mail-test-id" });
+  assert.equal(requests[0].reply_to, "support@gmail.com");
+  assert.equal(requests[0].from, "SeamCut <accounts@example.com>");
+  assert.deepEqual(requests[0].to, [message.to]);
+
+  for (const supportEmail of [undefined, " "]) {
+    if (supportEmail === undefined) delete process.env.SEAM_SUPPORT_EMAIL;
+    else process.env.SEAM_SUPPORT_EMAIL = supportEmail;
+    assert.deepEqual(await sendMail(message), { sent: true, id: "mail-test-id" });
+    assert.equal(Object.hasOwn(requests.at(-1)!, "reply_to"), false);
+  }
+});
+
 test("production mail failures never log recipients, recovery tokens, or provider response bodies", async (t) => {
   setMailEnv(t, { NODE_ENV: "production", RESEND_API_KEY: " ", SEAM_MAIL_FROM: "SeamCut <support@example.com>" });
   const logs: string[] = [];

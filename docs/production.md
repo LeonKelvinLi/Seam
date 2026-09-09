@@ -44,7 +44,7 @@ Keys and where they come from:
 | `OPENAI_API_KEY` | already in `.env.local` | Vision analysis and judging |
 | `RENDER_API_KEY` | Render → Account settings → API keys | Lets the push script write the values above |
 | `RESEND_API_KEY`, `SEAM_MAIL_FROM` | Resend API key and sender on a domain verified in that Resend account | Delivered password-reset and account-confirmation email |
-| `SEAM_COMPANY_NAME`, `SEAM_COMPANY_ADDRESS`, `SEAM_SUPPORT_EMAIL` | Verified operator details and a monitored support mailbox | Contact details on legal pages |
+| `SEAM_COMPANY_NAME`, `SEAM_COMPANY_ADDRESS`, `SEAM_SUPPORT_EMAIL` | Verified operator details and a monitored support mailbox | Contact details on legal pages; support email also receives replies to transactional mail |
 | `SEAM_PUBLIC_URL` | The service's public HTTPS origin | Correct links in transactional mail and shared projects |
 | `SEAM_OPS_TOKEN` | A private random token | `/ops` and `/api/metrics` access using an Authorization header |
 

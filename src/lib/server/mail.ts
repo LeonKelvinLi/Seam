@@ -25,7 +25,7 @@ export async function sendMail(mail: Mail): Promise<{ sent: boolean; id?: string
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY?.trim()}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ from: process.env.SEAM_MAIL_FROM?.trim(), to: [mail.to], subject: mail.subject, text: mail.text, html: mail.html ?? `<pre style="font:14px/1.5 -apple-system,Segoe UI,sans-serif;white-space:pre-wrap">${escapeHtml(mail.text)}</pre>` }),
+      body: JSON.stringify({ from: process.env.SEAM_MAIL_FROM?.trim(), reply_to: process.env.SEAM_SUPPORT_EMAIL?.trim() || undefined, to: [mail.to], subject: mail.subject, text: mail.text, html: mail.html ?? `<pre style="font:14px/1.5 -apple-system,Segoe UI,sans-serif;white-space:pre-wrap">${escapeHtml(mail.text)}</pre>` }),
       signal: AbortSignal.timeout(10_000),
     });
     if (!res.ok) { log.error("mail send failed", { status: res.status }); return { sent: false }; }
