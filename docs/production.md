@@ -96,3 +96,27 @@ What this showed and what changed:
   AI results per credit, or keep 70 for stricter seams. Balance after the test: 133 credits.
 - `/api/runtime` now reports `version` (deployed commit), `forcedProvider`, `coolingDown` and `bridgeModels`; the
   generation view carries `attemptLog` with per-attempt model, status, quality, duration and error, which the flow test prints.
+
+## Launch batch (2026-09-09)
+
+Everything from the readiness review that code can fix, verified locally and pushed for deploy:
+
+| Item | What changed |
+|---|---|
+| Payments credit without the API key | Webhook signature checks are local HMAC work, so the handler now verifies with the webhook secret alone. Payment Link purchases credit accounts as soon as this deploys. `STRIPE_SECRET_KEY` is still needed for server-side Checkout Sessions. |
+| Pricing that clears provider cost | A preview costs 2 credits, a final render 6. Packs: Starter $9 = 30 credits (15 previews, $0.60 each), Pro $29 = 120 ($0.48), Studio $89 = 400 ($0.45); an accepted AI preview costs about $0.36 to $0.42. Live Stripe products and Payment Links carry the new credit counts. Free trial is still 3 runs (6 credits). |
+| Wait time | Preview threshold 65 (final 72) so fewer good bridges are rejected; a rejected model is not retried in the same generation; `SEAM_PARALLEL_ATTEMPTS=2` runs two bridge models at once on the first round (roughly halves the wait, doubles provider cost; default 1). The studio says plainly that an AI bridge takes 3 to 5 minutes, that leaving the page is fine, and fires a browser notification when it finishes in the background. |
+| Judge calibration | A procedural dissolve is capped at 80 so a real bridge that clears the bar always wins. Human calibration of the rubric is still worth doing. |
+| Spend cap | `SEAM_DAILY_PROVIDER_BUDGET_USD` (default 25): once the day's generation fees pass it, runs use ffmpeg until midnight UTC. `/api/runtime` shows `budget`. |
+| Password reset and email confirmation | `/forgot` → one-hour link → `/reset` (signs out other devices); sign-up sends a 7-day confirmation link to `/verify`; `/api/auth/verify/resend` for signed-in users. Mail goes through Resend when `RESEND_API_KEY` and `SEAM_MAIL_FROM` are set; otherwise the link is logged so the flow still works in development. |
+| Health for monitors | `/api/health` checks the database, ffmpeg and free disk (503 under 500 MB), and reports queue depth, parked providers and budget. Point an uptime monitor (UptimeRobot, Better Stack, Checkly) at it with a 5-minute interval and email or Slack alerts. Render's own check stays on `/api/runtime`. |
+| Legal details | `SEAM_COMPANY_ADDRESS` and `SEAM_SUPPORT_EMAIL` render on the legal pages. |
+
+## Owner steps after this deploy
+
+1. Make one real Starter purchase with your card, confirm 30 credits land on the account, then refund it in Stripe.
+2. Add `RESEND_API_KEY` and `SEAM_MAIL_FROM` (a verified sender domain) on Render so reset and confirmation mail is delivered.
+3. Set `SEAM_SUPPORT_EMAIL` and `SEAM_COMPANY_ADDRESS`; have counsel read `/terms`, `/privacy`, `/refunds`.
+4. Create an uptime monitor on `https://seamcut.onrender.com/api/health`.
+5. Turn on auto top-up for the Higgsfield developer balance, or watch `budget` and the balance in `/api/health`.
+6. Replace the celebrity clips in the ad before paid placement; add a custom domain when ready.

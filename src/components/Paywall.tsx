@@ -25,7 +25,7 @@ export function Paywall({ freeRuns }: { freeRuns: number }) {
     <section className="mt-6 rounded-2xl border border-white/10 bg-white/[0.03] p-6" aria-live="polite">
       <p className="mono text-xs muted">Free trial used</p>
       <h2 className="display text-2xl mt-1">Your {freeRuns} free runs are done.</h2>
-      <p className="mt-2 muted text-sm">{guest ? "Create an account to keep this project and buy credits. One credit is one preview transition." : "Add a credit pack to keep generating. Credits never expire."}</p>
+      <p className="mt-2 muted text-sm">{guest ? "Create an account to keep this project and buy credits. Two credits per preview transition." : "Add a credit pack to keep generating. Credits never expire."}</p>
       <div className="mt-5 grid gap-3 sm:grid-cols-3">
         {(me?.packs ?? []).map((p) => (
           <button key={p.id} type="button" disabled={busy !== null} onClick={() => buy(p)} className="rounded-xl border border-white/10 p-4 text-left hover:border-white/30 disabled:opacity-60">

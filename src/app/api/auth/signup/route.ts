@@ -1,6 +1,7 @@
 import { bad, json } from "@/lib/server/session";
 import { hashPassword, publicUser, signIn, validEmail } from "@/lib/server/auth";
 import { Events, Users } from "@/db/repo";
+import { sendVerification } from "@/lib/server/account-mail";
 import { LIMITS, clientIp, rateLimit, tooMany } from "@/lib/server/ratelimit";
 
 export async function POST(req: Request) {
@@ -13,5 +14,6 @@ export async function POST(req: Request) {
   const user = Users.createAccount(email, hashPassword(password));
   await signIn(user);
   Events.track("signup", { userId: user.id });
+  void sendVerification(user).catch(() => {});
   return json({ user: publicUser(user) });
 }

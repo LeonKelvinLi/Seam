@@ -15,6 +15,7 @@ export interface User {
   createdAt: string;
   email: string | null;
   passwordHash: string | null;
+  emailVerifiedAt: string | null;
   credits: number;
   plan: "free" | "starter" | "pro";
   stripeCustomerId: string | null;

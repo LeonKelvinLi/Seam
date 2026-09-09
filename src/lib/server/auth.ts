@@ -53,5 +53,5 @@ export async function signOut() {
 }
 
 export function publicUser(u: User) {
-  return { id: u.id, email: u.email, credits: u.credits, plan: u.plan, createdAt: u.createdAt };
+  return { id: u.id, email: u.email, credits: u.credits, emailVerified: !!u.emailVerifiedAt, plan: u.plan, createdAt: u.createdAt };
 }

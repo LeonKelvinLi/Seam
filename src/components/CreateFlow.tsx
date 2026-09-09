@@ -84,7 +84,11 @@ export function CreateFlow() {
   // Poll generation.
   useEffect(() => {
     if (phase !== "generating" || !gen) return;
+    if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "default") void Notification.requestPermission().catch(() => {});
     const t = setInterval(() => api<{ generation: GenerationView }>(`/api/generations/${gen.id}`).then((r) => {
+      if (r.generation.status === "ready" && gen.status !== "ready" && document.hidden && "Notification" in window && Notification.permission === "granted") {
+        try { new Notification("Your transition is ready", { body: r.generation.title ?? "Open SeamCut to watch it." }); } catch { /* notifications unavailable */ }
+      }
       setGen(r.generation);
       if (r.generation.status === "ready" || r.generation.status === "failed") api<ProjectView>(`/api/projects/${r.generation.projectId}`).then(setView).catch(() => {});
     }).catch(() => {}), 1500);
@@ -214,7 +218,7 @@ export function CreateFlow() {
             <div>
               <h1 className="display text-3xl md:text-4xl">Recommended for your clips</h1>
               {view.boundary?.narrative ? <p className="mt-2 muted max-w-2xl">{view.boundary.narrative}</p> : null}
-              <p className="mt-2 mono text-xs muted" aria-live="polite">{view.credits} run{view.credits === 1 ? "" : "s"} left · 1 credit per preview</p>
+              <p className="mt-2 mono text-xs muted" aria-live="polite">{view.runsLeft} run{view.runsLeft === 1 ? "" : "s"} left · 2 credits per preview</p>
             </div>
             <div className="flex flex-wrap gap-2">
               <Link href={`/library?p=${view.project.id}`} className="btn btn-ghost btn-sm">Browse all transitions</Link>
@@ -249,7 +253,7 @@ export function CreateFlow() {
           </div>
           <div>
             <Steps steps={GENERATE_STEPS} current={gen.stageLabel} />
-            <p className="mt-6 muted text-sm">{gen.stage === "retry" ? gen.stageLabel : "Usually under a minute for a preview. Real camera moves from a video model take a few minutes."}</p>
+            <p className="mt-6 muted text-sm">{gen.stage === "retry" ? gen.stageLabel : "An AI bridge usually takes 3 to 5 minutes. You can leave this page; it keeps rendering and shows up in your account, and we'll notify this browser when it's ready."}</p>
           </div>
         </div>
       )}

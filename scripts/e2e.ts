@@ -65,7 +65,8 @@ async function main() {
   if (b.asset.kind === "video" && bd.cutB > 1.6) fail(`cutB ${bd.cutB} is not near the start of clip B`);
   log(`boundary ok: A last frame at ${bd.cutA.toFixed(2)}s of ${durA}s, B first frame at ${bd.cutB.toFixed(2)}s; lanes: ${(view.recommendations ?? []).map((l: any) => l.lane).join(", ")}`);
   log(`credits before runs: ${view.credits}`);
-  if (view.credits !== FREE_RUNS) fail(`fresh guest should have ${FREE_RUNS} free runs, has ${view.credits}`);
+  const RUN_COST = Number(process.env.E2E_RUN_COST ?? 2);
+  if (view.credits !== FREE_RUNS * RUN_COST) fail(`fresh guest should have ${FREE_RUNS} free runs (${FREE_RUNS * RUN_COST} credits), has ${view.credits}`);
 
   for (let run = 1; run <= RUNS; run++) {
     const g = await call(`/api/projects/${projectId}/generate`, { method: "POST", headers: { "content-type": "application/json" }, body: "{}" });

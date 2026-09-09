@@ -44,6 +44,10 @@ export async function judgeTransition(input: JudgeInput): Promise<{ scores: Qual
   return { scores: heuristic, judge: "heuristic", costUsd: 0 };
 }
 
-export function passes(scores: QualityScores): boolean {
-  return scores.overall >= config.generation.qualityThreshold && scores.startFidelity >= 45 && scores.endFidelity >= 45;
+export function thresholdFor(mode: "preview" | "final" = "final"): number {
+  return mode === "preview" ? config.generation.qualityThresholdPreview : config.generation.qualityThreshold;
+}
+
+export function passes(scores: QualityScores, mode: "preview" | "final" = "final"): boolean {
+  return scores.overall >= thresholdFor(mode) && scores.startFidelity >= 45 && scores.endFidelity >= 45;
 }

@@ -3,6 +3,7 @@
  * and provider details never leak by accident.
  */
 import { config, describeRuntime } from "@/core/config";
+import { CREDITS_PER_GENERATION } from "@/lib/server/billing";
 import { mediaUrl } from "@/core/media/storage";
 import { getRecipe, publicRecipe } from "@/core/recipes/registry";
 import { LANE_COPY, LANE_ORDER } from "@/core/opportunities/recommend";
@@ -74,6 +75,7 @@ export function projectView(projectId: string) {
     generations: Generations.forProject(projectId).map(generationView),
     runtime: { ...describeRuntime(), defaultMode: config.generation.defaultMode },
     credits: Users.get(project.userId)?.credits ?? 0,
+    runsLeft: Math.floor((Users.get(project.userId)?.credits ?? 0) / CREDITS_PER_GENERATION[config.generation.defaultMode]),
   };
 }
 

@@ -38,7 +38,12 @@ export const config = {
   },
   generation: {
     maxAttempts: num("SEAM_MAX_ATTEMPTS", 3),
-    qualityThreshold: num("SEAM_QUALITY_THRESHOLD", 70),
+    qualityThreshold: num("SEAM_QUALITY_THRESHOLD", 72),
+    qualityThresholdPreview: num("SEAM_QUALITY_THRESHOLD_PREVIEW", 65),
+    /** Bridge models tried concurrently on the first round (1 = sequential; 2 halves the wait at double provider cost). */
+    parallelAttempts: num("SEAM_PARALLEL_ATTEMPTS", 1),
+    /** Provider generation fees allowed per UTC day before the router falls back to ffmpeg. 0 disables the guard. */
+    dailyBudgetUsd: num("SEAM_DAILY_PROVIDER_BUDGET_USD", 25),
     defaultMode: (env("SEAM_DEFAULT_MODE", "preview") as GenerationMode) || "preview",
   },
   analysis: {

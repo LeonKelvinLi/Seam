@@ -22,7 +22,7 @@ export function Pricing() {
   return (
     <div className="mx-auto max-w-5xl px-5 pb-20 pt-12">
       <h1 className="display text-4xl">Credits, not subscriptions.</h1>
-      <p className="mt-3 muted max-w-xl">One credit is one preview transition. Final-quality generations use three. Credits never expire.</p>
+      <p className="mt-3 muted max-w-xl">A preview transition costs 2 credits and a final-quality render 6. Credits never expire.</p>
       <div className="mt-10 grid gap-4 md:grid-cols-3">
         {(me?.packs ?? []).map((p) => (
           <div key={p.id} className="hair rounded-2xl p-6 flex flex-col">

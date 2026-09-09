@@ -30,7 +30,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
         <button className="btn btn-primary w-full" disabled={busy}>{busy ? "…" : mode === "login" ? "Sign in" : "Create account"}</button>
       </form>
       <p className="mt-6 text-sm muted">
-        {mode === "login" ? <>New here? <Link className="underline" href={`/signup?next=${encodeURIComponent(next)}`}>Create an account</Link></> : <>Already have one? <Link className="underline" href={`/login?next=${encodeURIComponent(next)}`}>Sign in</Link></>}
+        {mode === "login" ? <><Link className="underline" href="/forgot">Forgot password?</Link> · New here? <Link className="underline" href={`/signup?next=${encodeURIComponent(next)}`}>Create an account</Link></> : <>Already have one? <Link className="underline" href={`/login?next=${encodeURIComponent(next)}`}>Sign in</Link></>}
       </p>
     </div>
   );

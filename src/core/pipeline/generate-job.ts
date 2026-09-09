@@ -14,6 +14,7 @@ import { compileIR, renderPrompt } from "@/core/prompt/compiler";
 import { routeModels } from "@/core/providers/router";
 import { ProviderError } from "@/core/providers/types";
 import { isBillingError, markProviderUnavailable } from "@/core/providers/cooldown";
+import { budgetExhausted } from "./budget";
 import { getProvider } from "@/core/providers/registry";
 import { LOCAL_MODEL } from "@/core/providers/local";
 import type { ModelSpec, TransitionRequest } from "@/core/providers/types";
@@ -28,6 +29,11 @@ import { labelFor } from "./stages";
 import { specForProject } from "./analyze-job";
 
 const log = logger("generate");
+
+/** A procedural dissolve is safe, not great: cap it so a real bridge that clears the bar is always preferred. */
+function capProcedural(scores: QualityScores, providerId: string) {
+  if (providerId === "local") scores.overall = Math.min(scores.overall, 80);
+}
 
 const FRIENDLY_FAIL = "We couldn't build that transition from these clips. Try another style, or a different cut point.";
 
@@ -91,58 +97,81 @@ export async function runGenerateJob(job: Job, report: Reporter) {
     let fellBackToLocal = false;
     const maxAttempts = Math.max(1, config.generation.maxAttempts);
 
-    for (let n = 1; n <= maxAttempts; n++) {
-      const durationSec = durationFor(recipe, fineTune);
-      const ir = compileIR({ a: analysisA, b: analysisB, pair: pairRow.data, recipe, hints: opp.hints, fineTune, durationSec, aspectRatio: aspect, attempt: n });
-      const learned = learnedModelQuality([recipe.id]);
-      const model = routeModels({ recipe, mode: gen.mode, exclude, learned })[0] ?? LOCAL_MODEL;
+    type RunOutcome = { attempt: GenerationAttempt; model: ModelSpec; ok: boolean; scores: QualityScores | null; bridgePath: string | null; error: string | null; recipeId: string; durationSec: number };
+    // One provider attempt: create the row, generate, normalise, judge, book costs. Safe to run several concurrently.
+    const runOne = async (model: ModelSpec, n: number, rec: TransitionRecipe, ft: FineTune): Promise<RunOutcome> => {
+      const durationSec = durationFor(rec, ft);
+      const ir = compileIR({ a: analysisA, b: analysisB, pair: pairRow.data, recipe: rec, hints: opp.hints, fineTune: ft, durationSec, aspectRatio: aspect, attempt: n });
       const provider = getProvider(model.providerId);
       const prompt = renderPrompt(ir, model.dialect);
       const rawPath = path.join(dir, `attempt_${n}_raw.mp4`);
       const attempt = Attempts.create({
-        generationId: gen.id, n, recipeId: recipe.id, providerId: model.providerId, modelId: model.id, promptIR: ir, compiledPrompt: prompt,
-        params: { durationSec, fineTune, mode: gen.mode }, status: "running", providerJobId: null, outputPath: null, error: null, costUsd: 0, durationMs: 0,
+        generationId: gen.id, n, recipeId: rec.id, providerId: model.providerId, modelId: model.id, promptIR: ir, compiledPrompt: prompt,
+        params: { durationSec, fineTune: ft, mode: gen.mode }, status: "running", providerJobId: null, outputPath: null, error: null, costUsd: 0, durationMs: 0,
       });
       attempts.push(attempt);
       setStage(n > 1 ? "retry" : "generate", 0.15 + (n - 1) * 0.2, n > 1 ? labelFor("retry") : `${labelFor("generate")} · ${model.label}`);
-      log.info("attempt", { gen: gen.id, n, recipe: recipe.id, model: model.id, durationSec });
+      log.info("attempt", { gen: gen.id, n, recipe: rec.id, model: model.id, durationSec });
       const ta = Date.now();
       try {
         const result = await provider.generateTransition({
           firstFramePath: frameA.path, lastFramePath: frameB.path, prompt, durationSec, aspectRatio: aspect, outputPath: rawPath,
-          transitionType: recipe.id, motionStrength: ir.motionStrength,
-          local: { spec, recipe, focusA: focusPoint(analysisA, frameA, recipe, opp.hints.shapeA), focusB: focusPoint(analysisB, frameB, recipe, opp.hints.shapeB) },
+          transitionType: rec.id, motionStrength: ir.motionStrength,
+          local: { spec, recipe: rec, focusA: focusPoint(analysisA, frameA, rec, opp.hints.shapeA), focusB: focusPoint(analysisB, frameB, rec, opp.hints.shapeB) },
           onProgress: (m) => setStage(n > 1 ? "retry" : "generate", 0.25 + (n - 1) * 0.2, m),
         }, model);
         const bridgePath = path.join(dir, `attempt_${n}_bridge.mp4`);
         await normalizeBridge(result.outputPath, bridgePath, spec, durationSec);
         setStage("judge", 0.55 + (n - 1) * 0.1);
-        const judged = await judgeTransition({ bridgePath, sourceFrame: frameA.path, destFrame: frameB.path, recipe, prompt: prompt.positive, tmpDir: dir, cheap: model.providerId === "local" });
-        Quality.create({ attemptId: attempt.id, judge: judged.judge, scores: judged.scores, passed: passes(judged.scores) });
+        const judged = await judgeTransition({ bridgePath, sourceFrame: frameA.path, destFrame: frameB.path, recipe: rec, prompt: prompt.positive, tmpDir: dir, cheap: model.providerId === "local" });
+        capProcedural(judged.scores, model.providerId);
+        const ok = passes(judged.scores, gen.mode);
+        Quality.create({ attemptId: attempt.id, judge: judged.judge, scores: judged.scores, passed: ok });
         const cost = result.costUsd + judged.costUsd;
         if (result.costUsd > 0) Costs.add({ attemptId: attempt.id, generationId: gen.id, kind: "generation", providerId: model.providerId, modelId: model.id, units: result.rawDurationSec, usd: result.costUsd });
         if (judged.costUsd > 0) Costs.add({ attemptId: attempt.id, generationId: gen.id, kind: "judge", providerId: "openai", modelId: config.openai.judgeModel, units: 1, usd: judged.costUsd });
-        const ok = passes(judged.scores);
         Attempts.update(attempt.id, { status: ok ? "succeeded" : "rejected", providerJobId: result.providerJobId, outputPath: bridgePath, costUsd: cost, durationMs: Date.now() - ta, params: { ...attempt.params, ...result.params } });
-        attempt.recipeId = recipe.id; attempt.durationMs = Date.now() - ta; attempt.status = ok ? "succeeded" : "rejected";
-        best = selectPassingCandidate(best, { attempt, bridgePath, scores: judged.scores, model, recipe, durationSec });
-        if (model.providerId === "local" && n > 1) fellBackToLocal = true;
-        if (ok) break;
-        log.warn("quality rejected", { gen: gen.id, n, overall: judged.scores.overall, issues: judged.scores.issues });
-        // A rejected model gets one shot per generation; the next attempt goes to the next-best bridge model for diversity.
-        exclude = [...new Set([...exclude, model.id])];
-        outcomes.push({ kind: "quality", message: judged.scores.issues.join("; "), scores: judged.scores, modelId: model.id });
+        attempt.recipeId = rec.id; attempt.durationMs = Date.now() - ta; attempt.status = ok ? "succeeded" : "rejected";
+        return { attempt, model, ok, scores: judged.scores, bridgePath, error: null, recipeId: rec.id, durationSec };
       } catch (e) {
         const msg = (e as Error).message;
         log.warn("attempt failed", { gen: gen.id, n, error: msg });
         if (e instanceof ProviderError && !e.retryable && isBillingError(e.message)) { markProviderUnavailable(e.providerId); log.warn("provider parked", { provider: e.providerId, reason: "billing" }); }
         Attempts.update(attempt.id, { status: "failed", error: msg, durationMs: Date.now() - ta });
         attempt.status = "failed"; attempt.durationMs = Date.now() - ta;
-        outcomes.push({ kind: "error", message: msg, scores: null, modelId: model.id });
+        return { attempt, model, ok: false, scores: null, bridgePath: null, error: msg, recipeId: rec.id, durationSec };
       }
-      const next = planNextAttempt({ attempt: n, maxAttempts, recipe, fineTune, outcomes, opportunities: opps });
+    };
+
+    let attemptNo = 0;
+    while (attemptNo < maxAttempts) {
+      const learned = learnedModelQuality([recipe.id]);
+      const overBudget = budgetExhausted();
+      if (overBudget && attemptNo === 0) log.warn("daily provider budget reached; using the procedural bridge", { gen: gen.id });
+      const ranked = overBudget ? [LOCAL_MODEL] : routeModels({ recipe, mode: gen.mode, exclude, learned });
+      const fanOut = attemptNo === 0 ? Math.max(1, config.generation.parallelAttempts) : 1;
+      const remote = ranked.filter((m) => m.providerId !== "local");
+      const round: ModelSpec[] = fanOut > 1 && remote.length >= 2 ? remote.slice(0, Math.min(fanOut, maxAttempts)) : [ranked[0] ?? LOCAL_MODEL];
+      const results = await Promise.all(round.map((m, i) => runOne(m, attemptNo + i + 1, recipe, fineTune)));
+      attemptNo += round.length;
+      let passed = false;
+      for (const r of results) {
+        if (r.scores && r.bridgePath) best = selectPassingCandidate(best, { attempt: r.attempt, bridgePath: r.bridgePath, scores: r.scores, model: r.model, recipe: getRecipe(r.recipeId), durationSec: r.durationSec });
+        if (r.model.providerId === "local" && attemptNo > 1) fellBackToLocal = true;
+        if (r.ok) { passed = true; continue; }
+        // A rejected or failed model gets one shot per generation; later rounds go to the next-best bridge model.
+        exclude = [...new Set([...exclude, r.model.id])];
+        if (r.scores) {
+          log.warn("quality rejected", { gen: gen.id, n: r.attempt.n, overall: r.scores.overall, issues: r.scores.issues });
+          outcomes.push({ kind: "quality", message: r.scores.issues.join("; "), scores: r.scores, modelId: r.model.id });
+        } else {
+          outcomes.push({ kind: "error", message: r.error ?? "failed", scores: null, modelId: r.model.id });
+        }
+      }
+      if (passed) break;
+      const next = planNextAttempt({ attempt: attemptNo, maxAttempts, recipe, fineTune, outcomes, opportunities: opps });
       if (!next) break;
-      setStage("retry", 0.2 + n * 0.15, next.userMessage);
+      setStage("retry", 0.2 + attemptNo * 0.15, next.userMessage);
       recipe = getRecipe(next.recipeId);
       fineTune = next.fineTune;
       exclude = [...new Set([...exclude, ...next.excludeModels])];
@@ -170,7 +199,8 @@ export async function runGenerateJob(job: Job, report: Reporter) {
       const bridgePath = path.join(dir, `fallback_bridge.mp4`);
       await normalizeBridge(result.outputPath, bridgePath, spec, durationSec);
       const judged = await judgeTransition({ bridgePath, sourceFrame: frameA.path, destFrame: frameB.path, recipe: safe, prompt: prompt.positive, tmpDir: dir, cheap: true });
-      const ok = passes(judged.scores);
+      capProcedural(judged.scores, "local");
+      const ok = passes(judged.scores, gen.mode);
       Quality.create({ attemptId: attempt.id, judge: judged.judge, scores: judged.scores, passed: ok });
       Attempts.update(attempt.id, { status: ok ? "succeeded" : "rejected", outputPath: bridgePath, durationMs: Date.now() - ta });
       attempt.durationMs = Date.now() - ta; attempt.status = ok ? "succeeded" : "rejected";

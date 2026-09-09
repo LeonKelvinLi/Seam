@@ -13,11 +13,13 @@ const env = (k: string) => (process.env[k] ?? "").trim();
 
 export interface Pack { id: "starter" | "pro" | "studio"; name: string; credits: number; priceUsd: number; blurb: string }
 export const PACKS: Pack[] = [
-  { id: "starter", name: "Starter", credits: 50, priceUsd: 9, blurb: "50 transitions. Enough for a week of Reels." },
-  { id: "pro", name: "Pro", credits: 250, priceUsd: 29, blurb: "250 transitions, final-quality models unlocked." },
-  { id: "studio", name: "Studio", credits: 1000, priceUsd: 89, blurb: "1,000 transitions for teams and agencies." },
+  // Credit maths (2026-09-09): a preview costs 2 credits and one accepted AI preview costs us roughly $0.36-0.42 in
+  // provider and judge fees, so every pack must clear about $0.45 per preview. Starter $0.60, Pro $0.48, Studio $0.45.
+  { id: "starter", name: "Starter", credits: 30, priceUsd: 9, blurb: "15 preview transitions. Enough for a week of Reels." },
+  { id: "pro", name: "Pro", credits: 120, priceUsd: 29, blurb: "60 previews, or 20 final-quality renders." },
+  { id: "studio", name: "Studio", credits: 400, priceUsd: 89, blurb: "200 previews for teams and agencies." },
 ];
-export const CREDITS_PER_GENERATION: Record<"preview" | "final", number> = { preview: 1, final: 3 };
+export const CREDITS_PER_GENERATION: Record<"preview" | "final", number> = { preview: 2, final: 6 };
 
 let stripeClient: Stripe | null = null;
 export function stripe(): Stripe | null {
@@ -69,9 +71,11 @@ export async function checkoutUrl(userId: string, email: string | null, packId: 
 
 /** Verify and apply a Stripe webhook payload. Returns what happened, for logging. */
 export function handleWebhook(rawBody: string, signature: string | null): { ok: boolean; message: string } {
-  const s = stripe();
   const secret = env("STRIPE_WEBHOOK_SECRET");
-  if (!s || !secret) return { ok: false, message: "Stripe webhook not configured" };
+  if (!secret) return { ok: false, message: "Stripe webhook not configured" };
+  // Signature verification is local HMAC work; it needs a client object, not a live API key, so Payment Link
+  // purchases are credited even before STRIPE_SECRET_KEY is set.
+  const s = stripe() ?? new Stripe("sk_verification_only");
   let event: Stripe.Event;
   try {
     event = s.webhooks.constructEvent(rawBody, signature ?? "", secret);

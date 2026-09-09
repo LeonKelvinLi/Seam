@@ -4,13 +4,18 @@ import { config } from "@/core/config";
 
 const SCHEMA = `
 CREATE TABLE IF NOT EXISTS users (
-  id TEXT PRIMARY KEY, createdAt TEXT NOT NULL, email TEXT UNIQUE, passwordHash TEXT, credits INTEGER NOT NULL DEFAULT 3,
+  id TEXT PRIMARY KEY, createdAt TEXT NOT NULL, email TEXT UNIQUE, passwordHash TEXT, credits INTEGER NOT NULL DEFAULT 6,
   plan TEXT NOT NULL DEFAULT 'free', stripeCustomerId TEXT, updatedAt TEXT
 );
 CREATE TABLE IF NOT EXISTS sessions (
   id TEXT PRIMARY KEY, userId TEXT NOT NULL, createdAt TEXT NOT NULL, expiresAt TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS sessions_user ON sessions(userId);
+CREATE TABLE IF NOT EXISTS authTokens (
+  id TEXT PRIMARY KEY, userId TEXT NOT NULL, kind TEXT NOT NULL, tokenHash TEXT NOT NULL,
+  expiresAt TEXT NOT NULL, usedAt TEXT, createdAt TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS authTokens_user ON authTokens(userId, kind);
 CREATE TABLE IF NOT EXISTS purchases (
   id TEXT PRIMARY KEY, userId TEXT NOT NULL, provider TEXT NOT NULL, externalId TEXT UNIQUE, pack TEXT NOT NULL,
   amountCents INTEGER NOT NULL, currency TEXT NOT NULL, credits INTEGER NOT NULL, createdAt TEXT NOT NULL
@@ -122,8 +127,8 @@ export function db(): Database.Database {
   // Additive migrations for databases created before accounts existed.
   const cols = new Set((instance.prepare("PRAGMA table_info(users)").all() as { name: string }[]).map((c) => c.name));
   const add = (col: string, ddl: string) => { if (!cols.has(col)) instance.exec(`ALTER TABLE users ADD COLUMN ${col} ${ddl}`); };
-  add("email", "TEXT"); add("passwordHash", "TEXT"); add("credits", "INTEGER NOT NULL DEFAULT 3"); add("plan", "TEXT NOT NULL DEFAULT 'free'");
-  add("stripeCustomerId", "TEXT"); add("updatedAt", "TEXT");
+  add("email", "TEXT"); add("passwordHash", "TEXT"); add("credits", "INTEGER NOT NULL DEFAULT 6"); add("plan", "TEXT NOT NULL DEFAULT 'free'");
+  add("stripeCustomerId", "TEXT"); add("updatedAt", "TEXT"); add("emailVerifiedAt", "TEXT");
   instance.exec("CREATE UNIQUE INDEX IF NOT EXISTS users_email ON users(email)");
   // Recover jobs left "running" by a previous process (dev restarts, crashes).
   instance.prepare("UPDATE jobs SET status='queued', updatedAt=? WHERE status='running'").run(new Date().toISOString());

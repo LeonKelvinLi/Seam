@@ -9,6 +9,7 @@ import type {
   LearningRecord, PairAnalysisRecord, Project, Purchase, QualityEvaluation, Recommendation, Session, Share,
   TransitionOpportunity, User, VisualAnalysis, Export,
 } from "@/core/types";
+import { createHash, randomBytes } from "node:crypto";
 
 export type Table =
   | "users" | "sessions" | "purchases" | "projects" | "assets" | "frames" | "visualAnalyses" | "pairAnalyses" | "opportunities"
@@ -90,17 +91,19 @@ export function remove(table: Table, where: string, params: unknown[] = []): voi
 
 /** Free trial: every new account or guest can run this many preview transitions before buying credits. */
 export const FREE_TRIAL_RUNS = 3;
+/** Credits granted at sign-up: the trial runs at the preview price (2 credits, see CREDITS_PER_GENERATION). */
+export const FREE_TRIAL_CREDITS = FREE_TRIAL_RUNS * 2;
 
 export const Users = {
   ensure(id: string): User {
     const u = get<User>("users", id);
     if (u) return u;
-    return insert<User>("users", { id, createdAt: now(), email: null, passwordHash: null, credits: FREE_TRIAL_RUNS, plan: "free", stripeCustomerId: null, updatedAt: null });
+    return insert<User>("users", { id, createdAt: now(), email: null, passwordHash: null, emailVerifiedAt: null, credits: FREE_TRIAL_CREDITS, plan: "free", stripeCustomerId: null, updatedAt: null });
   },
   get: (id: string) => get<User>("users", id),
   byEmail: (email: string) => find<User>("users", "email=?", [email.toLowerCase()], "createdAt ASC", 1)[0],
   createAccount(email: string, passwordHash: string): User {
-    return insert<User>("users", { id: newId("usr"), createdAt: now(), email: email.toLowerCase(), passwordHash, credits: FREE_TRIAL_RUNS, plan: "free", stripeCustomerId: null, updatedAt: now() });
+    return insert<User>("users", { id: newId("usr"), createdAt: now(), email: email.toLowerCase(), passwordHash, emailVerifiedAt: null, credits: FREE_TRIAL_CREDITS, plan: "free", stripeCustomerId: null, updatedAt: now() });
   },
   update(id: string, patch: Partial<User>) { update("users", id, { ...patch, updatedAt: now() }); },
   /** Atomically spend credits; returns false when the balance is too low. */
@@ -117,6 +120,7 @@ export const Users = {
 };
 
 export const Sessions = {
+  destroyForUser(userId: string) { db().prepare("DELETE FROM sessions WHERE userId=?").run(userId); },
   create(userId: string, days = 30): Session {
     const t = new Date();
     return insert<Session>("sessions", { id: newId("", 32), userId, createdAt: t.toISOString(), expiresAt: new Date(t.getTime() + days * 86400_000).toISOString() });
@@ -128,6 +132,26 @@ export const Sessions = {
     return s;
   },
   destroy: (id: string) => remove("sessions", "id=?", [id]),
+};
+
+const sha256 = (s: string) => createHash("sha256").update(s).digest("hex");
+
+/** Single-use, hashed, expiring tokens for password resets and email verification. */
+export const AuthTokens = {
+  issue(userId: string, kind: "reset" | "verify", ttlMs: number): string {
+    const token = randomBytes(32).toString("base64url");
+    db().prepare("DELETE FROM authTokens WHERE userId=? AND kind=?").run(userId, kind);
+    db().prepare("INSERT INTO authTokens (id, userId, kind, tokenHash, expiresAt, usedAt, createdAt) VALUES (?,?,?,?,?,?,?)")
+      .run(newId("tok"), userId, kind, sha256(token), new Date(Date.now() + ttlMs).toISOString(), null, now());
+    return token;
+  },
+  /** Returns the user id and burns the token, or null when unknown, used or expired. */
+  consume(kind: "reset" | "verify", token: string): string | null {
+    const row = db().prepare("SELECT id, userId, expiresAt, usedAt FROM authTokens WHERE kind=? AND tokenHash=?").get(kind, sha256(token)) as { id: string; userId: string; expiresAt: string; usedAt: string | null } | undefined;
+    if (!row || row.usedAt || row.expiresAt < now()) return null;
+    db().prepare("UPDATE authTokens SET usedAt=? WHERE id=?").run(now(), row.id);
+    return row.userId;
+  },
 };
 
 export const Purchases = {
