@@ -11,6 +11,8 @@ import { computeFeatures, loadRasters } from "@/core/analysis/features";
 import { heuristicJudge } from "@/core/quality/heuristic-judge";
 
 const spec = { width: 320, height: 180, fps: 24 };
+// ffprobe prints seconds rounded to six decimal places; allow that rounding at a one-frame boundary.
+const frameDurationTolerance = 1 / spec.fps + 0.000001;
 const run = promisify(execFile);
 
 async function streamDurations(file: string) {
@@ -30,8 +32,8 @@ test("ffmpeg pipeline: proxy, frames, features, procedural bridge, stitch, judge
   const pi = await probe(proxy);
   assert.equal(pi.width, 320); assert.ok(pi.hasAudio, "proxy always has audio");
   const proxyStreams = await streamDurations(proxy);
-  assert.ok(Math.abs(proxyStreams.audio - proxyStreams.video) <= 1 / spec.fps, `proxy audio/video durations ${proxyStreams.audio}/${proxyStreams.video}`);
-  assert.ok(Math.abs(pi.durationSec - info.durationSec) <= 1 / spec.fps, `proxy preserves source duration: ${pi.durationSec}`);
+  assert.ok(Math.abs(proxyStreams.audio - proxyStreams.video) <= frameDurationTolerance, `proxy audio/video durations ${proxyStreams.audio}/${proxyStreams.video}`);
+  assert.ok(Math.abs(pi.durationSec - info.durationSec) <= frameDurationTolerance, `proxy preserves source duration: ${pi.durationSec}`);
   const frames = await extractFrames(proxy, path.join(dir, "frames"), 0.5, 2, 6, "t");
   assert.ok(frames.length >= 6 && frames[0].t >= 0.5);
   const r0 = await loadRasters(frames[0].path), r1 = await loadRasters(frames[1].path);
@@ -55,7 +57,7 @@ test("ffmpeg pipeline: proxy, frames, features, procedural bridge, stitch, judge
   assert.ok(Math.abs(fi.durationSec - (2 + 0.8 + 2 - 0.24)) < 0.2, `full ${fi.durationSec}`);
   const fullStreams = await streamDurations(full);
   assert.ok(Math.abs(fullStreams.video - (2 + 0.8 + 2 - 0.24)) < 0.2, `full video ${fullStreams.video}`);
-  assert.ok(Math.abs(fullStreams.audio - fullStreams.video) <= 2 / spec.fps, `full audio/video durations ${fullStreams.audio}/${fullStreams.video}`);
+  assert.ok(Math.abs(fullStreams.audio - fullStreams.video) <= 2 * frameDurationTolerance, `full audio/video durations ${fullStreams.audio}/${fullStreams.video}`);
   const q = await heuristicJudge(norm, fa, fb, dir);
   assert.ok(q.startFidelity > 50 && q.endFidelity > 50, `fidelity ${q.startFidelity}/${q.endFidelity}`);
   fs.rmSync(dir, { recursive: true, force: true });
