@@ -7,7 +7,7 @@ services:
     dockerfilePath: ./Dockerfile
     dockerContext: .
     autoDeployTrigger: checksPass
-    healthCheckPath: /api/runtime
+    healthCheckPath: /api/health
     disk:
       name: seam-data
       mountPath: /var/data
@@ -59,7 +59,7 @@ services:
 # Provider keys (FAL_KEY, RUNWAYML_API_SECRET, HIGGSFIELD_API_KEY_ID + HIGGSFIELD_API_KEY_SECRET, OPENAI_API_KEY) are secrets: add them privately in Render's
 # Environment settings to turn on AI bridges and vision analysis; without them the router stays on local ffmpeg.
 # STRIPE_SECRET_KEY and STRIPE_WEBHOOK_SECRET are secrets: add them privately in Render's
-# Environment settings (never in this file). Without them the app falls back to Payment Links
-# and cannot verify webhooks, so purchases are not credited until both are set.
+# Environment settings (never in this file). STRIPE_WEBHOOK_SECRET verifies Payment Link
+# purchases locally. STRIPE_SECRET_KEY is needed only for server-created Checkout Sessions.
 # OPENAI_API_KEY is optional and must be added privately in Render's Environment
 # settings when paid visual analysis is intended. No keys are required for preview.

@@ -11,5 +11,5 @@ export async function POST(req: Request) {
   const { email } = (await req.json().catch(() => ({}))) as { email?: string };
   if (!email || !validEmail(email)) return bad("Enter a valid email address.");
   await sendPasswordReset(email);
-  return json({ ok: true, delivery: mailConfigured() ? "email" : "unconfigured" });
+  return json({ ok: true, delivery: mailConfigured() ? "configured" : "unavailable" });
 }

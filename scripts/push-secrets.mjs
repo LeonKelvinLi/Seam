@@ -14,7 +14,9 @@ const KEYS = [
   "STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET",
   "HIGGSFIELD_API_KEY_ID", "HIGGSFIELD_API_KEY_SECRET",
   "FAL_KEY", "RUNWAYML_API_SECRET", "OPENAI_API_KEY",
-  "SEAM_SUPPORT_EMAIL", "SEAM_OPS_TOKEN",
+  "RESEND_API_KEY", "SEAM_MAIL_FROM",
+  "SEAM_COMPANY_NAME", "SEAM_COMPANY_ADDRESS", "SEAM_SUPPORT_EMAIL",
+  "SEAM_PUBLIC_URL", "SEAM_OPS_TOKEN",
 ];
 const apply = process.argv.includes("--apply");
 const envPath = path.join(process.cwd(), ".env.local");

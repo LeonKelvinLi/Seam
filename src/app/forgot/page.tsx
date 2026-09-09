@@ -6,7 +6,7 @@ export default function ForgotPage() {
   const [email, setEmail] = useState(""); const [done, setDone] = useState<string | null>(null); const [error, setError] = useState<string | null>(null); const [busy, setBusy] = useState(false);
   const submit = async (e: React.FormEvent) => {
     e.preventDefault(); setBusy(true); setError(null);
-    try { const r = await api<{ delivery: string }>("/api/auth/forgot", { method: "POST", json: { email } }); setDone(r.delivery === "email" ? "If that address has an account, a reset link is on its way. It is valid for one hour." : "Email delivery is not configured on this deployment yet. Contact support to reset your password."); }
+    try { const r = await api<{ delivery: "configured" | "unavailable" }>("/api/auth/forgot", { method: "POST", json: { email } }); setDone(r.delivery === "configured" ? "Request received. If that address has an account, check your inbox for a reset link, valid for one hour. If it does not arrive, try again or contact support." : "Password reset email is currently unavailable. Contact support for help accessing your account."); }
     catch (err) { setError((err as Error).message); } finally { setBusy(false); }
   };
   return (

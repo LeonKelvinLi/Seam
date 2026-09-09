@@ -3,11 +3,21 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
 import { ffmpeg, probe, extractFrames, stillWithMove, xfadeClips, normalizeBridge, stitch, makeProxy, extractFrameAt } from "@/core/media/ffmpeg";
+import { config } from "@/core/config";
 import { computeFeatures, loadRasters } from "@/core/analysis/features";
 import { heuristicJudge } from "@/core/quality/heuristic-judge";
 
 const spec = { width: 320, height: 180, fps: 24 };
+const run = promisify(execFile);
+
+async function streamDurations(file: string) {
+  const { stdout } = await run(config.ffprobePath, ["-v", "error", "-show_entries", "stream=codec_type,duration", "-of", "json", file]);
+  const { streams } = JSON.parse(stdout) as { streams: { codec_type: string; duration: string }[] };
+  return Object.fromEntries(streams.map((stream) => [stream.codec_type, Number(stream.duration)]));
+}
 
 test("ffmpeg pipeline: proxy, frames, features, procedural bridge, stitch, judge", async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "seam-"));
@@ -19,6 +29,9 @@ test("ffmpeg pipeline: proxy, frames, features, procedural bridge, stitch, judge
   await makeProxy(src, proxy, spec, false);
   const pi = await probe(proxy);
   assert.equal(pi.width, 320); assert.ok(pi.hasAudio, "proxy always has audio");
+  const proxyStreams = await streamDurations(proxy);
+  assert.ok(Math.abs(proxyStreams.audio - proxyStreams.video) <= 1 / spec.fps, `proxy audio/video durations ${proxyStreams.audio}/${proxyStreams.video}`);
+  assert.ok(Math.abs(pi.durationSec - info.durationSec) <= 1 / spec.fps, `proxy preserves source duration: ${pi.durationSec}`);
   const frames = await extractFrames(proxy, path.join(dir, "frames"), 0.5, 2, 6, "t");
   assert.ok(frames.length >= 6 && frames[0].t >= 0.5);
   const r0 = await loadRasters(frames[0].path), r1 = await loadRasters(frames[1].path);
@@ -40,6 +53,9 @@ test("ffmpeg pipeline: proxy, frames, features, procedural bridge, stitch, judge
   await stitch(proxy, norm, proxy, full, spec, 0.12);
   const fi = await probe(full);
   assert.ok(Math.abs(fi.durationSec - (2 + 0.8 + 2 - 0.24)) < 0.2, `full ${fi.durationSec}`);
+  const fullStreams = await streamDurations(full);
+  assert.ok(Math.abs(fullStreams.video - (2 + 0.8 + 2 - 0.24)) < 0.2, `full video ${fullStreams.video}`);
+  assert.ok(Math.abs(fullStreams.audio - fullStreams.video) <= 2 / spec.fps, `full audio/video durations ${fullStreams.audio}/${fullStreams.video}`);
   const q = await heuristicJudge(norm, fa, fb, dir);
   assert.ok(q.startFidelity > 50 && q.endFidelity > 50, `fidelity ${q.startFidelity}/${q.endFidelity}`);
   fs.rmSync(dir, { recursive: true, force: true });

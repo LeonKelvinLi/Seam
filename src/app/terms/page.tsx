@@ -1,4 +1,5 @@
 import { LegalPage, Section } from "@/components/Legal";
+import { CREDITS_PER_GENERATION } from "@/lib/server/billing";
 export const metadata = { title: "Terms of Service — SeamCut" };
 export default function TermsPage() {
   return (
@@ -7,7 +8,7 @@ export default function TermsPage() {
         <p>SeamCut generates short transition clips ("bridges") between two pieces of footage you upload, and stitches them into a shareable result. Generation runs on our servers and on third-party AI model providers we select. Output quality varies with the footage; a generation can fail, in which case the credits it consumed are returned automatically.</p>
       </Section>
       <Section heading="2. Accounts and credits">
-        <p>You can try SeamCut as a guest; creating an account keeps your projects and credits across devices. Credits are prepaid units consumed per generation (currently one for a preview, three for a final-quality render). Credits are not a currency, do not expire, and are not transferable. Prices are shown before purchase; taxes may apply based on your location.</p>
+        <p>You can try SeamCut as a guest; creating an account keeps your projects and credits across devices. Credits are prepaid units consumed per generation (currently {CREDITS_PER_GENERATION.preview} for a preview, {CREDITS_PER_GENERATION.final} for a final-quality render). Credits are not a currency, do not expire, and are not transferable. Prices are shown before purchase; taxes may apply based on your location.</p>
         <p>You are responsible for keeping your password confidential and for activity under your account.</p>
       </Section>
       <Section heading="3. Your content">

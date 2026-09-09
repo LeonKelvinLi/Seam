@@ -1,7 +1,8 @@
-# Production readiness (2026-09-06)
+# Production readiness (updated 2026-09-09)
 
 Status of the SeamCut deployment at https://seamcut.onrender.com. "Done" means implemented, tested locally and
-verified on the live service. "Owner" means only the account owner can complete it (secrets, business facts).
+verified on the live service unless a row states a narrower result. Account configuration, delivered email,
+real payment settlement, and monitoring alerts require their own evidence; implemented code alone does not prove them.
 
 ## Done
 
@@ -22,10 +23,10 @@ verified on the live service. "Owner" means only the account owner can complete 
 | Free trial | Every new guest or account gets exactly 3 preview runs (`FREE_TRIAL_RUNS`); the fourth run returns 402 and the studio shows an inline paywall with the packs. New guest identities are capped at 10 per IP per day. |
 | Flow test | `npm run e2e` (`scripts/e2e.ts`) drives the real product against any base URL: two uploads → boundary frames (last frame of clip A, first frame of clip B) → analysis → 3 runs → 4th refused → balance 0. CI runs it against a production build with the ffmpeg provider; run it against the live URL after every deploy. |
 
-## Owner steps: keys (about ten minutes)
+## Configure the service
 
-Secrets are never typed into web forms by the assistant and never committed. Paste each one into the local `.env.local`
-(same folder as `package.json`), then run one command that pushes them to Render and redeploys without printing any value:
+Keep secrets out of Git, logs, and chat. Store authorized configuration privately in the local `.env.local`
+(same folder as `package.json`), then use the script to push supported values to Render and redeploy without printing them:
 
 ```bash
 npm run secrets:check   # shows which keys are set locally, sends nothing
@@ -37,27 +38,37 @@ Keys and where they come from:
 | Key | Where to create it | What it unlocks |
 |---|---|---|
 | `HIGGSFIELD_API_KEY_ID`, `HIGGSFIELD_API_KEY_SECRET` | set on Render 2026-09-07; the developer API has its own credit balance, which must be funded in the developer platform before bridges run | DoP and Veo 3.1 two-frame AI bridges |
-| `STRIPE_SECRET_KEY` | Stripe Dashboard → Developers → API keys → restricted key with Checkout Sessions write | Server-side checkout and webhook verification |
+| `STRIPE_SECRET_KEY` | Stripe Dashboard → Developers → API keys → restricted key with Checkout Sessions write | Server-side Checkout Sessions; Payment Links and local webhook signature verification do not require this key |
 | `STRIPE_WEBHOOK_SECRET` | already in `.env.local` (created 2026-09-06 for the live endpoint) | Credits granted after payment |
-| `FAL_KEY` | already in `.env.local`; top up fal.ai/dashboard/billing first | Kling 2.1 Pro bridges |
+| `FAL_KEY` | already in `.env.local`; verify current balance at fal.ai/dashboard/billing | Kling 2.1 Pro bridges |
 | `OPENAI_API_KEY` | already in `.env.local` | Vision analysis and judging |
 | `RENDER_API_KEY` | Render → Account settings → API keys | Lets the push script write the values above |
-| `SEAM_SUPPORT_EMAIL`, `SEAM_OPS_TOKEN` | your choice | Contact address on legal pages; `/ops` access |
+| `RESEND_API_KEY`, `SEAM_MAIL_FROM` | Resend API key and sender on a domain verified in that Resend account | Delivered password-reset and account-confirmation email |
+| `SEAM_COMPANY_NAME`, `SEAM_COMPANY_ADDRESS`, `SEAM_SUPPORT_EMAIL` | Verified operator details and a monitored support mailbox | Contact details on legal pages |
+| `SEAM_PUBLIC_URL` | The service's public HTTPS origin | Correct links in transactional mail and shared projects |
+| `SEAM_OPS_TOKEN` | A private random token | `/ops` and `/api/metrics` access using an Authorization header |
+
+The script upserts only nonempty allowlisted values; missing local values leave existing Render settings unchanged.
+It supports all mail and business fields above. It does not provision a sender domain, create a mailbox, or verify DNS.
+Legal pages read contact settings at request time. After changing settings and restarting the service, verify the rendered pages.
 
 After the deploy, `https://seamcut.onrender.com/api/runtime` lists the active providers, and
-`E2E_BASE_URL=https://seamcut.onrender.com npm run e2e` proves three AI runs and the paywall on the live service.
+`E2E_BASE_URL=https://seamcut.onrender.com npm run e2e` exercises three generations and the paywall on the live service.
+Inspect each generation's provider and attempt log to distinguish accepted AI output from the procedural fallback.
 A custom domain is added in Render → Settings → Custom Domains; then set `SEAM_PUBLIC_URL` and update the Stripe
 webhook URL and payment-link redirects to the new host.
 
 ## Known gaps
 
-- Provider balances (checked live 2026-09-07): the Higgsfield developer API answers `403 not_enough_credits` (its balance is separate from the web app that ran the trial), and fal is locked for exhausted balance. Until one of them is funded every run falls back to ffmpeg. After a billing failure a provider is parked for 10 minutes (`src/core/providers/cooldown.ts`) and `/api/runtime` lists it under `coolingDown`, so later runs skip straight to the fallback instead of re-uploading frames.
+- Provider balances are external account state. Higgsfield was funded and produced accepted AI output on 2026-09-08 (see verification below); its current balance and auto top-up status require an account check. fal's last documented billing check found an exhausted balance. After a billing failure a provider is parked for 10 minutes (`src/core/providers/cooldown.ts`) and `/api/runtime` lists it under `coolingDown`. An empty cooldown list does not prove a provider has funds.
 
-- No password reset or email verification yet; both need an email provider (Resend or Postmark key). Until then, account recovery is manual.
+- Password reset and email verification are implemented. Delivery needs `RESEND_API_KEY` and `SEAM_MAIL_FROM`, a verified sender domain, and an actual delivery check. Without configuration, no mail is sent. Only local development logs message content; production logs omit recipients and recovery tokens.
 - Single instance with a disk: deploys cause a short outage and the service cannot scale horizontally. Fine for launch; move SQLite to Postgres and files to object storage before scaling.
-- Unit economics: a preview costs 1 credit ($0.18 on Starter) while an AI bridge costs roughly $0.25 to $0.50 at the providers. Revisit credit prices or the preview/final split before spending on ads.
+- Current pricing is 2 credits per preview and 6 per final: Starter $9/30 credits, Pro $29/120, Studio $89/400. Provider-cost estimates and acceptance rates still need monitoring; the daily budget tracks recorded generation fees, not provider account balance, and concurrent/in-flight requests can pass the budget before their costs are recorded.
 - Rights: the speed-chain ad uses celebrity clips for reference only. Replace with licensed or recreated footage before paid placement.
-- Backups live on the same disk as the database. For off-box copies, add a Render cron job that uploads `backups/` to object storage.
+- Backups live on the same disk as the database. Off-box backup is not configured. Upload completed SQLite backups from the running service to a private object-store bucket, then verify a restore from that bucket. A separate Render cron service cannot read this service's persistent disk. The current backups contain the database only; uploaded footage, generated files, and exports need a separate backup plan if those must be recoverable.
+- The public legal pages still need verified company address and a working contact email. The setup follow-up corrects Terms to use the billing credit constants, lists Higgsfield in Privacy, and makes contact values available at request time. Company address and support email still require the owner's supplied public details.
+- Render uses `/api/health` with workspace failure notifications enabled, verified 2026-09-09. An independent uptime monitor and an observed alert-delivery test still need completion.
 
 ## Restore a backup
 
@@ -108,15 +119,25 @@ Everything from the readiness review that code can fix, verified locally and pus
 | Wait time | Preview threshold 65 (final 72) so fewer good bridges are rejected; a rejected model is not retried in the same generation; `SEAM_PARALLEL_ATTEMPTS=2` runs two bridge models at once on the first round (roughly halves the wait, doubles provider cost; default 1). The studio says plainly that an AI bridge takes 3 to 5 minutes, that leaving the page is fine, and fires a browser notification when it finishes in the background. |
 | Judge calibration | A procedural dissolve is capped at 80 so a real bridge that clears the bar always wins. Human calibration of the rubric is still worth doing. |
 | Spend cap | `SEAM_DAILY_PROVIDER_BUDGET_USD` (default 25): once the day's generation fees pass it, runs use ffmpeg until midnight UTC. `/api/runtime` shows `budget`. |
-| Password reset and email confirmation | `/forgot` → one-hour link → `/reset` (signs out other devices); sign-up sends a 7-day confirmation link to `/verify`; `/api/auth/verify/resend` for signed-in users. Mail goes through Resend when `RESEND_API_KEY` and `SEAM_MAIL_FROM` are set; otherwise the link is logged so the flow still works in development. |
-| Health for monitors | `/api/health` checks the database, ffmpeg and free disk (503 under 500 MB), and reports queue depth, parked providers and budget. Point an uptime monitor (UptimeRobot, Better Stack, Checkly) at it with a 5-minute interval and email or Slack alerts. Render's own check stays on `/api/runtime`. |
+| Password reset and email confirmation | `/forgot` → one-hour link → `/reset` (signs out other devices); sign-up sends a 7-day confirmation link to `/verify`; `/api/auth/verify/resend` for signed-in users. Mail goes through Resend when `RESEND_API_KEY` and `SEAM_MAIL_FROM` are set; otherwise the link is logged only in local development; production does not log recovery tokens. |
+| Health for monitors | `/api/health` checks the database, ffmpeg and free disk (503 under 500 MB), and reports queue depth, parked providers and budget. Point an uptime monitor (UptimeRobot, Better Stack, Checkly) at it with a 5-minute interval and email or Slack alerts. Render's own check now uses `/api/health` (saved and verified live on 2026-09-09). |
 | Legal details | `SEAM_COMPANY_ADDRESS` and `SEAM_SUPPORT_EMAIL` render on the legal pages. |
 
-## Owner steps after this deploy
+## Account and launch verification still required
 
-1. Make one real Starter purchase with your card, confirm 30 credits land on the account, then refund it in Stripe.
+1. Complete one authorized real Starter purchase, confirm the matching Stripe payment succeeded and exactly 30 credits land on the account, then verify an authorized refund. `scripts/webhook-selftest.mjs` posts a synthetic signed event and grants real application credits; it tests the handler only, does not prove a paid Stripe transaction, and must not be reported as payment settlement.
 2. Add `RESEND_API_KEY` and `SEAM_MAIL_FROM` (a verified sender domain) on Render so reset and confirmation mail is delivered.
 3. Set `SEAM_SUPPORT_EMAIL` and `SEAM_COMPANY_ADDRESS`; have counsel read `/terms`, `/privacy`, `/refunds`.
-4. Create an uptime monitor on `https://seamcut.onrender.com/api/health`.
-5. Turn on auto top-up for the Higgsfield developer balance, or watch `budget` and the balance in `/api/health`.
+4. Create an external uptime monitor on `https://seamcut.onrender.com/api/health`, select an authorized alert destination, and verify an alert is delivered. The endpoint was healthy at 2026-09-09 23:24 UTC on commit `24d0f0f`: database and ffmpeg passed, 9,442 MB free, no queued jobs. This snapshot does not establish ongoing monitoring.
+5. Check the Higgsfield developer balance and configure any authorized auto top-up in the provider account. `/api/health` reports application spend budget and parked providers; it does not expose provider balances.
 6. Replace the celebrity clips in the ad before paid placement; add a custom domain when ready.
+7. Configure off-box backups and complete a restore check before calling backup recovery verified.
+
+## Account setup follow-up (2026-09-09)
+
+- Render health-check update deployed successfully (`dep-daguneeq1p3s73918ir0`); the app was healthy with queue 0. Blueprint now preserves `/api/health`.
+- Stripe live account: charges and payouts enabled, no currently due requirements; existing SeamCut Payment Links have 30/120/400 credit metadata. No paid SeamCut Checkout Session was found in the latest 100 sessions. A real purchase remains unverified.
+- Resend dashboard: `beastypages.com` and `leonbuilds.org` are verified. No SeamCut sender/domain choice or production key was configured in this follow-up.
+- Higgsfield Cloud developer dashboard: 111 available credits, 49 used, 21 API calls. Auto-refill configuration remains unverified and needs an explicit spending limit.
+- Render has daily whole-disk snapshots dated September 6, 7 and 8. These are separate from the app's SQLite backups and do not establish tested database recovery or an independent object-store backup. Render documents snapshot limits at https://render.com/docs/disks#disk-snapshots.
+- External uptime setup requires account access; the UptimeRobot sign-in page is prepared. SSH backup export also needs an SSH key added to Render; no new access was created.

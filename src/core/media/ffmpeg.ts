@@ -91,7 +91,13 @@ function fitFilter(w: number, h: number): string {
 /** Normalise any video into the proxy spec. Always emits an audio track (silent if the source has none). */
 export async function makeProxy(input: string, output: string, spec: FrameSpec, hasAudio: boolean, maxDurationSec?: number) {
   const args = ["-i", input];
-  if (!hasAudio) args.push("-f", "lavfi", "-i", "anullsrc=channel_layout=stereo:sample_rate=48000");
+  let durationSec = maxDurationSec;
+  if (!hasAudio) {
+    args.push("-f", "lavfi", "-i", "anullsrc=channel_layout=stereo:sample_rate=48000");
+    // -shortest alone can leave buffered AAC beyond the video. That tail shifts stitch's crossfade offsets.
+    const sourceDuration = (await probe(input)).durationSec;
+    if (sourceDuration > 0) durationSec = Math.min(sourceDuration, maxDurationSec || Infinity);
+  }
   args.push(
     "-filter_complex", `[0:v]${fitFilter(spec.width, spec.height)},fps=${spec.fps},setsar=1[v]`,
     "-map", "[v]", "-map", hasAudio ? "0:a:0" : "1:a:0",
@@ -99,7 +105,7 @@ export async function makeProxy(input: string, output: string, spec: FrameSpec, 
     "-c:a", "aac", "-ar", "48000", "-ac", "2", "-b:a", "128k",
     "-movflags", "+faststart",
   );
-  if (maxDurationSec) args.push("-t", String(maxDurationSec));
+  if (durationSec) args.push("-t", String(durationSec));
   else if (!hasAudio) args.push("-shortest");
   args.push(output);
   await ffmpeg(args);

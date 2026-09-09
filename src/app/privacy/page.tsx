@@ -13,7 +13,7 @@ export default function PrivacyPage() {
         <p>To run the service (store your projects, generate transitions, deliver downloads), to bill you, to keep the service secure, and to improve transition quality by learning which recipes work. We do not sell personal data and we do not run third-party advertising trackers.</p>
       </Section>
       <Section heading="Who processes it for us">
-        <p>Hosting and storage: Render (United States). Payments: Stripe. AI generation and analysis, only when a generation runs: the model providers configured for the service, which may include OpenAI, fal.ai and Runway. Each receives only the frames or clips needed for that job.</p>
+        <p>Hosting and storage: Render (United States). Payments: Stripe. AI generation and analysis, only when a generation runs: the model providers configured for the service, which may include OpenAI, fal.ai, Runway and Higgsfield. Each receives only the frames or clips needed for that job.</p>
       </Section>
       <Section heading="Cookies">
         <p>We use strictly necessary cookies only: a session cookie for signed-in users and a guest identifier so your projects survive a page reload. No analytics or advertising cookies are set.</p>
