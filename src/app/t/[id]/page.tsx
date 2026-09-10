@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { sharePayload } from "@/lib/server/share";
 import { ShareBeacon } from "@/components/ShareBeacon";
+import { DownloadOptions } from "@/components/DownloadOptions";
 
 export const dynamic = "force-dynamic";
 
@@ -20,6 +21,7 @@ export default async function SharePage({ params }: { params: Promise<{ id: stri
         <div><span className="text-lg">{g.title}</span> <span className="muted">· {g.recipe.name}</span></div>
         <span className="muted text-xs">{data.views} views</span>
       </div>
+      {g.result && <DownloadOptions generationId={g.id} result={g.result} />}
       <div className="mt-10 grid items-center gap-3 md:grid-cols-[1fr_auto_1fr_auto_1fr]">
         <Thumb src={data.start?.thumbnailUrl} label="Clip A" />
         <Arrow />

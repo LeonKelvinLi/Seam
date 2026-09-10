@@ -6,6 +6,7 @@ import type { GenerationView, ProjectView } from "@/lib/server/views";
 import { DEFAULT_FINE_TUNE, type FineTune } from "@/core/types";
 import { api, track, uploadFile } from "@/lib/api";
 import { Paywall } from "@/components/Paywall";
+import { DownloadOptions } from "@/components/DownloadOptions";
 import { createProjectUploadQueue } from "@/lib/project-uploads";
 import { DropZone } from "./DropZone";
 import { Steps } from "./Steps";
@@ -143,14 +144,6 @@ export function CreateFlow() {
     finally { loadingSample.current = false; setBusy(false); }
   };
 
-  const feedback = (action: string) => gen && void api(`/api/generations/${gen.id}/feedback`, { method: "POST", json: { action } }).catch(() => {});
-  const download = (kind: "full" | "bridge") => {
-    if (!gen?.result) return;
-    const url = kind === "full" ? gen.result.fullUrl : gen.result.bridgeUrl;
-    if (!url) return;
-    feedback(kind === "full" ? "download_full" : "download_bridge");
-    const a = document.createElement("a"); a.href = `${url}?download=seam-${kind}-${gen.id}.mp4`; a.download = `seam-${kind}.mp4`; a.click();
-  };
   const share = async () => {
     if (!gen) return;
     try {
@@ -264,7 +257,7 @@ export function CreateFlow() {
           <div className="flex flex-wrap items-end justify-between gap-3">
             <h1 className="display text-3xl md:text-4xl">Your transition is ready</h1>
             <div className="seg">
-              <button data-on={videoMode === "full"} aria-pressed={videoMode === "full"} onClick={() => setVideoMode("full")}>Full edit</button>
+              <button data-on={videoMode === "full"} aria-pressed={videoMode === "full"} onClick={() => setVideoMode("full")}>Full video</button>
               <button data-on={videoMode === "bridge"} aria-pressed={videoMode === "bridge"} onClick={() => setVideoMode("bridge")}>Transition only</button>
             </div>
           </div>
@@ -279,10 +272,9 @@ export function CreateFlow() {
           {gen.result.suggestion && <Notice>{gen.result.suggestion}</Notice>}
           {gen.result.fellBackToLocal && !gen.result.suggestion && <Notice>The video model didn't produce a clean take, so this is a procedural preview of the move.</Notice>}
 
+          <DownloadOptions generationId={gen.id} result={gen.result} trackDownloads />
+
           <div className="mt-6 flex flex-wrap gap-2">
-            <button className="btn btn-primary" onClick={() => download("full")}>Download full edit</button>
-            <button className="btn btn-ghost" onClick={() => download("bridge")}>Download transition only</button>
-            <span className="mx-1 hidden md:inline-block w-px self-stretch" style={{ background: "var(--hair)" }} />
             <button className="btn btn-ghost" onClick={() => generate({ from: { generationId: gen.id, action: "another" } })} disabled={busy}>Try another</button>
             <button className="btn btn-ghost" onClick={() => generate({ from: { generationId: gen.id, action: "wilder" } })} disabled={busy}>Make wilder</button>
             <button className="btn btn-ghost" onClick={() => generate({ from: { generationId: gen.id, action: "smoother" } })} disabled={busy}>Make smoother</button>
