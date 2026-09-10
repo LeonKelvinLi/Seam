@@ -72,13 +72,67 @@ webhook URL and payment-link redirects to the new host.
 
 ## Restore a backup
 
+SQLite runs in WAL mode. Do not overwrite `seam.sqlite` while the web service, worker, maintenance timer,
+or another database connection is active. A local restore drill does not prove a production or off-site backup is recoverable.
+
+1. Retrieve a completed snapshot into an isolated directory and verify its checksum against the recorded backup
+   manifest. Run the following from the application directory, which has `better-sqlite3` installed. Replace the
+   dated filename with the snapshot selected for recovery; do not point it at the live database.
+
 ```bash
-# In a Render shell on the service
-ls /var/data/seam/backups
-cp /var/data/seam/backups/seam-YYYYMMDD.sqlite /var/data/seam/seam.sqlite
+umask 077
+seam_restore_work=$(mktemp -d /var/data/seam/restore-check.XXXXXX)
+cp /var/data/seam/backups/seam-YYYYMMDD.sqlite "$seam_restore_work/candidate.sqlite"
+export SEAM_RESTORE_CANDIDATE="$seam_restore_work/candidate.sqlite"
+node --input-type=module <<'NODE'
+import assert from 'node:assert/strict';
+import Database from 'better-sqlite3';
+const candidate = new Database(process.env.SEAM_RESTORE_CANDIDATE, { readonly: true, fileMustExist: true });
+assert.deepEqual(candidate.pragma('integrity_check'), [{ integrity_check: 'ok' }]);
+assert.deepEqual(candidate.pragma('foreign_key_check'), []);
+for (const table of ['users', 'projects', 'purchases', 'generations', 'assets', 'exports']) {
+  console.log(table, candidate.prepare(`SELECT COUNT(*) AS rows FROM ${table}`).get());
+}
+console.log('pending jobs', candidate.prepare("SELECT status, COUNT(*) AS rows FROM jobs WHERE status IN ('queued','running') GROUP BY status").all());
+candidate.close();
+NODE
 ```
 
-Restart the service afterwards.
+2. Compare those counts with the backup's recorded recovery point. Before changing production, take a **fresh
+   rollback snapshot** of the current live database with SQLite's online backup API, using a new destination:
+
+```bash
+export SEAM_ROLLBACK_SNAPSHOT="$seam_restore_work/current-before-restore.sqlite"
+node --input-type=module <<'NODE'
+import assert from 'node:assert/strict';
+import Database from 'better-sqlite3';
+const current = new Database('/var/data/seam/seam.sqlite', { readonly: true, fileMustExist: true });
+await current.backup(process.env.SEAM_ROLLBACK_SNAPSHOT);
+current.close();
+const rollback = new Database(process.env.SEAM_ROLLBACK_SNAPSHOT, { readonly: true, fileMustExist: true });
+assert.deepEqual(rollback.pragma('integrity_check'), [{ integrity_check: 'ok' }]);
+rollback.close();
+NODE
+```
+
+3. Establish a maintenance window that keeps disk access available while stopping all application and worker
+   processes. Stop incoming writes, wait for or explicitly reconcile in-flight provider jobs, and prevent automatic
+   process restarts. Verify that all SQLite connections are closed. A quiet queue alone is not sufficient. If the
+   host cannot provide this maintenance access, stop here rather than performing a live file replacement.
+4. With writers stopped, preserve the current `seam.sqlite` and any `seam.sqlite-wal` / `seam.sqlite-shm` files
+   together in a separate rollback directory, retaining their ownership and permissions. Keep the fresh online
+   snapshot too. Do not discard a WAL file before preserving the stopped database state.
+5. Stage the validated candidate on the same filesystem, owned by the service's actual UID/GID with restrictive
+   permissions (normally `0600`); its parent directory must be writable by that service account so SQLite can create
+   its journals. Record and verify the existing service ownership instead of assuming a username. Move the old
+   database and journals aside, then atomically rename the staged candidate to `/var/data/seam/seam.sqlite`.
+   No stale WAL or SHM file may remain beside the newly restored database. Restore required footage, frames and
+   exports to the paths referenced in that snapshot; database-only backups do not contain those files.
+6. Before starting the app, reconcile the restored `queued` and `running` jobs with provider state. Opening the
+   app requeues `running` jobs, so an unchecked restart can repeat paid generation work. Start one service
+   instance, then check `/api/health`, sign-in, purchase/credit records, project visibility, and actual transition-only
+   and full-video media downloads. Record the recovery point and any missing data or files. Keep rollback artifacts
+   until these checks pass; applying a rollback also requires stopped writers and the same WAL-safe procedure.
 
 ## Provider trial: Higgsfield Cinema Studio 3.0 (2026-09-07)
 
