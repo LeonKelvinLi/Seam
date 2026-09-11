@@ -94,7 +94,12 @@ export function CinematicHome() {
         previous.set(property, value);
       }
     };
-    const paint = () => {
+    // The playhead eases toward the scroll position instead of jumping to it, so a wheel notch glides through the
+    // footage rather than skipping ahead; EASE_SEC is the time constant of that glide.
+    const EASE_SEC = 0.3;
+    let shown = -1;
+    let last = 0;
+    const paint = (now: number) => {
       frame = 0;
       if (!motion) {
         setProgress(hero.current, "--hero-progress", 0);
@@ -106,19 +111,23 @@ export function CinematicHome() {
       const storyBox = story.current?.getBoundingClientRect();
       // Keep custom property invalidation within the affected section, instead of the whole page.
       if (heroBox) setProgress(hero.current, "--hero-progress", clamp(-heroBox.top / height));
-      if (storyBox && storyBox.top < height && storyBox.bottom > 72) {
-        const stageHeight = storyStage.current?.offsetHeight ?? height - 72;
-        const progress = clamp((72 - storyBox.top) / Math.max(1, storyBox.height - stageHeight));
-        const index = Math.min(CHAPTERS.length - 1, Math.floor(progress * CHAPTERS.length));
-        const local = clamp(progress * CHAPTERS.length - index);
-        if (index !== activeChapter) { activeChapter = index; setChapter(index); }
-        setProgress(story.current, "--chapter-progress", local);
-        const video = storyVideos.current[index];
-        if (video && video.readyState >= 1 && Number.isFinite(video.duration) && !video.seeking) {
-          const target = Math.max(0, video.duration - 0.06) * local;
-          if (Math.abs(video.currentTime - target) > 0.065) video.currentTime = target;
-        }
+      if (!storyBox || storyBox.top >= height || storyBox.bottom <= 72) { shown = -1; last = 0; return; }
+      const stageHeight = storyStage.current?.offsetHeight ?? height - 72;
+      const target = clamp((72 - storyBox.top) / Math.max(1, storyBox.height - stageHeight));
+      const dt = last ? Math.min(0.1, (now - last) / 1000) : 0;
+      shown = shown < 0 ? target : shown + (target - shown) * (1 - Math.exp(-dt / EASE_SEC));
+      if (Math.abs(target - shown) < 0.0005) shown = target;
+      last = shown === target ? 0 : now;
+      const index = Math.min(CHAPTERS.length - 1, Math.floor(shown * CHAPTERS.length));
+      const local = clamp(shown * CHAPTERS.length - index);
+      if (index !== activeChapter) { activeChapter = index; setChapter(index); }
+      setProgress(story.current, "--chapter-progress", local);
+      const video = storyVideos.current[index];
+      if (video && video.readyState >= 1 && Number.isFinite(video.duration) && !video.seeking) {
+        const time = Math.max(0, video.duration - 0.06) * local;
+        if (Math.abs(video.currentTime - time) > 0.065) video.currentTime = time;
       }
+      if (shown !== target) schedule();
     };
     const schedule = () => { if (!frame) frame = requestAnimationFrame(paint); };
     window.addEventListener("scroll", schedule, { passive: true });

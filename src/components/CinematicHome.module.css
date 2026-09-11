@@ -33,7 +33,7 @@
 .orbitLabel { position: absolute; left: 10%; bottom: 11%; font-size: 12px; letter-spacing: -.025em; transform: rotate(-7deg); display: flex; align-items: center; gap: 7px; }.orbitLabel > span { font-size: 30px; color: var(--lime); }
 .timelineTag { position: absolute; bottom: 11%; right: 15%; display: flex; align-items: center; gap: 8px; padding: 12px 14px; background: #191b16; border: 1px solid #d9fc692c; transform: rotate(4deg); box-shadow: 0 15px 35px #0009; }.timelineTag span { font: 8px ui-monospace,monospace; color: #c3c8b6; }.timelineTag i { height: 1px; width: 25px; background: #d9fc6950; }.timelineTag b { font: 9px ui-monospace,monospace; color: var(--lime); }
 .heroBottom { display: flex; align-items: center; justify-content: space-between; gap: 20px; border-top: 1px solid #ffffff19; padding: 22px 0; color: #8d9183; font: 8px ui-monospace,monospace; letter-spacing: .09em; position: relative; }.heroBottom a { display: flex; gap: 10px; align-items: center; color: var(--cream); }.scrollArrow { font-size: 19px; color: var(--lime); }[data-motion="true"] .scrollArrow { animation: scrollNudge 1.8s ease-in-out infinite; }
-.story { position: relative; height: 240svh; scroll-margin-top: 0; }.storySticky { height: calc(100svh - 72px); min-height: 0; position: sticky; top: 72px; overflow: hidden; background: #172826; }
+.story { position: relative; height: 420svh; scroll-margin-top: 0; }.storySticky { height: calc(100svh - 72px); min-height: 0; position: sticky; top: 72px; overflow: hidden; background: #172826; }
 .storyVisual,.chapterFilm,.chapterFilm video,.storyShade { position: absolute; inset: 0; width: 100%; height: 100%; }.chapterFilm { opacity: 0; transition: opacity .65s; }.chapterFilm[data-active="true"] { opacity: 1; }.chapterFilm video { object-fit: cover; transform: scale(calc(1.04 + var(--chapter-progress) * .035)); }.storyShade { background: linear-gradient(90deg,#0009,transparent 70%),linear-gradient(0deg,#000b,transparent 45%,#0003); }
 .storyTopline { position: absolute; top: 35px; left: 5.5%; right: 5.5%; display: flex; justify-content: space-between; }.storyInstruction { font: 9px ui-monospace,monospace; letter-spacing: .08em; display: flex; align-items: center; gap: 15px; }.storyInstruction > span { font-size: 22px; }
 .storyCopy { position: absolute; top: 24%; left: 8%; }[data-motion="true"] .storyCopy { animation: captionIn .65s ease-out both; }.chapterNumber { font: 9px ui-monospace,monospace; letter-spacing: .12em; color: #ecece2bd; }.storyCopy h2 { margin-top: 22px; font-size: clamp(64px,8vw,120px); line-height: .95; letter-spacing: -.065em; font-weight: 400; }.storyCopy h2 em { font-family: Georgia,"Times New Roman",serif; font-weight: 400; letter-spacing: -.055em; }.storyCopy > p { margin-top: 22px; font-size: 13px; color: #eeeee3d1; }.lightLink { border-bottom: 1px solid #ffffff7a; padding: 12px 0; margin-top: 20px; font-size: 11px; font-weight: 400; gap: 40px; }
@@ -130,7 +130,7 @@
   .heroBottom { padding: 4px 0; font-size: 10px; }
   .heroBottom a { min-height: 48px; align-items: center; }
   .heroBottom > span { display: none; }
-  .story { height: 220svh; }
+  .story { height: 380svh; }
   .storySticky { height: calc(100svh - 72px); min-height: 0; }
   .storyTopline { top: 22px; left: 6%; right: 6%; gap: 18px; }
   .storyInstruction { font-size: 9px; line-height: 1.5; max-width: 120px; text-align: right; gap: 8px; }
