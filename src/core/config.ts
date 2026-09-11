@@ -73,7 +73,7 @@ export function describeRuntime() {
     vision: config.openai.enabled ? `OpenAI (${config.openai.visionModel})` : "heuristic (no OPENAI_API_KEY)",
     judge: config.openai.enabled ? `OpenAI (${config.openai.judgeModel})` : "heuristic",
     providers: [
-      "local (ffmpeg, always on)",
+      config.generation.allowProcedural ? "local (ffmpeg, fallback forced on)" : "local (ffmpeg, only when no bridge model is configured)",
       config.providers.falKey ? "fal (Kling 2.1)" : null,
       config.providers.runwaySecret ? "runway (Gen-4 Turbo)" : null,
       config.providers.higgsfieldKeyId && config.providers.higgsfieldKeySecret ? "higgsfield (DoP, Veo 3.1 first→last)" : null,
