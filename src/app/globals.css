@@ -163,7 +163,8 @@ input[type="range"]::-moz-range-thumb { width: 10px; height: 10px; border-radius
 .recipe-preview-toggle > span { display: inline-flex; align-items: center; gap: 8px; min-height: 36px; padding: 0 11px; border: 1px solid #ffffff45; border-radius: 5px; background: #0b0b0abf; color: var(--fg); font-size: 12px; }
 .recipe-preview-toggle > span > span { font-size: 19px; line-height: 1; }
 .recipe-preview-toggle:focus-visible { outline-offset: -5px; }
-.recipe-preview-label { z-index: 4; pointer-events: none; color: #ecece2; text-shadow: 0 1px 7px #000; }
+/* A pill, not a text shadow: the fit badge has to read on a sunlit window as well as on a night street. */
+.recipe-preview-label { z-index: 4; pointer-events: none; color: #ecece2; padding: 3px 7px; border-radius: 4px; background: #0c0c0ec7; }
 
 @media (hover: hover) and (prefers-reduced-motion: no-preference) {
   .dropzone:hover:not([data-disabled="true"]) { transform: rotateX(2deg) rotateY(-2deg) translateY(-4px); border-color: #d9fc6970; box-shadow: 9px 18px 35px #0005, inset 0 0 60px #d9fc6905; }
