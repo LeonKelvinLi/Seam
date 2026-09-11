@@ -102,6 +102,13 @@ bridges from PixVerse V6 via OpenArt, 2026-09-05). They are demo material, not u
 stand-ins for any pair that is missing; `scripts/import-generated.ts mapping.json` imports new externally generated pairs
 (`a` must end on the bridge's first frame, `b` must start on its last frame; set `reverseA` when `a` was generated from that frame).
 
+`public/library-ai` holds a real AI preview for each seamless style the example set does not already show (20 styles,
+2026-09-10). Each has start and end stills from GPT Image 2 (high quality, 2k) and a 4 s first→last-frame bridge from
+Higgsfield Cinema Studio 3.0 at 720p, reviewed frame by frame before import. Two were regenerated once: Foreground Pass
+(the first take hid a hard cut behind the coat) and Object Morph (two planes on screen at once). Add or replace previews
+with `node scripts/import-library-previews.mjs previews.json`; the eight example bridges cover the remaining styles
+through `EXAMPLE_PREVIEWS` in `src/app/api/recipes/route.ts`.
+
 See `ARCHITECTURE.md` for the module map, data model and the multi-clip director plan.
 
 ## Production

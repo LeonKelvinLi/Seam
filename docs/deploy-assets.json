@@ -761,6 +761,106 @@
       "path": "public/samples/window-clouds-b.mp4",
       "bytes": 855286,
       "sha256": "48f68f5d52e369f68f1557f2849977c70938bf9a3d19dc1cc40cacf20a3ae60c"
+    },
+    {
+      "path": "public/library-ai/pull-out-reveal.mp4",
+      "bytes": 1416916,
+      "sha256": "3e7bb6a276a04c91535d62e7a098fd48c93a7a0b53719e041d3c56bf839af1ef"
+    },
+    {
+      "path": "public/library-ai/object-occlusion.mp4",
+      "bytes": 970723,
+      "sha256": "d77aed34f589090c3439830b81755c7c3323c2df9b552205ae889cee0c7ba298"
+    },
+    {
+      "path": "public/library-ai/silhouette-match.mp4",
+      "bytes": 608320,
+      "sha256": "4c3313ee54adba143cc85cf92f6baa43f2a9daa93c077395fb1d628aed4ffe9c"
+    },
+    {
+      "path": "public/library-ai/color-match.mp4",
+      "bytes": 1659073,
+      "sha256": "4328bea737ad988d42de18f0c957bada483bc06713a0ca990559ae94992531af"
+    },
+    {
+      "path": "public/library-ai/fabric-transform.mp4",
+      "bytes": 1584799,
+      "sha256": "79578871bd4d6f15beb6fb3067bf4ff3b68001d304f38ddd0acc2e0297780fa0"
+    },
+    {
+      "path": "public/library-ai/composition-match.mp4",
+      "bytes": 1678990,
+      "sha256": "9060a78261a657b390bf64cb4dc8efe550d2d1eeacc1569e33559f5ae4a2d939"
+    },
+    {
+      "path": "public/library-ai/material-transform.mp4",
+      "bytes": 483778,
+      "sha256": "28ed218105f0bb765d099b806ac1b88950b13b88e20296ba6f20377fb2a36590"
+    },
+    {
+      "path": "public/library-ai/object-becomes-environment.mp4",
+      "bytes": 1527463,
+      "sha256": "b9517c824adfb88e84afa658a819d17e8c56134adfb87227ecae5119047f97b0"
+    },
+    {
+      "path": "public/library-ai/dolly-through.mp4",
+      "bytes": 1824379,
+      "sha256": "2dbd1f8fb07eea7ff5b216f2cd2961541d65a6c2977f1cac5694a8171040808e"
+    },
+    {
+      "path": "public/library-ai/object-match.mp4",
+      "bytes": 1346859,
+      "sha256": "545752d0df18b5d278f4d8356c58d96bf26a817b2d5858ddd6e1097efe231ad5"
+    },
+    {
+      "path": "public/library-ai/environment-morph.mp4",
+      "bytes": 1595512,
+      "sha256": "f926cdbc0be2fe99d54e4ac5243ce47a858791cf8be5330f854f08126d4a9f06"
+    },
+    {
+      "path": "public/library-ai/glass-transform.mp4",
+      "bytes": 1407681,
+      "sha256": "c8c2989ca3156cc9d8dbe51d09e3158399d7f297c02caca461d92e0aedf40140"
+    },
+    {
+      "path": "public/library-ai/portal-tv.mp4",
+      "bytes": 1343481,
+      "sha256": "86293a955d9aea00629b46824f641c382a0c959a57078bb6d4e7e2ce10247127"
+    },
+    {
+      "path": "public/library-ai/orbit.mp4",
+      "bytes": 2008654,
+      "sha256": "e45f0196fd00f1084889b013f58364acaa76e067a243a83eb5aab10b9f819909"
+    },
+    {
+      "path": "public/library-ai/portal-cup.mp4",
+      "bytes": 1521016,
+      "sha256": "4516846cf9e1e4a2d26410f71c82dd6c3d40103f69a0774335171f03bf6c3a13"
+    },
+    {
+      "path": "public/library-ai/object-morph.mp4",
+      "bytes": 1121285,
+      "sha256": "f41fb98aaf3c7b17518eb72f478c63e6d118c68419d267be160a5bb5322652d5"
+    },
+    {
+      "path": "public/library-ai/motion-match.mp4",
+      "bytes": 1640978,
+      "sha256": "93b29d605fa0c09fb29bd60bf738227618a8a6a6934459d0b85d3894c1703342"
+    },
+    {
+      "path": "public/library-ai/portal-car-window.mp4",
+      "bytes": 1031937,
+      "sha256": "e2619c3dd4f03ab4c54737119387460dbec8cfd299bb5b83cd43f50cda98b68f"
+    },
+    {
+      "path": "public/library-ai/portal-tunnel.mp4",
+      "bytes": 2191226,
+      "sha256": "6de7d2aafea2e241746fb3d4dd14d15d8f07b71a69c9d3baf01f045410111741"
+    },
+    {
+      "path": "public/library-ai/foreground-pass.mp4",
+      "bytes": 1525079,
+      "sha256": "83873024e392f7056ac70479facaf785d2c7353003764907f7fccde02fd8a982"
     }
   ]
 }
