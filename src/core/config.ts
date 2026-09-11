@@ -42,8 +42,10 @@ export const config = {
     qualityThresholdPreview: num("SEAM_QUALITY_THRESHOLD_PREVIEW", 65),
     /** Bridge models tried concurrently on the first round (1 = sequential; 2 halves the wait at double provider cost). */
     parallelAttempts: num("SEAM_PARALLEL_ATTEMPTS", 1),
-    /** Provider generation fees allowed per UTC day before the router falls back to ffmpeg. 0 disables the guard. */
+    /** Provider generation fees allowed per UTC day. Past it, generation stops rather than shipping a crossfade. 0 disables the guard. */
     dailyBudgetUsd: num("SEAM_DAILY_PROVIDER_BUDGET_USD", 25),
+    /** Deliver the procedural ffmpeg bridge when no AI bridge passes. Off by default: SeamCut ships AI transitions only. */
+    allowProcedural: ["1", "true", "yes"].includes(env("SEAM_ALLOW_PROCEDURAL").toLowerCase()),
     defaultMode: (env("SEAM_DEFAULT_MODE", "preview") as GenerationMode) || "preview",
   },
   analysis: {

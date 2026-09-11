@@ -3,11 +3,22 @@
  * requested mode; the local procedural model always closes the list as the safety net.
  * Learned strengths (from the learning system) can be layered on top of the seeded ones.
  */
+import { config } from "@/core/config";
 import type { GenerationMode } from "@/core/types";
 import type { TransitionRecipe } from "@/core/recipes/types";
 import { availableModels } from "./registry";
 import { LOCAL_MODEL } from "./local";
 import type { ModelSpec } from "./types";
+
+/**
+ * The procedural ffmpeg bridge is an offline/test path, not a product transition: a crossfade is exactly
+ * the "default" transition SeamCut exists to replace. It is only used when no AI bridge model is configured
+ * at all (local development, CI) or when SEAM_ALLOW_PROCEDURAL is set deliberately.
+ */
+export function proceduralAllowed(): boolean {
+  if (config.generation.allowProcedural) return true;
+  return availableModels().every((m) => m.providerId === "local");
+}
 
 export interface RouteInput {
   recipe: TransitionRecipe;
@@ -32,6 +43,6 @@ export function routeModels(input: RouteInput): ModelSpec[] {
     return { m, score };
   });
   const ordered = scored.sort((a, b) => b.score - a.score).map((s) => s.m);
-  if (!exclude.has(LOCAL_MODEL.id)) ordered.push(LOCAL_MODEL);
+  if (proceduralAllowed() && !exclude.has(LOCAL_MODEL.id)) ordered.push(LOCAL_MODEL);
   return ordered;
 }

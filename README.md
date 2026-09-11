@@ -7,7 +7,11 @@ Live preview deployment: https://seamcut.onrender.com (Render Docker service `se
 Seam is an AI transition director: it looks at the end of clip A and the start of clip B, decides which
 transition the footage actually supports, writes the generation prompt, routes it to a video model,
 judges the result, retries when needed, and stitches a finished edit. Users never see prompts, models,
-frames or parameters — they see four recommendations, a *Surprise me* button, and a video.
+frames or parameters — they see three recommendations, a *Surprise me* button, and a video.
+
+Every transition SeamCut offers is a seamless AI bridge: a generated shot that starts on the last frame of clip A and
+lands on the first frame of clip B, so the join is not meant to be visible. Effect moves (crash zoom, whip pan, spin,
+tunnel rush, explosions) and plain cuts or dissolves stay in the catalog for older generations but are never offered.
 
 ## Run it
 
@@ -19,8 +23,10 @@ npm run dev              # http://localhost:3000
 
 Requirements: Node 20+, `ffmpeg`/`ffprobe` on PATH (or `FFMPEG_PATH` / `FFPROBE_PATH`).
 
-With no API keys Seam runs fully local: heuristic visual analysis, a procedural ffmpeg bridge
-(the *preview* tier), and a heuristic quality judge. Copy `.env.example` to `.env.local` to enable:
+With no API keys Seam runs fully local for development and CI: heuristic visual analysis, a procedural ffmpeg
+bridge, and a heuristic quality judge. Once a bridge model is configured, that procedural bridge is never delivered —
+a run that no AI bridge passes fails and refunds its credits instead of shipping a crossfade (`SEAM_ALLOW_PROCEDURAL=1`
+re-enables it deliberately). Copy `.env.example` to `.env.local` to enable:
 
 | Key | Unlocks |
 |-----|---------|
@@ -50,9 +56,9 @@ npm test                               # unit + ffmpeg integration tests
 ## Product surface
 
 - `/` — the demo (before: hard cut, after: Seam), example switcher, one CTA.
-- `/create` — two drop zones → *Understanding your clips* → four lanes (Smooth, Cinematic, Viral, Insane) + Surprise me → progress → result with
+- `/create` — two drop zones → *Understanding your clips* → three lanes (Invisible, Cinematic, Transformation) + Surprise me → progress → result with
   Download full edit / Download transition only / Try another / Make wilder / Make smoother / Regenerate / Share / Fine tune.
-- `/library` — every transition recipe, by category, with looping previews. Pick one, bring your clips.
+- `/library` — real AI bridges from the example set, then every seamless style the director can choose. Pick one, bring your clips.
 - `/t/:id` — public share page (Clip A → transition → Clip B, "Make one with your clips").
 - `/ops` — funnel, latency, quality, retries, cost per generation, per model, per recipe.
 
@@ -64,12 +70,12 @@ npm test                               # unit + ffmpeg integration tests
    plus a pair analysis (relationships and concrete ideas mapped to recipe ids).
 3. **Transition grammar** — motivations are detected (camera movement, direction, zoom, object crossing the lens, lighting change, shape match,
    location change…). Every recipe in the catalog is scored: semantic, geometry, motion, continuity, artifact risk, wow. Unmotivated flashy
-   moves are pushed down; when nothing motivates a move, a *Clean Cut* wins the Smooth lane.
+   moves are pushed down; when nothing motivates a move, the calmest seamless bridge wins the Invisible lane.
 4. **Prompt compiler** — analysis + recipe + intent → a model-agnostic IR (source, destination, transition, continuity, camera, bridge, end,
    preserve, avoid) → rendered per provider dialect.
 5. **Router → provider → judge → retry** — models are ranked per transition class and mode; output is time-remapped, judged
-   (start/end fidelity, subject consistency, continuity, artifacts, aesthetics), retried with calmer settings or a safer recipe, and the
-   procedural bridge guarantees an output.
+   (start/end fidelity, subject consistency, continuity, artifacts, aesthetics), and retried with calmer settings, the next-best
+   bridge model, or a safer seamless recipe. Nothing that fails the bar ships.
 6. **Stitch** — A is cut at the chosen frame, B resumed at its chosen frame, short video and audio crossfades at both seams.
 
 ## Accounts and payments

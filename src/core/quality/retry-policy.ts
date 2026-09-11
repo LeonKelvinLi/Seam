@@ -4,7 +4,7 @@
  * Provider error -> next model. Final attempt -> the recipe's safer alternative (or the smoothest opportunity).
  */
 import type { FineTune, QualityScores, TransitionOpportunity } from "@/core/types";
-import { getRecipe } from "@/core/recipes/registry";
+import { SAFE_SEAMLESS_RECIPE_ID, getRecipe, isOffered } from "@/core/recipes/registry";
 import type { TransitionRecipe } from "@/core/recipes/types";
 
 export interface AttemptOutcome { kind: "error" | "quality"; message: string; scores: QualityScores | null; modelId: string }
@@ -20,10 +20,13 @@ export interface NextAttempt {
   suggestion: string | null;
 }
 
+/** The calmer second choice. It must still be a seamless transition: retries never drop to an effect or a dissolve. */
 export function saferRecipeFor(recipe: TransitionRecipe, opps: TransitionOpportunity[]): TransitionRecipe {
-  if (recipe.saferAlternative) return getRecipe(recipe.saferAlternative);
-  const smooth = opps.filter((o) => getRecipe(o.recipeId).intensity < recipe.intensity).sort((a, b) => b.scores.overall - a.scores.overall)[0];
-  return smooth ? getRecipe(smooth.recipeId) : getRecipe("dissolve-match");
+  if (recipe.saferAlternative && isOffered(recipe.saferAlternative)) return getRecipe(recipe.saferAlternative);
+  const smooth = opps
+    .filter((o) => isOffered(o.recipeId) && getRecipe(o.recipeId).intensity < recipe.intensity)
+    .sort((a, b) => b.scores.overall - a.scores.overall)[0];
+  return smooth ? getRecipe(smooth.recipeId) : getRecipe(SAFE_SEAMLESS_RECIPE_ID);
 }
 
 export function planNextAttempt(args: {

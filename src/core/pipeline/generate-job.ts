@@ -11,7 +11,7 @@ import { normalizeBridge, poster, probe, stitch, trimClip, type FrameSpec } from
 import { storage } from "@/core/media/storage";
 import { getRecipe } from "@/core/recipes/registry";
 import { compileIR, renderPrompt } from "@/core/prompt/compiler";
-import { routeModels } from "@/core/providers/router";
+import { proceduralAllowed, routeModels } from "@/core/providers/router";
 import { ProviderError } from "@/core/providers/types";
 import { isBillingError, markProviderUnavailable } from "@/core/providers/cooldown";
 import { budgetExhausted } from "./budget";
@@ -36,6 +36,15 @@ function capProcedural(scores: QualityScores, providerId: string) {
 }
 
 const FRIENDLY_FAIL = "We couldn't build that transition from these clips. Try another style, or a different cut point.";
+const FRIENDLY_BUSY = "SeamCut has reached today's AI limit. Your credits are untouched; try again later.";
+const FRIENDLY_NO_MODEL = "No AI bridge model is available right now. Your credits are untouched; try again shortly.";
+
+/** A stop we can explain: the generation's friendlyError comes from `friendly`, never from the raw error. */
+class GenerationStopped extends Error {
+  constructor(readonly friendly: string, message: string) {
+    super(message);
+  }
+}
 
 function aspectFor(spec: FrameSpec): TransitionRequest["aspectRatio"] {
   const r = spec.width / spec.height;
@@ -147,11 +156,13 @@ export async function runGenerateJob(job: Job, report: Reporter) {
     while (attemptNo < maxAttempts) {
       const learned = learnedModelQuality([recipe.id]);
       const overBudget = budgetExhausted();
+      if (overBudget && !proceduralAllowed()) throw new GenerationStopped(FRIENDLY_BUSY, "daily provider budget reached");
       if (overBudget && attemptNo === 0) log.warn("daily provider budget reached; using the procedural bridge", { gen: gen.id });
       const ranked = overBudget ? [LOCAL_MODEL] : routeModels({ recipe, mode: gen.mode, exclude, learned });
       const fanOut = attemptNo === 0 ? Math.max(1, config.generation.parallelAttempts) : 1;
       const remote = ranked.filter((m) => m.providerId !== "local");
-      const round: ModelSpec[] = fanOut > 1 && remote.length >= 2 ? remote.slice(0, Math.min(fanOut, maxAttempts)) : [ranked[0] ?? LOCAL_MODEL];
+      const round: ModelSpec[] = fanOut > 1 && remote.length >= 2 ? remote.slice(0, Math.min(fanOut, maxAttempts)) : ranked.slice(0, 1);
+      if (!round.length) throw new GenerationStopped(FRIENDLY_NO_MODEL, "no bridge model available for this recipe");
       const results = await Promise.all(round.map((m, i) => runOne(m, attemptNo + i + 1, recipe, fineTune)));
       attemptNo += round.length;
       let passed = false;
@@ -178,8 +189,8 @@ export async function runGenerateJob(job: Job, report: Reporter) {
       if (next.suggestion) suggestion = next.suggestion;
     }
 
-    // If every candidate failed, try a procedural bridge with the safest recipe.
-    if (!best) {
+    // If every candidate failed, try a procedural bridge with the safest recipe. Offline and CI only.
+    if (!best && proceduralAllowed()) {
       const safe = saferRecipeFor(recipe, opps);
       const durationSec = durationFor(safe, fineTune);
       const ir = compileIR({ a: analysisA, b: analysisB, pair: pairRow.data, recipe: safe, hints: opp.hints, fineTune, durationSec, aspectRatio: aspect, attempt: maxAttempts + 1 });
@@ -209,6 +220,9 @@ export async function runGenerateJob(job: Job, report: Reporter) {
       fellBackToLocal = true;
       suggestion = suggestion ?? `This footage is fighting the ${getRecipe(gen.recipeId).name.toLowerCase()}. A ${safe.name.toLowerCase()} will likely look cleaner.`;
     }
+
+    // AI transitions only: a bridge that never passed is a refunded failure, not a crossfade dressed up as a result.
+    if (!best) throw new GenerationStopped(FRIENDLY_FAIL, "every AI bridge attempt failed or was rejected");
 
     // ---- stitch: A[..cutA] + bridge + B[cutB..]
     setStage("stitch", 0.8);
@@ -243,7 +257,7 @@ export async function runGenerateJob(job: Job, report: Reporter) {
   } catch (e) {
     const msg = (e as Error).message;
     Users.grant(project.userId, CREDITS_PER_GENERATION[gen.mode]); // never charge for a failure
-    Generations.update(gen.id, { status: "failed", stage: "failed", stageLabel: labelFor("failed"), friendlyError: FRIENDLY_FAIL });
+    Generations.update(gen.id, { status: "failed", stage: "failed", stageLabel: labelFor("failed"), friendlyError: e instanceof GenerationStopped ? e.friendly : FRIENDLY_FAIL });
     Events.track("generation_failed", { userId: project.userId, projectId: gen.projectId, generationId: gen.id, props: { error: msg } });
     throw e;
   }

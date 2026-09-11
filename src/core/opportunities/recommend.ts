@@ -20,21 +20,22 @@ const laneScore: Record<Intent, (o: Opp) => number> = {
 };
 
 const laneFilter: Record<Intent, (intensity: number, category: string) => boolean> = {
-  smooth: (i) => i <= 0.42,
-  cinematic: (i, c) => i >= 0.28 && i <= 0.72 && c !== "surreal",
-  viral: (i) => i >= 0.5,
+  smooth: (i) => i <= 0.45,
+  cinematic: (i, c) => i >= 0.3 && i <= 0.75 && c !== "surreal",
+  viral: (i, c) => c === "transformation" || c === "portal" || c === "surreal" || i >= 0.5,
   insane: (i) => i >= 0.72,
   surprise: () => true,
 };
 
-export const LANE_ORDER: Intent[] = ["smooth", "cinematic", "viral", "insane", "surprise"];
+/** Every lane is a seamless bridge; they differ in how much the world is allowed to change. */
+export const LANE_ORDER: Intent[] = ["smooth", "cinematic", "viral", "surprise"];
 
 export const LANE_COPY: Record<Intent, { label: string; blurb: string }> = {
-  smooth: { label: "Smooth", blurb: "Most natural transition." },
-  cinematic: { label: "Cinematic", blurb: "Most professionally composed." },
-  viral: { label: "Viral", blurb: "Visually surprising and attention-grabbing." },
-  insane: { label: "Insane", blurb: "Maximum transformation. Impossible camera." },
-  surprise: { label: "Surprise Me", blurb: "The strongest idea our editor sees in your footage." },
+  smooth: { label: "Invisible", blurb: "The cut you cannot see." },
+  cinematic: { label: "Cinematic", blurb: "One continuous camera move between the shots." },
+  viral: { label: "Transformation", blurb: "One shot becomes the other." },
+  insane: { label: "Transformation", blurb: "One shot becomes the other." },
+  surprise: { label: "Surprise Me", blurb: "The strongest seamless idea in your footage." },
 };
 
 export function recommend<T extends Opp>(opps: T[]): { lane: Intent; opportunity: T }[] {

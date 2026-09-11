@@ -95,10 +95,19 @@ test("two-endpoint routing excludes Standard and Gen-4 Turbo in both generation 
     assert.equal(models.every((model) => model.supportsLastFrame), true, "only two-endpoint models may bridge");
     assert.ok(!ids.includes("fal:kling-2.1-standard") && !ids.includes("runway:gen4-turbo"), "first-frame-only models are excluded");
     assert.ok(ids.includes("fal:kling-2.1-pro") && ids.some((id) => id.startsWith("higgsfield:")), "every bridge-capable provider is offered");
-    assert.equal(ids[ids.length - 1], LOCAL_MODEL.id, "ffmpeg closes the list as the safety net");
+    assert.ok(!ids.includes(LOCAL_MODEL.id), "ffmpeg is never routed while an AI bridge model is configured");
   }
   config.providers.force = "runway";
-  assert.deepEqual(routeModels({ recipe: getRecipe("liquid-transform"), mode: "preview" }).map((model) => model.providerId), ["local"]);
+  assert.deepEqual(routeModels({ recipe: getRecipe("liquid-transform"), mode: "preview" }).map((model) => model.providerId), [], "forcing a provider with no two-endpoint model leaves nothing to route");
+});
+
+test("with no AI provider configured, the ffmpeg bridge is the only route", (t) => {
+  const originalForce = config.providers.force;
+  config.providers.force = "";
+  t.after(() => { config.providers.force = originalForce; });
+  for (const provider of PROVIDERS) if (provider.id !== "local") t.mock.method(provider, "isAvailable", () => false);
+  const ids = routeModels({ recipe: getRecipe("liquid-transform"), mode: "preview" }).map((model) => model.id);
+  assert.deepEqual(ids, [LOCAL_MODEL.id], "local development and CI still render a bridge without any provider key");
 });
 
 test("provider billing and invalid-request failures are not marked retryable", async (t) => {
