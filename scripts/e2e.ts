@@ -1,11 +1,13 @@
 /**
  * Production flow test, run against any base URL (local `next start` or the live service):
  *   upload two clips as a fresh guest → boundary frames (last frame of A, first frame of B) → analysis →
- *   three free transition runs → fourth run refused with 402 → balance is zero.
+ *   a clip over 10 MB uploads → three free transition runs → fourth run refused with 402 → balance is zero.
  *
  *   E2E_BASE_URL=https://seamcut.onrender.com npx tsx scripts/e2e.ts
  */
+import { execFileSync } from "node:child_process";
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 
 const BASE = (process.env.E2E_BASE_URL ?? "http://localhost:3000").replace(/\/$/, "");
@@ -37,6 +39,24 @@ async function upload(role: "start" | "end", file: string, projectId?: string) {
   return r.body as { project: { id: string }; asset: { id: string; kind: string; durationSec: number | null; thumbnailUrl: string | null } };
 }
 
+/**
+ * A phone-sized clip. The proxy in front of /api once buffered request bodies and cut them at 10 MB, so real clips
+ * failed to parse as form data while the small samples above passed.
+ */
+async function largeUpload() {
+  const file = path.join(os.tmpdir(), `seam-e2e-large-${process.pid}.mp4`);
+  execFileSync(process.env.FFMPEG_PATH || "ffmpeg", ["-v", "error", "-y", "-f", "lavfi", "-i", "testsrc2=size=1920x1080:rate=30", "-t", "6",
+    "-c:v", "libx264", "-b:v", "22M", "-maxrate", "22M", "-bufsize", "44M", "-pix_fmt", "yuv420p", file]);
+  const bytes = fs.statSync(file).size;
+  if (bytes < 12 * 1024 * 1024) fail(`large upload fixture is only ${bytes} bytes`);
+  try {
+    const r = await upload("start", file);
+    log(`large upload ok: ${(bytes / 1e6).toFixed(1)} MB clip → project ${r.project.id}, ${r.asset.kind} ${r.asset.durationSec}s`);
+  } finally {
+    fs.rmSync(file, { force: true });
+  }
+}
+
 async function main() {
   log(`base ${BASE}`);
   const runtime = await call("/api/runtime");
@@ -64,6 +84,7 @@ async function main() {
   if (a.asset.kind === "video" && durA && bd.cutA < durA - 1.6) fail(`cutA ${bd.cutA} is not near the end of clip A (${durA}s)`);
   if (b.asset.kind === "video" && bd.cutB > 1.6) fail(`cutB ${bd.cutB} is not near the start of clip B`);
   log(`boundary ok: A last frame at ${bd.cutA.toFixed(2)}s of ${durA}s, B first frame at ${bd.cutB.toFixed(2)}s; lanes: ${(view.recommendations ?? []).map((l: any) => l.lane).join(", ")}`);
+  await largeUpload();
   log(`credits before runs: ${view.credits}`);
   const RUN_COST = Number(process.env.E2E_RUN_COST ?? 2);
   if (view.credits !== FREE_RUNS * RUN_COST) fail(`fresh guest should have ${FREE_RUNS} free runs (${FREE_RUNS * RUN_COST} credits), has ${view.credits}`);

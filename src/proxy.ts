@@ -12,4 +12,7 @@ export function proxy(request: NextRequest) {
   return NextResponse.next();
 }
 
-export const config = { matcher: "/api/:path*" };
+// Every API route except the upload. Next buffers each request body that passes through the proxy and cuts it at
+// 10 MB (proxyClientMaxBodySize), so clips over 10 MB reached the upload route truncated and failed to parse as form
+// data. The upload route runs the same cross-site check itself.
+export const config = { matcher: ["/api/((?!upload$).*)"] };

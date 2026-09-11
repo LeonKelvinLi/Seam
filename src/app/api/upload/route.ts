@@ -4,6 +4,7 @@ import { assetView, projectView } from "@/lib/server/views";
 import { Events, Projects } from "@/db/repo";
 import { ownedProject } from "@/lib/server/access";
 import { LIMITS, clientIp, rateLimit, tooMany } from "@/lib/server/ratelimit";
+import { crossSiteRequest } from "@/lib/server/csrf";
 import { cookies } from "next/headers";
 
 const MAX_UPLOAD_BYTES = 500 * 1024 * 1024;
@@ -12,6 +13,8 @@ export const runtime = "nodejs";
 export const maxDuration = 300;
 
 export async function POST(req: Request) {
+  // The proxy skips this route so uploads are not cut at its 10 MB body buffer (src/proxy.ts); the cross-site guard runs here.
+  if (crossSiteRequest(req.method, req.headers, req.headers.get("host"))) return bad("Cross-site request refused.", 403);
   // A brand-new visitor gets free runs; cap how many fresh guest identities one address can mint per day.
   const jar = await cookies();
   if (!jar.get("seam_session") && !jar.get("seam_uid")) {
