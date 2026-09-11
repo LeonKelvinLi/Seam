@@ -4,7 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { api, track } from "@/lib/api";
 
-interface Recipe { id: string; name: string; category: string; tags: string[]; description: string; intensity: number; wow: number; recommendedDuration: [number, number]; local: { kind: string; xfade: string }; previewUrl: string | null; sound?: string }
+interface Recipe { id: string; name: string; category: string; tags: string[]; description: string; intensity: number; wow: number; recommendedDuration: [number, number]; local: { kind: string; xfade: string }; previewUrl: string | null; previewPoster?: string | null; sound?: string }
 interface Category { tag: string; label: string }
 interface Example { id: string; title: string; bridge: string; poster: string }
 
@@ -121,7 +121,7 @@ function RecipeCard({ recipe, onUse, busy, cta }: { recipe: Recipe; onUse: () =>
       <div className="recipe-preview frame grain aspect-video" onPointerEnter={(e) => { if (e.pointerType === "mouse" && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) void v.current?.play().catch(() => {}); }} onPointerLeave={(e) => { if (e.pointerType === "mouse") v.current?.pause(); }}>
         {recipe.previewUrl ? (
           <>
-            <video ref={v} src={recipe.previewUrl} muted loop playsInline preload="metadata" onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)} aria-hidden="true" className="h-full w-full object-cover" />
+            <video ref={v} src={recipe.previewUrl} poster={recipe.previewPoster ?? undefined} muted loop playsInline preload="metadata" onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)} aria-hidden="true" className="h-full w-full object-cover" />
             <button className="recipe-preview-toggle" aria-label={`${playing ? "Pause" : "Play"} ${recipe.name} preview`} aria-pressed={playing} onClick={() => { const video = v.current; if (video) { if (video.paused) void video.play().catch(() => {}); else video.pause(); } }}><span><span aria-hidden="true">{playing ? "Ⅱ" : "▷"}</span>{playing ? "Pause preview" : "Play preview"}</span></button>
           </>
         ) : (

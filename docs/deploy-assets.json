@@ -861,6 +861,106 @@
       "path": "public/library-ai/foreground-pass.mp4",
       "bytes": 1525079,
       "sha256": "83873024e392f7056ac70479facaf785d2c7353003764907f7fccde02fd8a982"
+    },
+    {
+      "path": "public/library-ai/color-match.jpg",
+      "bytes": 159276,
+      "sha256": "ef24527811fd54eb7a3ef2b66a7dd98cc429511ed2bf6c12b3efd69798a66031"
+    },
+    {
+      "path": "public/library-ai/composition-match.jpg",
+      "bytes": 150221,
+      "sha256": "817877e90cabe493771e24acf5672a20ad4d58d3e7073e1d156d853a121bfb96"
+    },
+    {
+      "path": "public/library-ai/dolly-through.jpg",
+      "bytes": 140241,
+      "sha256": "5c62e82814e9c5422a65174efbd6f8612894f3d7026e752c80bce52376592b1f"
+    },
+    {
+      "path": "public/library-ai/environment-morph.jpg",
+      "bytes": 113781,
+      "sha256": "147c748d9c6c99e33a3f8931e79d3181d044e4c931301a6c9d7d77fd6282fec5"
+    },
+    {
+      "path": "public/library-ai/fabric-transform.jpg",
+      "bytes": 35927,
+      "sha256": "81092e593a629eeced9668b09882703878d2c1f2c91a7662c70a664f2feda361"
+    },
+    {
+      "path": "public/library-ai/foreground-pass.jpg",
+      "bytes": 129221,
+      "sha256": "54b89a9567fa880cc6ebc76a8fbee3284176603bad350fcb1fa38e4e042e78a1"
+    },
+    {
+      "path": "public/library-ai/glass-transform.jpg",
+      "bytes": 101718,
+      "sha256": "555d2065b33d51bcfccad03dbc058d83dc57063bfc3afb26d3ec8863ca0f11b6"
+    },
+    {
+      "path": "public/library-ai/material-transform.jpg",
+      "bytes": 60360,
+      "sha256": "a96746543e73f02db8ff7e1928fcfc7cd3aa2758ce56ea8b75952d84836f882d"
+    },
+    {
+      "path": "public/library-ai/motion-match.jpg",
+      "bytes": 82013,
+      "sha256": "df73de1edf8432b383bba61bd03c1a3cedc57c13e7b8d952b08bf141d2af96e1"
+    },
+    {
+      "path": "public/library-ai/object-becomes-environment.jpg",
+      "bytes": 64903,
+      "sha256": "ba810a9f82d48800486f814fd18bd681b097392713883906156de4d750b8a834"
+    },
+    {
+      "path": "public/library-ai/object-match.jpg",
+      "bytes": 85817,
+      "sha256": "714c8ea0d9fbaa9fa9f20d5a5b1ad545795568c2ccaa6d91bde6456bc83b56a6"
+    },
+    {
+      "path": "public/library-ai/object-morph.jpg",
+      "bytes": 80249,
+      "sha256": "9667abdd0393307cf5744e2f068d87f43634b0fd588388d5d2e4ef896cd37910"
+    },
+    {
+      "path": "public/library-ai/object-occlusion.jpg",
+      "bytes": 56372,
+      "sha256": "e1cd4ac6024dfd230d1d445c78a5c8e1da455a35a259a3fb0bac62551ee02940"
+    },
+    {
+      "path": "public/library-ai/orbit.jpg",
+      "bytes": 123077,
+      "sha256": "dc9ae9e3e8830dd3d65c98549067b36456743e4963f2e56afb989c20aff12a87"
+    },
+    {
+      "path": "public/library-ai/portal-car-window.jpg",
+      "bytes": 58035,
+      "sha256": "9d02dd261b2dc4bc34921d61bd4658d6271c890fbdb25755d770388963c1b192"
+    },
+    {
+      "path": "public/library-ai/portal-cup.jpg",
+      "bytes": 92251,
+      "sha256": "3c302d70b60d13d8bd46d1a36e251174ee29e7f00898bfc11b2b71fe9c8234d5"
+    },
+    {
+      "path": "public/library-ai/portal-tunnel.jpg",
+      "bytes": 99171,
+      "sha256": "bd19dadc103dc833eed0ddcc2711e3a5f22f0b177d2f924df41f37b866a6ac52"
+    },
+    {
+      "path": "public/library-ai/portal-tv.jpg",
+      "bytes": 77679,
+      "sha256": "0e856e5b5e08dd07cdc2396f7efc1d6643ef8e6204f90c623fb6fa24c56390b8"
+    },
+    {
+      "path": "public/library-ai/pull-out-reveal.jpg",
+      "bytes": 143747,
+      "sha256": "fa7941271b838f52073dfc083b639f31c194d06fce86e8c58e8a0b8a775abc42"
+    },
+    {
+      "path": "public/library-ai/silhouette-match.jpg",
+      "bytes": 44880,
+      "sha256": "d5cd7d580dbbe5053c8a27ef82b81c295a8480edddd1d719a481978d1d5bc278"
     }
   ]
 }
