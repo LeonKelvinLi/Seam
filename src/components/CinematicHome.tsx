@@ -13,13 +13,11 @@ const clamp = (n: number) => Math.min(1, Math.max(0, n));
 const COFFEE_FILM = "/examples/coffee-ocean/after.mp4";
 const DESKTOP_VIDEO_MEDIA = "(min-width: 1200px) and (pointer: fine)";
 
+/** The hero film streams as a plain loop, so desktops can take its 4K file; phones get the lighter 720p one. */
 function VideoSources({ src }: { src: string }) {
-  const mobile = [COFFEE_FILM, ...CHAPTERS.map((item) => `/examples/${item.id}/after.mp4`)].includes(src);
-  if (!mobile) return <source src={src} type="video/mp4" />;
+  if (src !== COFFEE_FILM) return <source src={src} type="video/mp4" />;
   return <>
-    {/* Short keyframe intervals make phone scrubbing more responsive at the same 720p resolution. */}
     <source src={src.replace("/after.mp4", "/after-mobile.mp4")} type="video/mp4" media="(max-width: 1199px), (pointer: coarse)" />
-    {/* Full-screen desktops get 4K (the story chapters are Topaz upscales of the 720p edits), keyframed every 0.5 s so scrubbing stays smooth. */}
     <source src={src.replace("/after.mp4", "/after-4k.mp4")} type="video/mp4" media={DESKTOP_VIDEO_MEDIA} />
     <source src={src} type="video/mp4" />
   </>;
@@ -83,6 +81,47 @@ export function CinematicHome() {
     return () => { observer.disconnect(); document.removeEventListener("visibilitychange", visibility); };
   }, []);
 
+  // Scrubbing reads a new frame at every scroll step, so the story films start on the 720p files with a keyframe every
+  // 0.5 s, which seek smoothly even over the network. Desktops then download the sharp version (1440p cut from the Topaz
+  // 4K master, a keyframe every 5 frames) whole in the background and switch to it, so its seeks come from memory.
+  // Pointing the videos at a sharp file over the network froze scrubbing: every seek waited on a range request.
+  const pendingHd = useRef(new Map<number, string>());
+  const onScreen = useRef(-1);
+  // A chapter keeps its current file while it is on screen, since switching src mid-scrub would flash the poster frame.
+  const applyHd = useCallback(() => {
+    for (const [index, url] of pendingHd.current) {
+      const video = storyVideos.current[index];
+      if (!video || index === onScreen.current) continue;
+      video.src = url;
+      pendingHd.current.delete(index);
+    }
+  }, []);
+
+  useEffect(() => {
+    const section = story.current;
+    if (!section || !window.matchMedia(DESKTOP_VIDEO_MEDIA).matches) return;
+    const controller = new AbortController();
+    const urls: string[] = [];
+    const pending = pendingHd.current;
+    const download = async () => {
+      for (let index = 0; index < CHAPTERS.length; index++) {
+        const res = await fetch(`/examples/${CHAPTERS[index].id}/after-hd.mp4`, { signal: controller.signal });
+        if (!res.ok) return;
+        const url = URL.createObjectURL(await res.blob());
+        urls.push(url);
+        pending.set(index, url);
+        applyHd();
+      }
+    };
+    const observer = new IntersectionObserver(([entry]) => {
+      if (!entry.isIntersecting) return;
+      observer.disconnect();
+      download().catch(() => {});
+    }, { rootMargin: "100% 0px" });
+    observer.observe(section);
+    return () => { observer.disconnect(); controller.abort(); pending.clear(); urls.forEach((url) => URL.revokeObjectURL(url)); };
+  }, [applyHd]);
+
   useEffect(() => {
     if (!root.current) return;
     let frame = 0;
@@ -112,7 +151,11 @@ export function CinematicHome() {
       const storyBox = story.current?.getBoundingClientRect();
       // Keep custom property invalidation within the affected section, instead of the whole page.
       if (heroBox) setProgress(hero.current, "--hero-progress", clamp(-heroBox.top / height));
-      if (!storyBox || storyBox.top >= height || storyBox.bottom <= 72) { shown = -1; last = 0; return; }
+      if (!storyBox || storyBox.top >= height || storyBox.bottom <= 72) {
+        shown = -1; last = 0; onScreen.current = -1;
+        if (pendingHd.current.size) applyHd();
+        return;
+      }
       const stageHeight = storyStage.current?.offsetHeight ?? height - 72;
       const target = clamp((72 - storyBox.top) / Math.max(1, storyBox.height - stageHeight));
       const dt = last ? Math.min(0.1, (now - last) / 1000) : 0;
@@ -122,6 +165,8 @@ export function CinematicHome() {
       const index = Math.min(CHAPTERS.length - 1, Math.floor(shown * CHAPTERS.length));
       const local = clamp(shown * CHAPTERS.length - index);
       if (index !== activeChapter) { activeChapter = index; setChapter(index); }
+      onScreen.current = index;
+      if (pendingHd.current.size) applyHd();
       setProgress(story.current, "--chapter-progress", local);
       const video = storyVideos.current[index];
       if (video && video.readyState >= 1 && Number.isFinite(video.duration) && !video.seeking) {
@@ -169,7 +214,7 @@ export function CinematicHome() {
       <div className={styles.heroBottom}><a href="#explore"><span className={styles.scrollArrow}>↓</span> SCROLL TO CHANGE THE SCENE</a><span>YOUR FOOTAGE. A NEW POINT OF VIEW.</span><span className={styles.coordinates}>ALWAYS IN MOTION ↗</span></div>
     </section>
     <section id="explore" className={styles.story} ref={story} aria-label="Explore transitions by scrolling"><div className={styles.storySticky} ref={storyStage}>
-      <div className={styles.storyVisual}>{CHAPTERS.map((item, index) => <div className={styles.chapterFilm} key={item.id} data-active={chapter === index} aria-hidden="true"><video ref={(element) => { storyVideos.current[index] = element; }} poster={`/examples/${item.id}/poster.jpg`} muted playsInline preload="metadata"><VideoSources src={`/examples/${item.id}/after.mp4`} /></video></div>)}</div><div className={styles.storyShade} />
+      <div className={styles.storyVisual}>{CHAPTERS.map((item, index) => <div className={styles.chapterFilm} key={item.id} data-active={chapter === index} aria-hidden="true"><video ref={(element) => { storyVideos.current[index] = element; }} poster={`/examples/${item.id}/poster.jpg`} muted playsInline preload="metadata"><source src={`/examples/${item.id}/after-mobile.mp4`} type="video/mp4" /></video></div>)}</div><div className={styles.storyShade} />
       <div className={styles.storyTopline}><span className={styles.eyebrow}>THE SPACE BETWEEN</span><span className={styles.storyInstruction}>{motion ? "YOUR SCROLL IS THE PLAYHEAD" : "SELECT A SCENE BELOW"} <span>↓</span></span></div>
       <div className={styles.storyCopy} key={currentChapter.id}><span className={styles.chapterNumber}>{currentChapter.type}</span><h2>{currentChapter.title[0]}<br /><em>{currentChapter.title[1]}</em></h2><p>{currentChapter.note}</p><Link href="/create" className={styles.lightLink}>Make a connection <Arrow /></Link></div>
       <div className={styles.frameReticle} aria-hidden="true"><span /><span /><span /><span /></div>
