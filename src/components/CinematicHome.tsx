@@ -19,7 +19,8 @@ function VideoSources({ src }: { src: string }) {
   return <>
     {/* Short keyframe intervals make phone scrubbing more responsive at the same 720p resolution. */}
     <source src={src.replace("/after.mp4", "/after-mobile.mp4")} type="video/mp4" media="(max-width: 1199px), (pointer: coarse)" />
-    {src === COFFEE_FILM && <source src="/examples/coffee-ocean/after-4k.mp4" type="video/mp4" media={DESKTOP_VIDEO_MEDIA} />}
+    {/* Full-screen desktops get 4K (the story chapters are Topaz upscales of the 720p edits), keyframed every 0.5 s so scrubbing stays smooth. */}
+    <source src={src.replace("/after.mp4", "/after-4k.mp4")} type="video/mp4" media={DESKTOP_VIDEO_MEDIA} />
     <source src={src} type="video/mp4" />
   </>;
 }

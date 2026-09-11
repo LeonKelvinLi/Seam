@@ -98,6 +98,11 @@
       "sha256": "fe1f06dadbe32df29c779fa5ab1ec569f2d58a87f961c6889ad970732b3f7689"
     },
     {
+      "path": "public/examples/eye-space/after-4k.mp4",
+      "bytes": 31621076,
+      "sha256": "9f22cbc98bc731078edaa04656e655d41a885455417870a484156d1a3f07c830"
+    },
+    {
       "path": "public/examples/eye-space/after-mobile.mp4",
       "bytes": 3978475,
       "sha256": "9717169af7af7d4861c8ad66e75416be1e603d20a0ea91f973c1bf92cf759ecc"
@@ -306,6 +311,11 @@
       "path": "public/examples/window-clouds/a.mp4",
       "bytes": 534959,
       "sha256": "0a0d299550fe24fb60c05b3cb04f14278aef1e8e754581fe419702ec6f2e8d1d"
+    },
+    {
+      "path": "public/examples/window-clouds/after-4k.mp4",
+      "bytes": 23732845,
+      "sha256": "203c7796ca87a080bf4def06090d353a442b0be0b3d2a30063fb0adc408df2fe"
     },
     {
       "path": "public/examples/window-clouds/after-mobile.mp4",

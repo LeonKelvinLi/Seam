@@ -107,6 +107,10 @@ Then add a webhook endpoint in Stripe pointing at `https://<your-domain>/api/str
 bridges from PixVerse V6 via OpenArt, 2026-09-05). They are demo material, not user footage. `npm run samples` renders vector
 stand-ins for any pair that is missing; `scripts/import-generated.ts mapping.json` imports new externally generated pairs
 (`a` must end on the bridge's first frame, `b` must start on its last frame; set `reverseA` when `a` was generated from that frame).
+The home page films (`coffee-ocean` in the hero, `eye-space` and `window-clouds` in the scroll story) also ship an
+`after-4k.mp4` for desktops. The two story films are Topaz 4K upscales of the 720p edits (2026-09-11), encoded as H.264
+with a keyframe every 0.5 s so scroll scrubbing stays smooth. `public/examples/*/` is gitignored: add new example files
+with `git add -f` and pin them in `docs/deploy-assets.json` and `.dockerignore`, or the deploy's asset check fails.
 
 `public/library-ai` holds a real AI preview for each seamless style the example set does not already show (20 styles,
 2026-09-10). Each has start and end stills from GPT Image 2 (high quality, 2k) and a 4 s first→last-frame bridge from
