@@ -12,6 +12,22 @@ export function mailConfigured(): boolean {
   return !!(process.env.RESEND_API_KEY?.trim() && process.env.SEAM_MAIL_FROM?.trim());
 }
 
+const domainOf = (address: string) => address.match(/@([^>\s]+)/)?.[1]?.toLowerCase();
+
+/**
+ * Reply-To is set only when the support address sits on the sending domain. A business From with a
+ * free-mail Reply-To (gmail.com, outlook.com…) is a forgery pattern to spam filters — SpamAssassin's
+ * FREEMAIL_FORGED_REPLYTO alone costs about 2.5 points and lands account mail in Spam. Support stays
+ * reachable through the address on the legal pages either way.
+ */
+export function replyToAddress(): string | undefined {
+  const support = process.env.SEAM_SUPPORT_EMAIL?.trim();
+  const from = process.env.SEAM_MAIL_FROM?.trim();
+  if (!support || !from) return undefined;
+  const fromDomain = domainOf(from);
+  return fromDomain && domainOf(support) === fromDomain ? support : undefined;
+}
+
 export async function sendMail(mail: Mail): Promise<{ sent: boolean; id?: string }> {
   if (!mailConfigured()) {
     if (process.env.NODE_ENV === "development") {
@@ -25,7 +41,7 @@ export async function sendMail(mail: Mail): Promise<{ sent: boolean; id?: string
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY?.trim()}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ from: process.env.SEAM_MAIL_FROM?.trim(), reply_to: process.env.SEAM_SUPPORT_EMAIL?.trim() || undefined, to: [mail.to], subject: mail.subject, text: mail.text, html: mail.html ?? `<pre style="font:14px/1.5 -apple-system,Segoe UI,sans-serif;white-space:pre-wrap">${escapeHtml(mail.text)}</pre>` }),
+      body: JSON.stringify({ from: process.env.SEAM_MAIL_FROM?.trim(), reply_to: replyToAddress(), to: [mail.to], subject: mail.subject, text: mail.text, html: mail.html ?? `<pre style="font:14px/1.5 -apple-system,Segoe UI,sans-serif;white-space:pre-wrap">${escapeHtml(mail.text)}</pre>` }),
       signal: AbortSignal.timeout(10_000),
     });
     if (!res.ok) { log.error("mail send failed", { status: res.status }); return { sent: false }; }

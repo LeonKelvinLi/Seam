@@ -25,8 +25,8 @@ function setMailEnv(t: { after: (fn: () => void) => void }, values: Record<strin
   t.after(() => apply(previous));
 }
 
-test("transactional replies use the configured support mailbox and omit Reply-To when unset", async (t) => {
-  setMailEnv(t, { RESEND_API_KEY: "test-key", SEAM_MAIL_FROM: "SeamCut <accounts@example.com>", SEAM_SUPPORT_EMAIL: " support@gmail.com " });
+test("Reply-To is used only when the support mailbox is on the sending domain", async (t) => {
+  setMailEnv(t, { RESEND_API_KEY: "test-key", SEAM_MAIL_FROM: "SeamCut <accounts@example.com>", SEAM_SUPPORT_EMAIL: " support@example.com " });
   const requests: Record<string, unknown>[] = [];
   t.mock.method(globalThis, "fetch", async (_input: unknown, init?: RequestInit) => {
     requests.push(JSON.parse(String(init?.body)));
@@ -35,15 +35,16 @@ test("transactional replies use the configured support mailbox and omit Reply-To
   const message = { to: "customer@example.com", subject: "Confirm email", text: "Confirmation message" };
 
   assert.deepEqual(await sendMail(message), { sent: true, id: "mail-test-id" });
-  assert.equal(requests[0].reply_to, "support@gmail.com");
+  assert.equal(requests[0].reply_to, "support@example.com");
   assert.equal(requests[0].from, "SeamCut <accounts@example.com>");
   assert.deepEqual(requests[0].to, [message.to]);
 
-  for (const supportEmail of [undefined, " "]) {
+  // A business From with a free-mail Reply-To is a forgery pattern to spam filters, so it is dropped.
+  for (const supportEmail of ["support@gmail.com", "someone@outlook.com", undefined, " "]) {
     if (supportEmail === undefined) delete process.env.SEAM_SUPPORT_EMAIL;
     else process.env.SEAM_SUPPORT_EMAIL = supportEmail;
     assert.deepEqual(await sendMail(message), { sent: true, id: "mail-test-id" });
-    assert.equal(Object.hasOwn(requests.at(-1)!, "reply_to"), false);
+    assert.equal(Object.hasOwn(requests.at(-1)!, "reply_to"), false, `reply_to must be omitted for ${supportEmail ?? "unset"}`);
   }
 });
 
