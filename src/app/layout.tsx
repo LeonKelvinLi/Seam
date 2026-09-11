@@ -29,7 +29,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </Link>
             <span className="site-nav-label mono">AI transition studio</span>
             <div className="site-nav-actions">
-              <Link href="/library" className="site-nav-link" aria-label="Transition library">Explore transitions</Link>
+              <Link href="/library" className="site-nav-link">See what SeamCut makes</Link>
               <Link href="/create" className="btn btn-primary btn-sm">Open studio <span aria-hidden="true">↗</span></Link>
             </div>
           </nav>
@@ -38,7 +38,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <footer className="site-footer">
           <Link href="/" className="site-footer-brand">SeamCut</Link>
           <p>Two clips. Infinite possibilities.<br /><span className="muted">Footage stays yours.</span></p>
-          <div className="site-footer-links"><Link href="/library">Transition library ↗</Link><Link href="/create">Open studio ↗</Link><Link href="/pricing">Pricing</Link><Link href="/terms">Terms</Link><Link href="/privacy">Privacy</Link><Link href="/refunds">Refunds</Link></div>
+          <div className="site-footer-links"><Link href="/library">See what SeamCut makes ↗</Link><Link href="/create">Open studio ↗</Link><Link href="/pricing">Pricing</Link><Link href="/terms">Terms</Link><Link href="/privacy">Privacy</Link><Link href="/refunds">Refunds</Link></div>
           <span className="site-footer-note mono">FRAME A → FRAME B</span>
         </footer>
       </body>
