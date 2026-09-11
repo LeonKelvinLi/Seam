@@ -1,6 +1,10 @@
 import fs from "node:fs";
 import path from "node:path";
-import { json } from "@/lib/server/session";
+import { getUserId, json } from "@/lib/server/session";
+import { ownedProject } from "@/lib/server/access";
+import { scoreRecipeForProject } from "@/lib/server/generate";
+import { Opportunities } from "@/db/repo";
+import { requirementSummary } from "@/core/opportunities/fit";
 import { LIBRARY_CATEGORIES, RECIPES, publicRecipe } from "@/core/recipes/registry";
 
 /**
@@ -32,15 +36,32 @@ function previewFor(id: string, dedicated: Set<string>, posters: Set<string>): {
     : { previewUrl: null, previewPoster: null };
 }
 
-export async function GET() {
+/** For the project's owner, how well its clips fit each effect. Scored on the fly for effects an older analysis did not keep. */
+async function fitsFor(projectId: string | null): Promise<Map<string, { fit: string; fitNeeds: string | null }>> {
+  const fits = new Map<string, { fit: string; fitNeeds: string | null }>();
+  if (!projectId) return fits;
+  const project = ownedProject(projectId, await getUserId());
+  if (!project || project.status !== "analyzed") return fits;
+  const stored = new Map(Opportunities.forProject(projectId).map((o) => [o.recipeId, o.hints]));
+  for (const r of RECIPES) {
+    const hints = stored.get(r.id)?.fit ? stored.get(r.id) : scoreRecipeForProject(projectId, r.id)?.hints;
+    if (hints?.fit) fits.set(r.id, { fit: hints.fit, fitNeeds: hints.fitNeeds ?? null });
+  }
+  return fits;
+}
+
+export async function GET(req: Request) {
   // Only real AI bridges may be shown as previews. The old `public/library` clips were ffmpeg effects
   // rendered on a sample still, which is exactly what SeamCut does not sell.
   const dir = path.join(process.cwd(), "public", "library-ai");
   const files = fs.existsSync(dir) ? fs.readdirSync(dir) : [];
   const previews = new Set(files.filter((f) => f.endsWith(".mp4")).map((f) => f.replace(/\.mp4$/, "")));
   const posters = new Set(files.filter((f) => f.endsWith(".jpg")).map((f) => f.replace(/\.jpg$/, "")));
+  const fits = await fitsFor(new URL(req.url).searchParams.get("p"));
   return json({
     categories: LIBRARY_CATEGORIES,
-    recipes: RECIPES.map((r) => ({ ...publicRecipe(r), ...previewFor(r.id, previews, posters) })),
+    recipes: RECIPES.map((r) => ({
+      ...publicRecipe(r), ...previewFor(r.id, previews, posters), needs: requirementSummary(r.requirements), ...(fits.get(r.id) ?? {}),
+    })),
   });
 }

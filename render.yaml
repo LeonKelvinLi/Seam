@@ -24,7 +24,7 @@ services:
       - key: SEAM_FORCE_PROVIDER
         value: ""
       - key: SEAM_QUALITY_THRESHOLD_PREVIEW
-        value: "65"
+        value: "70"
       - key: SEAM_QUALITY_THRESHOLD
         value: "72"
       - key: SEAM_PARALLEL_ATTEMPTS

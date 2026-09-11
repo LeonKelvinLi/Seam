@@ -35,11 +35,14 @@ export const config = {
     higgsfieldKeyId: env("HIGGSFIELD_API_KEY_ID"),
     higgsfieldKeySecret: env("HIGGSFIELD_API_KEY_SECRET"),
     force: env("SEAM_FORCE_PROVIDER") as "" | "local" | "fal" | "runway" | "higgsfield",
+    /** One bridge model id that every attempt is routed to (proof runs, debugging). Empty in production. */
+    forceModel: env("SEAM_FORCE_MODEL"),
   },
   generation: {
     maxAttempts: num("SEAM_MAX_ATTEMPTS", 3),
     qualityThreshold: num("SEAM_QUALITY_THRESHOLD", 72),
-    qualityThresholdPreview: num("SEAM_QUALITY_THRESHOLD_PREVIEW", 65),
+    // 70, not 65: in the 2026-09-10 proof runs a 66 take melted into a dissolve while an 82 was a clean portal.
+    qualityThresholdPreview: num("SEAM_QUALITY_THRESHOLD_PREVIEW", 70),
     /** Bridge models tried concurrently on the first round (1 = sequential; 2 halves the wait at double provider cost). */
     parallelAttempts: num("SEAM_PARALLEL_ATTEMPTS", 1),
     /** Provider generation fees allowed per UTC day. Past it, generation stops rather than shipping a crossfade. 0 disables the guard. */
@@ -76,7 +79,7 @@ export function describeRuntime() {
       config.generation.allowProcedural ? "local (ffmpeg, fallback forced on)" : "local (ffmpeg, only when no bridge model is configured)",
       config.providers.falKey ? "fal (Kling 2.1)" : null,
       config.providers.runwaySecret ? "runway (Gen-4 Turbo)" : null,
-      config.providers.higgsfieldKeyId && config.providers.higgsfieldKeySecret ? "higgsfield (DoP, Veo 3.1 first→last)" : null,
+      config.providers.higgsfieldKeyId && config.providers.higgsfieldKeySecret ? "higgsfield (DoP, Hailuo-02)" : null,
     ].filter(Boolean),
     mode: config.generation.defaultMode,
     forcedProvider: config.providers.force || null,

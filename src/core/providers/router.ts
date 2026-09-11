@@ -31,7 +31,8 @@ export interface RouteInput {
 
 export function routeModels(input: RouteInput): ModelSpec[] {
   const exclude = new Set(input.exclude ?? []);
-  const remote = availableModels().filter((m) => m.providerId !== "local" && m.supportsLastFrame && !exclude.has(m.id));
+  const only = config.providers.forceModel;
+  const remote = availableModels().filter((m) => m.providerId !== "local" && m.supportsLastFrame && !exclude.has(m.id) && (!only || m.id === only));
   const maxCost = Math.max(0.01, ...remote.map((m) => m.costPerSecondUsd));
   const scored = remote.map((m) => {
     const strength = m.strengths[input.recipe.modelClass] ?? 0.5;

@@ -309,6 +309,8 @@ export interface QualityScores {
   transitionSuccess: number;
   overall: number;
   issues: string[];
+  /** Set by the pixel check (quality/seamless.ts): false means a cross-dissolve or a hard cut; absent means not checked. */
+  seamless?: boolean;
 }
 
 export interface QualityEvaluation {

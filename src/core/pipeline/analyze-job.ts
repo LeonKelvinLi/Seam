@@ -105,7 +105,8 @@ export async function runAnalyzeJob(job: Job, report: Reporter) {
     // ---- opportunities + lanes
     report("recommendations", 0.9);
     const drafts = scoreOpportunities({ a: analyses.get(pair.a.id)!, b: analyses.get(pair.b.id)!, fa: pair.a.features, fb: pair.b.features, pair: pairRes.data });
-    const opps = Opportunities.replaceForProject(projectId, drafts.slice(0, 24).map((d, i) => ({ ...d, projectId, pairAnalysisId: pairRow.id, rank: i })));
+    // Keep every offered effect: the library shows each one's fit for these clips.
+    const opps = Opportunities.replaceForProject(projectId, drafts.map((d, i) => ({ ...d, projectId, pairAnalysisId: pairRow.id, rank: i })));
     const recs = recommend(opps);
     Recommendations.replaceForProject(projectId, recs.map((r) => ({ lane: r.lane, opportunityId: r.opportunity.id })));
 

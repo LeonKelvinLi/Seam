@@ -4,7 +4,10 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { api, track } from "@/lib/api";
 
-interface Recipe { id: string; name: string; category: string; tags: string[]; description: string; intensity: number; wow: number; recommendedDuration: [number, number]; local: { kind: string; xfade: string }; previewUrl: string | null; previewPoster?: string | null; sound?: string }
+interface Recipe { id: string; name: string; category: string; tags: string[]; description: string; intensity: number; wow: number; recommendedDuration: [number, number]; local: { kind: string; xfade: string }; previewUrl: string | null; previewPoster?: string | null; sound?: string; needs?: string; fit?: Fit; fitNeeds?: string | null }
+type Fit = "great" | "possible" | "poor";
+const FIT_ORDER: Record<Fit, number> = { great: 0, possible: 1, poor: 2 };
+const FIT_LABEL: Record<Fit, string> = { great: "Great fit", possible: "Could work", poor: "Poor fit" };
 interface Category { tag: string; label: string }
 interface Example { id: string; title: string; bridge: string; poster: string }
 
@@ -22,12 +25,16 @@ export function Library() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    api<{ categories: Category[]; recipes: Recipe[] }>("/api/recipes").then((r) => { setCats(r.categories); setRecipes(r.recipes); }).catch(() => {});
+    api<{ categories: Category[]; recipes: Recipe[] }>(`/api/recipes${projectId ? `?p=${encodeURIComponent(projectId)}` : ""}`).then((r) => { setCats(r.categories); setRecipes(r.recipes); }).catch(() => {});
     fetch("/examples/manifest.json").then((r) => r.json()).then((list: Example[]) => setExamples(list.slice(0, 6))).catch(() => {});
     track("library_view", { projectId });
   }, [projectId]);
 
-  const list = useMemo(() => (tag === ALL ? recipes : recipes.filter((r) => r.tags.includes(tag))), [recipes, tag]);
+  const list = useMemo(() => {
+    const shown = tag === ALL ? recipes : recipes.filter((r) => r.tags.includes(tag));
+    // With clips in hand, the effects those clips suit come first.
+    return projectId ? [...shown].sort((x, y) => FIT_ORDER[x.fit ?? "possible"] - FIT_ORDER[y.fit ?? "possible"]) : shown;
+  }, [recipes, tag, projectId]);
 
   const use = async (r: Recipe) => {
     if (!projectId) { router.push(`/create?recipe=${r.id}`); return; }
@@ -62,14 +69,14 @@ export function Library() {
       <section className="mt-14">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <h2 className="text-xl">Styles the director can choose</h2>
-          <span className="muted text-sm">Pick one, then bring your clips.</span>
+          <span className="muted text-sm">{projectId ? "Sorted by how well your clips suit each one." : "Each one says what footage it needs."}</span>
         </div>
         <div className="library-filters mt-4 flex gap-2 overflow-x-auto pb-2" role="group" aria-label="Transition categories">
           {[{ tag: ALL, label: "All" }, ...cats].map((c) => <button key={c.tag} className="chip" data-on={c.tag === tag} aria-pressed={c.tag === tag} onClick={() => setTag(c.tag)}>{c.label}</button>)}
         </div>
         {error && <div className="mt-4 text-sm" style={{ color: "var(--accent)" }}>{error}</div>}
         <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {list.map((r) => <RecipeCard key={r.id} recipe={r} busy={busy === r.id} onUse={() => use(r)} cta={projectId ? "Use on my clips" : "Try with my clips"} />)}
+          {list.map((r) => <RecipeCard key={r.id} recipe={r} busy={busy === r.id} onUse={() => use(r)} hasProject={!!projectId} cta={projectId ? "Use on my clips" : "Try with my clips"} />)}
         </div>
       </section>
     </div>
@@ -104,7 +111,8 @@ function ExampleCard({ example }: { example: Example }) {
   );
 }
 
-function RecipeCard({ recipe, onUse, busy, cta }: { recipe: Recipe; onUse: () => void; busy: boolean; cta: string }) {
+function RecipeCard({ recipe, onUse, busy, cta, hasProject }: { recipe: Recipe; onUse: () => void; busy: boolean; cta: string; hasProject: boolean }) {
+  const poor = hasProject && recipe.fit === "poor";
   const v = useRef<HTMLVideoElement | null>(null);
   const [playing, setPlaying] = useState(false);
   useEffect(() => {
@@ -130,13 +138,19 @@ function RecipeCard({ recipe, onUse, busy, cta }: { recipe: Recipe; onUse: () =>
           </div>
         )}
         <div className="recipe-preview-label absolute left-3 top-3 mono uppercase">{recipe.category}</div>
+        {hasProject && recipe.fit && (
+          <div className="recipe-preview-label absolute right-3 top-3 mono uppercase" style={recipe.fit === "great" ? { color: "var(--accent)" } : undefined}>{FIT_LABEL[recipe.fit]}</div>
+        )}
       </div>
       <div className="recipe-details mt-3 flex items-start justify-between gap-3">
         <div>
           <div className="text-lg leading-tight">{recipe.name}</div>
           <div className="mt-1 muted text-sm">{recipe.description}</div>
+          {poor
+            ? <div className="mt-1 text-sm" style={{ color: "var(--accent)" }}>{recipe.fitNeeds ?? "These clips give this effect little to work with."}</div>
+            : !hasProject && recipe.needs ? <div className="mt-1 muted text-xs">{recipe.needs}</div> : null}
         </div>
-        <button className="btn btn-ghost btn-sm shrink-0" onClick={onUse} disabled={busy}>{busy ? "…" : cta}</button>
+        <button className="btn btn-ghost btn-sm shrink-0" onClick={onUse} disabled={busy || poor} title={poor ? "Your clips don't suit this effect" : undefined}>{busy ? "…" : poor ? "Not a fit" : cta}</button>
       </div>
     </div>
   );

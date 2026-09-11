@@ -5,7 +5,13 @@
 import type { Intent, TransitionOpportunity } from "@/core/types";
 import { getRecipe } from "@/core/recipes/registry";
 
-type Opp = Pick<TransitionOpportunity, "recipeId" | "scores">;
+type Opp = Pick<TransitionOpportunity, "recipeId" | "scores"> & { hints?: Record<string, string> };
+
+/** Effects the footage cannot deliver never reach a lane, as long as enough others can. */
+const fitting = <T extends Opp>(opps: T[], min = 3): T[] => {
+  const ok = opps.filter((o) => o.hints?.fit !== "poor");
+  return ok.length >= min ? ok : opps;
+};
 
 const laneScore: Record<Intent, (o: Opp) => number> = {
   smooth: (o) => o.scores.overall * 0.55 + (100 - o.scores.artifactRisk) * 0.3 + o.scores.visualContinuity * 0.15,
@@ -38,7 +44,8 @@ export const LANE_COPY: Record<Intent, { label: string; blurb: string }> = {
   surprise: { label: "Surprise Me", blurb: "The strongest seamless idea in your footage." },
 };
 
-export function recommend<T extends Opp>(opps: T[]): { lane: Intent; opportunity: T }[] {
+export function recommend<T extends Opp>(all: T[]): { lane: Intent; opportunity: T }[] {
+  const opps = fitting(all);
   const used = new Set<string>();
   const out: { lane: Intent; opportunity: T }[] = [];
   for (const lane of LANE_ORDER) {
@@ -55,7 +62,7 @@ export function recommend<T extends Opp>(opps: T[]): { lane: Intent; opportunity
 /** "Make Wilder" / "Make Smoother": step intensity and pick the best opportunity in that band. */
 export function stepIntent<T extends Opp>(opps: T[], current: T, direction: "wilder" | "smoother"): T {
   const cur = getRecipe(current.recipeId).intensity;
-  const band = opps.filter((o) => {
+  const band = fitting(opps, 1).filter((o) => {
     const i = getRecipe(o.recipeId).intensity;
     return direction === "wilder" ? i > cur + 0.12 : i < cur - 0.12;
   });

@@ -58,7 +58,9 @@ npm test                               # unit + ffmpeg integration tests
 - `/` — the demo (before: hard cut, after: Seam), example switcher, one CTA.
 - `/create` — two drop zones → *Understanding your clips* → three lanes (Invisible, Cinematic, Transformation) + Surprise me → progress → result with
   Download full edit / Download transition only / Try another / Make wilder / Make smoother / Regenerate / Share / Fine tune.
-- `/library` — real AI bridges from the example set, then every seamless style the director can choose. Pick one, bring your clips.
+- `/library` — real AI bridges from the example set, then every seamless effect with the footage it needs. Once clips are uploaded,
+  each effect is graded for them (Great fit / Could work / Poor fit, with the reason); a poor fit cannot be picked, and the server
+  refuses it before any credit is charged.
 - `/t/:id` — public share page (Clip A → transition → Clip B, "Make one with your clips").
 - `/ops` — funnel, latency, quality, retries, cost per generation, per model, per recipe.
 
@@ -75,7 +77,11 @@ npm test                               # unit + ffmpeg integration tests
    preserve, avoid) → rendered per provider dialect.
 5. **Router → provider → judge → retry** — models are ranked per transition class and mode; output is time-remapped, judged
    (start/end fidelity, subject consistency, continuity, artifacts, aesthetics), and retried with calmer settings, the next-best
-   bridge model, or a safer seamless recipe. Nothing that fails the bar ships.
+   bridge model, or a safer seamless recipe. Nothing that fails the bar ships, and a pixel check (`src/core/quality/seamless.ts`)
+   fails any take with a cross-dissolve or a hard cut whatever the judge scored. Bridge models all take both boundary frames:
+   Higgsfield DoP leads, MiniMax Hailuo-02 is the last resort, and Veo 3.1 waits until the Higgsfield account is enabled for
+   it (`npx tsx scripts/probe-higgsfield.ts` checks at no cost). None of their APIs has a negative prompt, so the Higgsfield
+   prompt is a plain shot direction with the no-cut and one-object rules written in.
 6. **Stitch** — A is cut at the chosen frame, B resumed at its chosen frame, short video and audio crossfades at both seams.
 
 ## Accounts and payments
@@ -107,7 +113,13 @@ stand-ins for any pair that is missing; `scripts/import-generated.ts mapping.jso
 Higgsfield Cinema Studio 3.0 at 720p, reviewed frame by frame before import. Two were regenerated once: Foreground Pass
 (the first take hid a hard cut behind the coat) and Object Morph (two planes on screen at once). Add or replace previews
 with `node scripts/import-library-previews.mjs previews.json`; the eight example bridges cover the remaining styles
-through `EXAMPLE_PREVIEWS` in `src/app/api/recipes/route.ts`.
+through `EXAMPLE_PREVIEWS` in `src/app/api/recipes/route.ts`. To make a preview with the product itself instead,
+`SEAM_FORCE_PROVIDER= SEAM_DATA_DIR=/tmp/seam-proof npx tsx scripts/proof-previews.ts <effect> <start> <end> <outDir>` runs one
+effect through the full pipeline on a designed pair (real provider credit) and keeps the bridge and the finished edit; add
+`SEAM_FORCE_MODEL=<model id>` to prove one model instead of the router's pick. Cinema Studio is not on the developer API,
+so its previews show what a style can look like rather than what the app's own models deliver: the first Object Morph
+proof run (2026-09-10) came back as a cross-dissolve on DoP Lite and a melt on Hailuo-02. `npx tsx scripts/check-seams.ts
+<videos>` runs the dissolve and cut check on any clip.
 
 See `ARCHITECTURE.md` for the module map, data model and the multi-clip director plan.
 

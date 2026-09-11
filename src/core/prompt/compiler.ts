@@ -8,7 +8,7 @@ import { fillTemplate } from "@/core/opportunities/scorer";
 
 export const PROMPT_COMPILER_VERSION = "1.0";
 
-export type PromptDialect = "kling" | "runway" | "generic";
+export type PromptDialect = "kling" | "runway" | "higgsfield" | "generic";
 
 export interface CompileInput {
   a: FrameAnalysis;
@@ -83,6 +83,18 @@ export function renderPrompt(ir: PromptIR, dialect: PromptDialect): { positive: 
         `Camera: ${ir.camera}. ${ir.bridge}. ${ir.end}. Ends exactly on: ${ir.destination}. ` +
         `${ir.continuity}. Preserve ${ir.preserve}. Cinematic, photoreal, smooth motion, high detail.`;
       return { positive: positive.slice(0, 2400), negative: ir.avoid.join(", ").slice(0, 500) };
+    }
+    case "higgsfield": {
+      // Higgsfield's bridge models (DoP, Veo 3.1, Hailuo-02) take one plain-language prompt and have no negative field,
+      // so the rules that keep a bridge invisible are written into the prompt itself.
+      const sentence = (s: string) => { const t = s.trim().replace(/[.\s]+$/, ""); return t ? `${t.charAt(0).toUpperCase()}${t.slice(1)}.` : ""; };
+      const positive = [
+        sentence(ir.camera), sentence(ir.bridge), sentence(ir.end),
+        `One continuous shot that starts exactly on the first image (${ir.source}) and lands exactly on the last image (${ir.destination}).`,
+        "No cuts, no flashes, no fades, no dissolves. Only one of each object is ever on screen: things transform, they are never replaced by a second copy.",
+        sentence(ir.continuity), sentence(`keep ${ir.preserve}`), sentence(`avoid ${ir.avoid.slice(0, 10).join(", ")}`),
+      ].filter(Boolean).join(" ");
+      return { positive: positive.slice(0, 1800), negative: null };
     }
     case "runway": {
       // Runway prefers positive, plain camera language and short prompts; negatives are ignored.

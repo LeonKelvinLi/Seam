@@ -167,7 +167,7 @@ export async function runGenerateJob(job: Job, report: Reporter) {
       attemptNo += round.length;
       let passed = false;
       for (const r of results) {
-        if (r.scores && r.bridgePath) best = selectPassingCandidate(best, { attempt: r.attempt, bridgePath: r.bridgePath, scores: r.scores, model: r.model, recipe: getRecipe(r.recipeId), durationSec: r.durationSec });
+        if (r.scores && r.bridgePath) best = selectPassingCandidate(best, { attempt: r.attempt, bridgePath: r.bridgePath, scores: r.scores, model: r.model, recipe: getRecipe(r.recipeId), durationSec: r.durationSec }, gen.mode);
         if (r.model.providerId === "local" && attemptNo > 1) fellBackToLocal = true;
         if (r.ok) { passed = true; continue; }
         // A rejected or failed model gets one shot per generation; later rounds go to the next-best bridge model.
@@ -215,7 +215,7 @@ export async function runGenerateJob(job: Job, report: Reporter) {
       Quality.create({ attemptId: attempt.id, judge: judged.judge, scores: judged.scores, passed: ok });
       Attempts.update(attempt.id, { status: ok ? "succeeded" : "rejected", outputPath: bridgePath, durationMs: Date.now() - ta });
       attempt.durationMs = Date.now() - ta; attempt.status = ok ? "succeeded" : "rejected";
-      best = selectPassingCandidate(best, { attempt, bridgePath, scores: judged.scores, model: LOCAL_MODEL, recipe: safe, durationSec });
+      best = selectPassingCandidate(best, { attempt, bridgePath, scores: judged.scores, model: LOCAL_MODEL, recipe: safe, durationSec }, gen.mode);
       if (!best) throw new Error("The fallback transition failed the quality checks");
       fellBackToLocal = true;
       suggestion = suggestion ?? `This footage is fighting the ${getRecipe(gen.recipeId).name.toLowerCase()}. A ${safe.name.toLowerCase()} will likely look cleaner.`;

@@ -6,6 +6,7 @@
  */
 import type { FrameAnalysis, FrameFeatures, OpportunityScores, PairAnalysis, RelationshipKind, ShapeType, TransitionOpportunity } from "@/core/types";
 import type { RecipeRequirements, TransitionRecipe } from "@/core/recipes/types";
+import { fitLevel, needsSentence, requirementPhrases } from "./fit";
 import { RECIPES } from "@/core/recipes/registry";
 import { colorSimilarity } from "@/core/analysis/features";
 import { detectMotivations, motivationSupport, restraint, MOTIVATION_LABEL, type AudioContext } from "@/core/director/grammar";
@@ -95,29 +96,34 @@ export function extractTraits(ctx: ScoringContext): Traits {
   };
 }
 
-/** Fraction of requirement keys satisfied, plus the concrete matches for hint filling. */
-function evaluate(req: RecipeRequirements, t: Traits, ctx: ScoringContext): { score: number; total: number; hits: Record<string, string> } {
+/** Fraction of requirement keys satisfied, the concrete matches for hint filling, and phrases for what is missing. */
+function evaluate(req: RecipeRequirements, t: Traits, ctx: ScoringContext): { score: number; total: number; hits: Record<string, string>; missing: string[] } {
   const hits: Record<string, string> = {};
+  const missing: string[] = [];
+  const phrases = requirementPhrases(req);
   let total = 0, ok = 0;
-  const check = (cond: boolean, key?: string, val?: string) => { total++; if (cond) { ok++; if (key && val) hits[key] = val; } };
-  if (req.shapesA) { const s = req.shapesA.find((x) => t.shapesA.has(x)); check(!!s, "shapeA", s ? t.shapesA.get(s)!.label : undefined); }
-  if (req.shapesB) { const s = req.shapesB.find((x) => t.shapesB.has(x)); check(!!s, "shapeB", s ? t.shapesB.get(s)!.label : undefined); }
-  if (req.relationships) { const r = req.relationships.find((k) => (t.relationships.get(k) ?? 0) >= 0.35); check(!!r); }
-  if (req.materialsA) { const m = mentions(ctx.a, req.materialsA); check(!!m, "materialA", m ?? undefined); }
-  if (req.materialsB) { const m = mentions(ctx.b, req.materialsB); check(!!m, "materialB", m ?? undefined); }
-  if (req.subjectsA) { const s = ctx.a.subjects.find((x) => req.subjectsA!.includes(x.category)); check(!!s, "objectA", s?.label); }
-  if (req.subjectsB) { const s = ctx.b.subjects.find((x) => req.subjectsB!.includes(x.category)); check(!!s, "objectB", s?.label); }
-  if (req.framingA) check(req.framingA.includes(ctx.a.composition.framing));
-  if (req.framingB) check(req.framingB.includes(ctx.b.composition.framing));
-  if (req.cameraA) check(req.cameraA.includes(ctx.a.motion.camera));
-  if (req.speedA) check(req.speedA.includes(ctx.a.motion.speed));
-  if (req.foregroundObjectA !== undefined) check(t.foregroundObjectA === req.foregroundObjectA);
-  if (req.depthA !== undefined) check(t.depthA === req.depthA);
-  if (req.faceA !== undefined) check(t.faceA === req.faceA);
-  if (req.faceB !== undefined) check(t.faceB === req.faceB);
-  if (req.occlusionA !== undefined) check(t.occlusionA === req.occlusionA);
-  if (req.minColorSimilarity !== undefined) check(t.colorSim >= req.minColorSimilarity);
-  return { score: total ? ok / total : 1, total, hits };
+  const check = (need: keyof RecipeRequirements, cond: boolean, key?: string, val?: string) => {
+    total++;
+    if (cond) { ok++; if (key && val) hits[key] = val; } else if (phrases[need]) missing.push(phrases[need]!);
+  };
+  if (req.shapesA) { const s = req.shapesA.find((x) => t.shapesA.has(x)); check("shapesA", !!s, "shapeA", s ? t.shapesA.get(s)!.label : undefined); }
+  if (req.shapesB) { const s = req.shapesB.find((x) => t.shapesB.has(x)); check("shapesB", !!s, "shapeB", s ? t.shapesB.get(s)!.label : undefined); }
+  if (req.relationships) { const r = req.relationships.find((k) => (t.relationships.get(k) ?? 0) >= 0.35); check("relationships", !!r); }
+  if (req.materialsA) { const m = mentions(ctx.a, req.materialsA); check("materialsA", !!m, "materialA", m ?? undefined); }
+  if (req.materialsB) { const m = mentions(ctx.b, req.materialsB); check("materialsB", !!m, "materialB", m ?? undefined); }
+  if (req.subjectsA) { const s = ctx.a.subjects.find((x) => req.subjectsA!.includes(x.category)); check("subjectsA", !!s, "objectA", s?.label); }
+  if (req.subjectsB) { const s = ctx.b.subjects.find((x) => req.subjectsB!.includes(x.category)); check("subjectsB", !!s, "objectB", s?.label); }
+  if (req.framingA) check("framingA", req.framingA.includes(ctx.a.composition.framing));
+  if (req.framingB) check("framingB", req.framingB.includes(ctx.b.composition.framing));
+  if (req.cameraA) check("cameraA", req.cameraA.includes(ctx.a.motion.camera));
+  if (req.speedA) check("speedA", req.speedA.includes(ctx.a.motion.speed));
+  if (req.foregroundObjectA !== undefined) check("foregroundObjectA", t.foregroundObjectA === req.foregroundObjectA);
+  if (req.depthA !== undefined) check("depthA", t.depthA === req.depthA);
+  if (req.faceA !== undefined) check("faceA", t.faceA === req.faceA);
+  if (req.faceB !== undefined) check("faceB", t.faceB === req.faceB);
+  if (req.occlusionA !== undefined) check("occlusionA", t.occlusionA === req.occlusionA);
+  if (req.minColorSimilarity !== undefined) check("minColorSimilarity", t.colorSim >= req.minColorSimilarity);
+  return { score: total ? ok / total : 1, total, hits, missing };
 }
 
 function motionScore(recipe: TransitionRecipe, ctx: ScoringContext, t: Traits): number {
@@ -224,6 +230,11 @@ export function scoreOpportunities(ctx: ScoringContext, recipes: TransitionRecip
     if (recipe.intensity > rule.maxIntensity) overall -= 25;
     if (recipe.id === "hard-cut") overall = rule.preferCleanCut ? Math.max(overall, 72) : Math.min(overall, 58);
     overall = Math.max(0, Math.min(100, overall));
+    // Fit for the library badge: can these clips actually deliver this effect, and if not, why.
+    const fit = fitLevel(req.score, req.total, overall);
+    hints.fit = fit;
+    if (fit === "poor") hints.fitNeeds = req.missing.length ? needsSentence(req.missing) : "These clips give this effect little to work with.";
+    else if (req.missing.length) hints.fitNeeds = needsSentence(req.missing);
     if (by.length) hints.motivatedBy = by.slice(0, 2).map((h) => MOTIVATION_LABEL[h.motivation]).join(" and ");
     hints.sound = recipe.sound;
 

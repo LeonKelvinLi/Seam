@@ -24,6 +24,7 @@ export function opportunityView(o: TransitionOpportunity) {
   return {
     id: o.id, recipeId: o.recipeId, title: o.title, why: o.why, recipe: publicRecipe(r), intensity: r.intensity, wow: o.scores.wow, overall: o.scores.overall,
     motivatedBy: o.hints.motivatedBy ?? null, sound: o.hints.sound ?? r.sound,
+    fit: o.hints.fit ?? null, fitNeeds: o.hints.fitNeeds ?? null,
   };
 }
 

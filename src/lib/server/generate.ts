@@ -1,8 +1,8 @@
 import { config } from "@/core/config";
 import { DEFAULT_FINE_TUNE, type FineTune, type Generation, type GenerationMode, type Intent, type TransitionOpportunity } from "@/core/types";
-import { getRecipe, hasRecipe } from "@/core/recipes/registry";
+import { getRecipe, hasRecipe, isOffered } from "@/core/recipes/registry";
 import { stepIntent } from "@/core/opportunities/recommend";
-import { scoreOpportunities } from "@/core/opportunities/scorer";
+import { scoreOpportunities, type OpportunityDraft } from "@/core/opportunities/scorer";
 import { Events, Frames, Generations, Learning, Opportunities, PairAnalyses, Recommendations, VisualAnalyses, insert } from "@/db/repo";
 import { enqueue } from "@/core/pipeline/runner";
 import { newId, now } from "@/core/ids";
@@ -27,15 +27,24 @@ function laneForIntensity(i: number): Intent {
   return i <= 0.42 ? "smooth" : i <= 0.72 ? "cinematic" : i < 0.85 ? "viral" : "insane";
 }
 
-/** A library pick may not be among the stored top opportunities; score it on demand against the stored analysis. */
+/** Score one recipe against the project's stored analysis without saving anything. */
+export function scoreRecipeForProject(projectId: string, recipeId: string): OpportunityDraft | null {
+  const pair = PairAnalyses.latestForProject(projectId);
+  if (!pair) return null;
+  const fa = Frames.get(pair.startFrameId), fb = Frames.get(pair.endFrameId);
+  const a = fa ? VisualAnalyses.forFrame(fa.id)?.data : undefined, b = fb ? VisualAnalyses.forFrame(fb.id)?.data : undefined;
+  if (!fa || !fb || !a || !b) return null;
+  return scoreOpportunities({ a, b, fa: fa.features, fb: fb.features, pair: pair.data }, [getRecipe(recipeId)])[0] ?? null;
+}
+
+/** A library pick may not be among the stored opportunities (older projects kept the top 24); score and save it. */
 export function ensureOpportunityForRecipe(projectId: string, recipeId: string): TransitionOpportunity {
   const existing = Opportunities.forProject(projectId).find((o) => o.recipeId === recipeId);
-  if (existing) return existing;
+  if (existing?.hints.fit) return existing;
   const pair = PairAnalyses.latestForProject(projectId);
-  if (!pair) throw new Error("analysis missing");
-  const fa = Frames.get(pair.startFrameId)!, fb = Frames.get(pair.endFrameId)!;
-  const a = VisualAnalyses.forFrame(fa.id)!.data, b = VisualAnalyses.forFrame(fb.id)!.data;
-  const draft = scoreOpportunities({ a, b, fa: fa.features, fb: fb.features, pair: pair.data }, [getRecipe(recipeId)])[0];
+  const draft = scoreRecipeForProject(projectId, recipeId);
+  if (!pair || !draft) throw new Error("analysis missing");
+  if (existing) return { ...existing, hints: { ...existing.hints, fit: draft.hints.fit, ...(draft.hints.fitNeeds ? { fitNeeds: draft.hints.fitNeeds } : {}) } };
   const rank = Opportunities.forProject(projectId).length;
   return insert<TransitionOpportunity>("opportunities", { ...draft, id: newId("opp"), projectId, pairAnalysisId: pair.id, rank, createdAt: now() });
 }
@@ -77,8 +86,14 @@ export function createGeneration(input: CreateGenerationInput): Generation {
     opp = Opportunities.get(input.opportunityId);
     if (!opp || opp.projectId !== input.projectId) throw new Error("transition opportunity not found");
   } else if (input.recipeId) {
-    if (!hasRecipe(input.recipeId)) throw new Error("unknown recipe");
+    if (!hasRecipe(input.recipeId) || !isOffered(input.recipeId)) throw new Error("That transition style is not offered.");
     opp = ensureOpportunityForRecipe(input.projectId, input.recipeId);
+    // Refuse before charging: an effect these clips cannot deliver would only waste credits and disappoint.
+    if (opp.hints.fit === "poor") {
+      const err = new Error(`These clips aren't a good fit for ${getRecipe(opp.recipeId).name}. ${opp.hints.fitNeeds ?? ""}`.trim()) as Error & { code?: string };
+      err.code = "POOR_FIT";
+      throw err;
+    }
   } else if (intent) {
     const rec = Recommendations.forProject(input.projectId).find((r) => r.lane === intent);
     opp = rec ? Opportunities.get(rec.opportunityId) : undefined;
