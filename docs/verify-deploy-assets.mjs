@@ -8,7 +8,7 @@ const manifest = JSON.parse(fs.readFileSync(path.join(root, "docs/deploy-assets.
 const errors = [];
 const seen = new Set();
 for (const file of manifest.files) {
-  if (!/^public\/(examples|samples|library)\//.test(file.path) || file.path.split("/").includes("..") || seen.has(file.path)) {
+  if (!/^public\/(examples|samples|library|library-ai)\//.test(file.path) || file.path.split("/").includes("..") || seen.has(file.path)) {
     errors.push(`Invalid or duplicated asset path: ${file.path}`);
     continue;
   }
