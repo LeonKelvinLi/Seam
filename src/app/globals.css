@@ -94,6 +94,8 @@ video, img { display: block; max-width: 100%; }
 .studio-phase-rail li[data-active="true"] { color: var(--fg); }
 .studio-phase-rail li[data-active="true"] .mono { color: var(--accent); opacity: 1; }
 .studio-phase-rail li[data-active="true"]::after { content: ""; position: absolute; left: 0; right: 22%; bottom: -1px; height: 2px; background: var(--accent); }
+.progress-line { height: 2px; background: #ffffff1f; overflow: hidden; }
+.progress-line > i { display: block; height: 100%; background: var(--accent); transition: width .6s ease; }
 .studio-intro { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 40px; }
 .studio-intro h1 { font-size: clamp(40px,5.5vw,68px); }
 .studio-intro h1 span { color: #8f8f82; }

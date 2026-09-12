@@ -96,6 +96,18 @@ export function CreateFlow() {
     return () => clearInterval(t);
   }, [phase, gen]);
 
+  // A clock that ticks while the bridge renders. The model works on its own schedule and a step can stay the same for
+  // minutes, so the screen has to show something moving or the wait reads as a freeze.
+  const [nowMs, setNowMs] = useState(() => Date.now());
+  const stageSince = useRef({ label: "", at: Date.now() });
+  useEffect(() => {
+    if (phase !== "generating") return;
+    setNowMs(Date.now());
+    const t = setInterval(() => setNowMs(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, [phase]);
+  if (gen && stageSince.current.label !== gen.stageLabel) stageSince.current = { label: gen.stageLabel, at: Date.now() };
+
   const generate = useCallback(async (body: Record<string, unknown>) => {
     if (!projectId) return;
     setBusy(true); setError(null); setShowFineTune(false); setVideoMode("full");
@@ -246,7 +258,15 @@ export function CreateFlow() {
           </div>
           <div>
             <Steps steps={GENERATE_STEPS} current={gen.stageLabel} />
-            <p className="mt-6 muted text-sm">{gen.stage === "retry" ? gen.stageLabel : "An AI bridge usually takes 3 to 5 minutes. You can leave this page; it keeps rendering and shows up in your account, and we'll notify this browser when it's ready."}</p>
+            <div className="progress-line mt-5" aria-hidden="true"><i style={{ width: `${Math.round(Math.max(0.05, Math.min(1, gen.progress)) * 100)}%` }} /></div>
+            <div className="mt-3 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 text-xs muted">
+              <span>
+                {Math.floor(Math.max(0, nowMs - Date.parse(gen.createdAt)) / 60000)}:{String(Math.floor(Math.max(0, nowMs - Date.parse(gen.createdAt)) / 1000) % 60).padStart(2, "0")} elapsed
+                {gen.attemptLog.length > 1 ? ` · attempt ${gen.attemptLog.length}` : ""}
+              </span>
+              <span aria-live="polite">on this step {Math.round(Math.max(0, nowMs - stageSince.current.at) / 1000)}s</span>
+            </div>
+            <p className="mt-5 muted text-sm">{gen.stage === "retry" ? gen.stageLabel : "An AI bridge usually takes 3 to 5 minutes. The model keeps its own pace, so a step can sit still for a while; the clock above keeps counting while it works. You can leave this page: it keeps rendering, appears in your account, and this browser gets a notification when it's ready."}</p>
           </div>
         </div>
       )}
