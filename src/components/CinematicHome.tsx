@@ -57,6 +57,11 @@ export function CinematicHome() {
   const [chapter, setChapter] = useState(0);
   const [comparison, setComparison] = useState<"before" | "after">("after");
   const [playingFilm, setPlayingFilm] = useState<string | null>(null);
+  // How much of the scene has downloaded, shown only while the picture cannot follow the scroll: a still frame with no
+  // transition reads as broken, so the wait says what it is.
+  const [loadingPercent, setLoadingPercent] = useState<number | null>(null);
+  const shownTime = useRef<number[]>([]);
+  const bufferedPercent = useRef<number[]>([]);
 
   useEffect(() => {
     const query = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -99,7 +104,8 @@ export function CinematicHome() {
 
   useEffect(() => {
     const section = story.current;
-    if (!section || !window.matchMedia(DESKTOP_VIDEO_MEDIA).matches) return;
+    if (!section) return;
+    const desktop = window.matchMedia(DESKTOP_VIDEO_MEDIA).matches;
     const controller = new AbortController();
     const urls: string[] = [];
     const pending = pendingHd.current;
@@ -116,7 +122,9 @@ export function CinematicHome() {
     const observer = new IntersectionObserver(([entry]) => {
       if (!entry.isIntersecting) return;
       observer.disconnect();
-      download().catch(() => {});
+      // Buffer the scrub files before the story arrives: a scene scrolled into cold shows a still frame, not a transition.
+      for (const video of storyVideos.current) { if (video) { video.preload = "auto"; video.load(); } }
+      if (desktop) download().catch(() => {});
     }, { rootMargin: "100% 0px" });
     observer.observe(section);
     return () => { observer.disconnect(); controller.abort(); pending.clear(); urls.forEach((url) => URL.revokeObjectURL(url)); };
@@ -139,6 +147,11 @@ export function CinematicHome() {
     const EASE_SEC = 0.3;
     let shown = -1;
     let last = 0;
+    let loading: number | null = null;
+    const covers = (video: HTMLVideoElement, time: number) => {
+      for (let r = 0; r < video.buffered.length; r++) if (time >= video.buffered.start(r) - 0.05 && time <= video.buffered.end(r) + 0.05) return true;
+      return false;
+    };
     const paint = (now: number) => {
       frame = 0;
       if (!motion) {
@@ -154,6 +167,7 @@ export function CinematicHome() {
       if (!storyBox || storyBox.top >= height || storyBox.bottom <= 72) {
         shown = -1; last = 0; onScreen.current = -1;
         if (pendingHd.current.size) applyHd();
+        if (loading !== null) { loading = null; setLoadingPercent(null); }
         return;
       }
       const stageHeight = storyStage.current?.offsetHeight ?? height - 72;
@@ -169,27 +183,64 @@ export function CinematicHome() {
       if (pendingHd.current.size) applyHd();
       setProgress(story.current, "--chapter-progress", local);
       const video = storyVideos.current[index];
-      if (video && video.readyState >= 1 && Number.isFinite(video.duration) && !video.seeking) {
-        const time = Math.max(0, video.duration - 0.06) * local;
+      const duration = video && Number.isFinite(video.duration) ? video.duration : 0;
+      if (video && video.readyState >= 1 && duration > 0 && !video.seeking) {
+        const time = Math.max(0, duration - 0.06) * local;
         if (Math.abs(video.currentTime - time) > 0.065) video.currentTime = time;
       }
+      // What the visitor sees is the frame that painted, not the time we asked for. While that frame cannot follow the
+      // scroll, show how much of the scene has arrived: a still frame with no transition reads as broken.
+      const wanted = duration * local;
+      const ready = !!video && duration > 0 && video.readyState >= 2 && covers(video, wanted);
+      const painted = shownTime.current[index];
+      const behind = !ready || (painted !== undefined && Math.abs(painted - wanted) > 0.6);
+      const percent = bufferedPercent.current[index] ?? 0;
+      const next = behind && percent < 100 ? percent : null;
+      if (next !== loading) { loading = next; setLoadingPercent(next); }
       if (shown !== target) schedule();
     };
     const schedule = () => { if (!frame) frame = requestAnimationFrame(paint); };
     window.addEventListener("scroll", schedule, { passive: true });
     window.addEventListener("resize", schedule);
     document.addEventListener("visibilitychange", schedule);
-    const videos = storyVideos.current.filter((v): v is HTMLVideoElement => Boolean(v));
-    videos.forEach((video) => { video.addEventListener("loadedmetadata", schedule); video.addEventListener("seeked", schedule); });
-    schedule();
+    type FrameVideo = HTMLVideoElement & { requestVideoFrameCallback?: (callback: (now: number, meta: { mediaTime: number }) => void) => number };
+    const videos: { video: HTMLVideoElement; index: number }[] = [];
+    storyVideos.current.forEach((video, index) => { if (video) videos.push({ video, index }); });
+    const measure = () => {
+      for (const { video, index } of videos) {
+        const duration = Number.isFinite(video.duration) ? video.duration : 0;
+        let end = 0;
+        for (let r = 0; r < video.buffered.length; r++) end = Math.max(end, video.buffered.end(r));
+        bufferedPercent.current[index] = duration > 0 && (end >= duration - 0.3 || video.readyState >= 4) ? 100 : Math.min(99, Math.round((end / (duration || 1)) * 100));
+      }
+      schedule();
+    };
+    for (const { video, index } of videos) {
+      video.addEventListener("loadedmetadata", measure);
+      video.addEventListener("progress", measure);
+      video.addEventListener("canplaythrough", measure);
+      video.addEventListener("seeked", schedule);
+      // requestVideoFrameCallback reports the frame that reached the screen; currentTime moves even when nothing paints.
+      const seen = (_now: number, meta: { mediaTime: number }) => {
+        shownTime.current[index] = meta.mediaTime;
+        (video as FrameVideo).requestVideoFrameCallback?.(seen);
+      };
+      (video as FrameVideo).requestVideoFrameCallback?.(seen);
+    }
+    measure();
     return () => {
       cancelAnimationFrame(frame);
       window.removeEventListener("scroll", schedule);
       window.removeEventListener("resize", schedule);
       document.removeEventListener("visibilitychange", schedule);
-      videos.forEach((video) => { video.removeEventListener("loadedmetadata", schedule); video.removeEventListener("seeked", schedule); });
+      for (const { video } of videos) {
+        video.removeEventListener("loadedmetadata", measure);
+        video.removeEventListener("progress", measure);
+        video.removeEventListener("canplaythrough", measure);
+        video.removeEventListener("seeked", schedule);
+      }
     };
-  }, [motion]);
+  }, [motion, applyHd]);
 
   const jumpToChapter = useCallback((index: number) => {
     if (!motion) { setChapter(index); return; }
@@ -215,6 +266,7 @@ export function CinematicHome() {
     </section>
     <section id="explore" className={styles.story} ref={story} aria-label="Explore transitions by scrolling"><div className={styles.storySticky} ref={storyStage}>
       <div className={styles.storyVisual}>{CHAPTERS.map((item, index) => <div className={styles.chapterFilm} key={item.id} data-active={chapter === index} aria-hidden="true"><video ref={(element) => { storyVideos.current[index] = element; }} poster={`/examples/${item.id}/poster.jpg`} muted playsInline preload="metadata"><source src={`/examples/${item.id}/after-mobile.mp4`} type="video/mp4" /></video></div>)}</div><div className={styles.storyShade} />
+      {loadingPercent !== null && <div className={styles.storyLoading} role="status" aria-live="polite"><span>Loading the scene {loadingPercent}%</span><i><b style={{ width: `${loadingPercent}%` }} /></i></div>}
       <div className={styles.storyTopline}><span className={styles.eyebrow}>THE SPACE BETWEEN</span><span className={styles.storyInstruction}>{motion ? "YOUR SCROLL IS THE PLAYHEAD" : "SELECT A SCENE BELOW"} <span>↓</span></span></div>
       <div className={styles.storyCopy} key={currentChapter.id}><span className={styles.chapterNumber}>{currentChapter.type}</span><h2>{currentChapter.title[0]}<br /><em>{currentChapter.title[1]}</em></h2><p>{currentChapter.note}</p><Link href="/create" className={styles.lightLink}>Make a connection <Arrow /></Link></div>
       <div className={styles.frameReticle} aria-hidden="true"><span /><span /><span /><span /></div>
