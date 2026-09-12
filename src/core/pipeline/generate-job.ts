@@ -158,7 +158,10 @@ export async function runGenerateJob(job: Job, report: Reporter) {
       const overBudget = budgetExhausted();
       if (overBudget && !proceduralAllowed()) throw new GenerationStopped(FRIENDLY_BUSY, "daily provider budget reached");
       if (overBudget && attemptNo === 0) log.warn("daily provider budget reached; using the procedural bridge", { gen: gen.id });
-      const ranked = overBudget ? [LOCAL_MODEL] : routeModels({ recipe, mode: gen.mode, exclude, learned });
+      // The last attempt on a pair the cheap models could not bridge goes to the strongest model for the class, whatever
+      // its tier or price: a run that ends with nothing is worse than a dearer take that works.
+      const lastChance = attemptNo > 0 && attemptNo + 1 >= maxAttempts;
+      const ranked = overBudget ? [LOCAL_MODEL] : routeModels({ recipe, mode: gen.mode, exclude, learned, best: lastChance });
       const fanOut = attemptNo === 0 ? Math.max(1, config.generation.parallelAttempts) : 1;
       const remote = ranked.filter((m) => m.providerId !== "local");
       const round: ModelSpec[] = fanOut > 1 && remote.length >= 2 ? remote.slice(0, Math.min(fanOut, maxAttempts)) : ranked.slice(0, 1);

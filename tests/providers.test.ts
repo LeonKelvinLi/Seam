@@ -101,6 +101,21 @@ test("two-endpoint routing excludes Standard and Gen-4 Turbo in both generation 
   assert.deepEqual(routeModels({ recipe: getRecipe("liquid-transform"), mode: "preview" }).map((model) => model.providerId), [], "forcing a provider with no two-endpoint model leaves nothing to route");
 });
 
+test("the last chance on a pair the cheap models could not bridge goes to the strongest model", (t) => {
+  const originalForce = config.providers.force;
+  config.providers.force = "";
+  t.after(() => { config.providers.force = originalForce; });
+  for (const provider of PROVIDERS) t.mock.method(provider, "isAvailable", () => true);
+  // A morph is the case that matters: the cheap models are weak at it, which is what a preview would otherwise pick.
+  const recipe = getRecipe("object-morph");
+  const usual = routeModels({ recipe, mode: "preview" });
+  const lastChance = routeModels({ recipe, mode: "preview", best: true });
+  const strengths = lastChance.map((model) => model.strengths[recipe.modelClass] ?? 0.5);
+  assert.equal(strengths[0], Math.max(...strengths), "the last attempt leads with the ablest model for the class");
+  assert.ok(strengths[0] > (usual[0].strengths[recipe.modelClass] ?? 0.5), "a first preview attempt still leads with the cheap model, which is the weaker one");
+  assert.deepEqual(lastChance.map((m) => m.id).sort(), usual.map((m) => m.id).sort(), "the same models are offered either way; only the order changes");
+});
+
 test("with no AI provider configured, the ffmpeg bridge is the only route", (t) => {
   const originalForce = config.providers.force;
   config.providers.force = "";

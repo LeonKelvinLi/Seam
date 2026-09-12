@@ -27,6 +27,8 @@ export interface RouteInput {
   exclude?: string[];
   /** Learned per-model quality for this transition class (0..1), if any. */
   learned?: Record<string, number>;
+  /** Last chance on a pair the cheap models could not bridge: rank by ability alone, ignoring tier and price. */
+  best?: boolean;
 }
 
 export function routeModels(input: RouteInput): ModelSpec[] {
@@ -40,7 +42,7 @@ export function routeModels(input: RouteInput): ModelSpec[] {
     const quality = learned !== undefined ? strength * 0.5 + learned * 0.5 : strength;
     const tierFit = m.tier === "both" ? 0.8 : m.tier === input.mode ? 1 : 0.35;
     const cheap = 1 - m.costPerSecondUsd / maxCost;
-    const score = quality * 0.55 + tierFit * 0.3 + cheap * (input.mode === "preview" ? 0.15 : 0.02);
+    const score = input.best ? quality : quality * 0.55 + tierFit * 0.3 + cheap * (input.mode === "preview" ? 0.15 : 0.02);
     return { m, score };
   });
   const ordered = scored.sort((a, b) => b.score - a.score).map((s) => s.m);

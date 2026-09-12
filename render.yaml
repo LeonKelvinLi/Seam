@@ -20,7 +20,7 @@ services:
       - key: SEAM_DEFAULT_MODE
         value: preview
       - key: SEAM_MAX_ATTEMPTS
-        value: "2"
+        value: "3"
       - key: SEAM_FORCE_PROVIDER
         value: ""
       - key: SEAM_QUALITY_THRESHOLD_PREVIEW
