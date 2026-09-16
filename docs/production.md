@@ -197,3 +197,29 @@ Everything from the readiness review that code can fix, verified locally and pus
 - Higgsfield Cloud developer dashboard: 111 available credits, 49 used, 21 API calls. Auto-refill configuration remains unverified and needs an explicit spending limit.
 - Render has daily whole-disk snapshots dated September 6, 7 and 8. These are separate from the app's SQLite backups and do not establish tested database recovery or an independent object-store backup. Render documents snapshot limits at https://render.com/docs/disks#disk-snapshots.
 - External uptime setup requires account access; the UptimeRobot sign-in page is prepared. SSH backup export also needs an SSH key added to Render; no new access was created.
+
+## Preview routing and fan-out (2026-09-16)
+
+Problem measured on the live service that morning: one preview took 12.7 minutes because the router ranked Kling 2.1 Pro
+(tagged final-tier) last, ran DoP Lite (rejected at 66, 210 s) and DoP Standard (rejected at 52, 387 s) before Kling passed at 84 in 102 s.
+
+Change (commit 2e0aa79):
+
+- The router now ranks previews by expected time-to-accept and expected cost-to-accept: per model, acceptance rate, mean judge
+  score and mean wall time come from every judged attempt in the database (`Attempts.modelStats()`), smoothed with a prior of
+  0.6 and a pseudo-count of 3 until a model has data. Preview score = quality 0.4 + speed 0.4 + cost 0.2; finals stay quality-first.
+- Seeds updated from production: Kling 2.1 Pro ~110 s and usable for previews; DoP Lite 210 s; DoP Standard 390 s.
+- `SEAM_PARALLEL_ATTEMPTS=2`: the first round runs the top two models together and ends at the first pass; the slower sibling
+  keeps rendering and is logged when it lands (its cost is booked either way).
+- `/api/runtime` shows `previewRoute` with the profile behind each choice. Live after deploy: Kling first (expected 157 s, $0.64),
+  DoP Lite second (acceptance 0.45 over 21 judged attempts, expected 519 s, $0.22), Hailuo-02 next.
+
+Verification: one live run passed with Kling at quality 93 in 112 s of model time. The run's wall time was 4.5 minutes only
+because the instance restarted mid-run (the push changed `render.yaml`, so the blueprint sync and the checks-pass auto-deploy
+each deployed once); the job was requeued and re-ran from the start, which is the designed recovery. Steady-state wait for a
+preview is now about 2 to 2.5 minutes. Cost per preview round is now Kling $0.45 plus DoP Lite $0.10 plus judging, against
+$0.45 to $0.60 of revenue per preview, so the fan-out is roughly break-even on Starter and loses a little on Studio; drop back to
+`SEAM_PARALLEL_ATTEMPTS=1` if margin matters more than the wait, since Kling alone now leads.
+
+Operational note: a push that touches `render.yaml` deploys twice. Put blueprint changes in their own commit, or mark the
+code commit `[skip render]`, and never push while a customer generation is running.
