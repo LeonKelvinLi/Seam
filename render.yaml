@@ -28,7 +28,7 @@ services:
       - key: SEAM_QUALITY_THRESHOLD
         value: "72"
       - key: SEAM_PARALLEL_ATTEMPTS
-        value: "1"
+        value: "2"
       - key: SEAM_DAILY_PROVIDER_BUDGET_USD
         value: "25"
       - key: SEAM_VISION_MODEL

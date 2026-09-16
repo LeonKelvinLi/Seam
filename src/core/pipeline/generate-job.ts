@@ -15,6 +15,8 @@ import { proceduralAllowed, routeModels } from "@/core/providers/router";
 import { ProviderError } from "@/core/providers/types";
 import { isBillingError, markProviderUnavailable } from "@/core/providers/cooldown";
 import { budgetExhausted } from "./budget";
+import { firstPassing } from "./race";
+import { Attempts as AttemptRows } from "@/db/repo";
 import { getProvider } from "@/core/providers/registry";
 import { LOCAL_MODEL } from "@/core/providers/local";
 import type { ModelSpec, TransitionRequest } from "@/core/providers/types";
@@ -155,18 +157,21 @@ export async function runGenerateJob(job: Job, report: Reporter) {
     let attemptNo = 0;
     while (attemptNo < maxAttempts) {
       const learned = learnedModelQuality([recipe.id]);
+      const measured = AttemptRows.modelStats();
       const overBudget = budgetExhausted();
       if (overBudget && !proceduralAllowed()) throw new GenerationStopped(FRIENDLY_BUSY, "daily provider budget reached");
       if (overBudget && attemptNo === 0) log.warn("daily provider budget reached; using the procedural bridge", { gen: gen.id });
       // The last attempt on a pair the cheap models could not bridge goes to the strongest model for the class, whatever
       // its tier or price: a run that ends with nothing is worse than a dearer take that works.
       const lastChance = attemptNo > 0 && attemptNo + 1 >= maxAttempts;
-      const ranked = overBudget ? [LOCAL_MODEL] : routeModels({ recipe, mode: gen.mode, exclude, learned, best: lastChance });
+      const ranked = overBudget ? [LOCAL_MODEL] : routeModels({ recipe, mode: gen.mode, exclude, learned, best: lastChance, measured });
       const fanOut = attemptNo === 0 ? Math.max(1, config.generation.parallelAttempts) : 1;
       const remote = ranked.filter((m) => m.providerId !== "local");
       const round: ModelSpec[] = fanOut > 1 && remote.length >= 2 ? remote.slice(0, Math.min(fanOut, maxAttempts)) : ranked.slice(0, 1);
       if (!round.length) throw new GenerationStopped(FRIENDLY_NO_MODEL, "no bridge model available for this recipe");
-      const results = await Promise.all(round.map((m, i) => runOne(m, attemptNo + i + 1, recipe, fineTune)));
+      // The round ends as soon as one model passes; a slower sibling keeps rendering and is logged when it lands.
+      const { done: results, pending } = await firstPassing(round.map((m, i) => runOne(m, attemptNo + i + 1, recipe, fineTune)));
+      for (const late of pending) void late.then((r) => log.info("late attempt finished", { gen: gen.id, n: r.attempt.n, model: r.model.id, status: r.attempt.status }));
       attemptNo += round.length;
       let passed = false;
       for (const r of results) {

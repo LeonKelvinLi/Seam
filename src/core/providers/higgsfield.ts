@@ -23,12 +23,12 @@ export const HIGGSFIELD_MODELS: ModelSpec[] = [
   {
     id: "higgsfield:dop-lite", providerId: "higgsfield", endpoint: "/higgsfield-ai/dop/lite", label: "Higgsfield DoP Lite",
     supportsLastFrame: true, durations: [5], costPerSecondUsd: 0.02, tier: "preview",
-    strengths: { ...DOP_STRENGTHS, morph: 0.55 }, dialect: "higgsfield", latencyEstimateSec: 90,
+    strengths: { ...DOP_STRENGTHS, morph: 0.55 }, dialect: "higgsfield", latencyEstimateSec: 210, // measured 190-410 s on production
   },
   {
     id: "higgsfield:dop-standard", providerId: "higgsfield", endpoint: "/higgsfield-ai/dop/standard", label: "Higgsfield DoP",
     supportsLastFrame: true, durations: [5], costPerSecondUsd: 0.05, tier: "both",
-    strengths: DOP_STRENGTHS, dialect: "higgsfield", latencyEstimateSec: 150,
+    strengths: DOP_STRENGTHS, dialect: "higgsfield", latencyEstimateSec: 390, // measured 387 s on production
   },
   {
     // Last-resort retries until proven. First proof run (2026-09-10, paper plane to airliner): 66, the paper melted into

@@ -20,8 +20,9 @@ export const FAL_MODELS: ModelSpec[] = [
   },
   {
     id: "fal:kling-2.1-pro", providerId: "fal", endpoint: "fal-ai/kling-video/v2.1/pro/image-to-video",
-    label: "Kling 2.1 Pro", supportsLastFrame: true, durations: [5, 10], costPerSecondUsd: 0.09, tier: "final",
-    strengths: { ...KLING_STRENGTHS, fpv: 0.8, morph: 0.78 }, dialect: "kling", latencyEstimateSec: 240,
+    label: "Kling 2.1 Pro", supportsLastFrame: true, durations: [5, 10], costPerSecondUsd: 0.09, tier: "both",
+    // Measured on production 2026-09-16: ~100 s wall time and accepted first try; usable for previews as well as finals.
+    strengths: { ...KLING_STRENGTHS, fpv: 0.8, morph: 0.78 }, dialect: "kling", latencyEstimateSec: 110,
   },
 ];
 

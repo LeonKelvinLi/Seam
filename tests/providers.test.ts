@@ -112,7 +112,8 @@ test("the last chance on a pair the cheap models could not bridge goes to the st
   const lastChance = routeModels({ recipe, mode: "preview", best: true });
   const strengths = lastChance.map((model) => model.strengths[recipe.modelClass] ?? 0.5);
   assert.equal(strengths[0], Math.max(...strengths), "the last attempt leads with the ablest model for the class");
-  assert.ok(strengths[0] > (usual[0].strengths[recipe.modelClass] ?? 0.5), "a first preview attempt still leads with the cheap model, which is the weaker one");
+  // A first preview attempt optimises expected time-to-accept, so it may already lead with the ablest model; the last chance never leads with a weaker one.
+  assert.ok(strengths[0] >= (usual[0].strengths[recipe.modelClass] ?? 0.5), "the last chance is at least as able as the usual first pick");
   assert.deepEqual(lastChance.map((m) => m.id).sort(), usual.map((m) => m.id).sort(), "the same models are offered either way; only the order changes");
 });
 

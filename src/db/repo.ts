@@ -260,7 +260,21 @@ export const Attempts = {
   },
   update: (id: string, patch: Partial<GenerationAttempt>) => update("attempts", id, patch),
   forGeneration: (generationId: string) => find<GenerationAttempt>("attempts", "generationId=?", [generationId], "n ASC"),
+  /** Per-model acceptance, mean judge score and mean wall time over every judged attempt (provider failures excluded). */
+  modelStats(): Record<string, ModelStats> {
+    const rows = db().prepare(
+      `SELECT a.modelId AS modelId, COUNT(*) AS judged, SUM(CASE WHEN a.status='succeeded' THEN 1 ELSE 0 END) AS accepted,
+              AVG(json_extract(q.scores, '$.overall')) AS quality, AVG(a.durationMs) AS durationMs
+         FROM attempts a JOIN qualityEvaluations q ON q.attemptId = a.id
+        WHERE a.status IN ('succeeded', 'rejected') GROUP BY a.modelId`,
+    ).all() as { modelId: string; judged: number; accepted: number; quality: number; durationMs: number }[];
+    const out: Record<string, ModelStats> = {};
+    for (const r of rows) out[r.modelId] = { judged: r.judged, accepted: r.accepted, quality: r.quality, latencySec: r.durationMs / 1000 };
+    return out;
+  },
 };
+
+export interface ModelStats { judged: number; accepted: number; quality: number; latencySec: number }
 
 export const Quality = {
   create(q: Omit<QualityEvaluation, "id" | "createdAt">): QualityEvaluation {
