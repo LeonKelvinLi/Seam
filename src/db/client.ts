@@ -20,6 +20,15 @@ CREATE TABLE IF NOT EXISTS purchases (
   id TEXT PRIMARY KEY, userId TEXT NOT NULL, provider TEXT NOT NULL, externalId TEXT UNIQUE, pack TEXT NOT NULL,
   amountCents INTEGER NOT NULL, currency TEXT NOT NULL, credits INTEGER NOT NULL, createdAt TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS stripePayments (
+  paymentIntentId TEXT PRIMARY KEY, sessionId TEXT NOT NULL UNIQUE,
+  revokedCredits INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE IF NOT EXISTS stripeRefundTotals (
+  chargeId TEXT PRIMARY KEY, paymentIntentId TEXT NOT NULL,
+  amountRefunded INTEGER NOT NULL, currency TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS stripeRefundTotals_payment ON stripeRefundTotals(paymentIntentId);
 CREATE TABLE IF NOT EXISTS projects (
   id TEXT PRIMARY KEY, userId TEXT NOT NULL, title TEXT NOT NULL, status TEXT NOT NULL,
   outputWidth INTEGER, outputHeight INTEGER, analysisError TEXT,

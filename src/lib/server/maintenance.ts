@@ -10,6 +10,7 @@ import { config } from "@/core/config";
 import { db } from "@/db/client";
 import { storage } from "@/core/media/storage";
 import { logger } from "@/core/log";
+import { backupOffsite } from "@/lib/server/offsite-backup";
 
 const log = logger("maintenance");
 export const GUEST_RETENTION_DAYS = 30;
@@ -73,7 +74,11 @@ export async function backupDatabase(now = new Date()): Promise<string | null> {
   const stamp = now.toISOString().slice(0, 10).replace(/-/g, "");
   const dest = path.join(dir, `seam-${stamp}.sqlite`);
   if (fs.existsSync(dest)) return null;
-  await db().backup(dest);
+  const pending = `${dest}.partial`;
+  try {
+    await db().backup(pending);
+    fs.renameSync(pending, dest);
+  } finally { fs.rmSync(pending, { force: true }); }
   const files = fs.readdirSync(dir).filter((f) => /^seam-\d{8}\.sqlite$/.test(f)).sort();
   for (const f of files.slice(0, Math.max(0, files.length - BACKUPS_TO_KEEP))) rm(path.join(dir, f));
   return dest;
@@ -84,7 +89,8 @@ export async function runMaintenance(): Promise<void> {
     const projects = sweepGuestProjects();
     const tmp = sweepTmp();
     const backup = await backupDatabase();
-    log.info("maintenance", { guestProjectsDeleted: projects, tmpFilesDeleted: tmp, backup });
+    const offsite = await backupOffsite();
+    log.info("maintenance", { guestProjectsDeleted: projects, tmpFilesDeleted: tmp, backup, offsite });
   } catch (e) {
     log.error("maintenance failed", { error: (e as Error).message });
   }

@@ -5,6 +5,7 @@
  * Either way the webhook (checkout.session.completed) is what grants credits, idempotently by session id.
  */
 import Stripe from "stripe";
+import { db } from "@/db/client";
 import { Purchases, Users } from "@/db/repo";
 import { logger } from "@/core/log";
 
@@ -82,20 +83,74 @@ export function handleWebhook(rawBody: string, signature: string | null): { ok: 
   } catch (e) {
     return { ok: false, message: `signature failed: ${(e as Error).message}` };
   }
-  if (event.type !== "checkout.session.completed") return { ok: true, message: `ignored ${event.type}` };
+  if (event.type === "charge.refunded") {
+    const charge = event.data.object as Stripe.Charge;
+    const paymentId = objectId(charge.payment_intent);
+    if (!paymentId) return { ok: true, message: "refund without payment intent" };
+    if (!Number.isSafeInteger(charge.amount_refunded) || charge.amount_refunded < 0) {
+      return { ok: false, message: "invalid refund amount" };
+    }
+    return db().transaction(() => {
+      // Stripe retries and delivers events out of order. Keep the largest cumulative total per charge.
+      db().prepare(`INSERT INTO stripeRefundTotals (chargeId, paymentIntentId, amountRefunded, currency) VALUES (?,?,?,?)
+        ON CONFLICT(chargeId) DO UPDATE SET amountRefunded=MAX(amountRefunded, excluded.amountRefunded)`)
+        .run(charge.id, paymentId, charge.amount_refunded, charge.currency);
+      const revoked = reconcileRefund(paymentId);
+      return { ok: true, message: `refund recorded; revoked ${revoked} credits` };
+    })();
+  }
+  if (event.type !== "checkout.session.completed" && event.type !== "checkout.session.async_payment_succeeded") {
+    return { ok: true, message: `ignored ${event.type}` };
+  }
   const session = event.data.object as Stripe.Checkout.Session;
+  if (session.payment_status !== "paid") return { ok: true, message: "awaiting payment" };
   const userId = session.client_reference_id ?? session.metadata?.userId ?? null;
   if (!userId || !Users.get(userId)) return { ok: true, message: "no matching user" };
-  const packId = session.metadata?.pack ?? PACKS.find((p) => Math.round(p.priceUsd * 100) === (session.amount_total ?? -1))?.id ?? "starter";
-  const pack = PACKS.find((p) => p.id === packId) ?? PACKS[0];
-  const credits = Number(session.metadata?.credits ?? pack.credits);
-  const recorded = Purchases.record({
-    userId, provider: "stripe", externalId: session.id, pack: pack.id, amountCents: session.amount_total ?? Math.round(pack.priceUsd * 100),
-    currency: session.currency ?? "usd", credits,
-  });
-  if (!recorded) return { ok: true, message: "already applied" };
-  Users.grant(userId, credits);
-  Users.update(userId, { plan: pack.id === "studio" ? "pro" : pack.id, stripeCustomerId: typeof session.customer === "string" ? session.customer : null });
-  log.info("credits granted", { userId, credits, pack: pack.id });
-  return { ok: true, message: `granted ${credits} credits` };
+  const pack = session.metadata?.pack
+    ? PACKS.find((p) => p.id === session.metadata?.pack)
+    : PACKS.find((p) => Math.round(p.priceUsd * 100) === session.amount_total);
+  if (!pack || session.currency !== "usd" || session.amount_total !== Math.round(pack.priceUsd * 100)
+    || (session.metadata?.credits && Number(session.metadata.credits) !== pack.credits)) {
+    return { ok: false, message: "unrecognized credit purchase" };
+  }
+  const paymentId = objectId(session.payment_intent);
+  if (!paymentId) return { ok: false, message: "missing payment intent" };
+  return db().transaction(() => {
+    // Grant and receipt commit together; an interrupted webhook cannot lose the credits.
+    const recorded = Purchases.record({
+      userId, provider: "stripe", externalId: session.id, pack: pack.id,
+      amountCents: session.amount_total!, currency: session.currency!, credits: pack.credits,
+    });
+    db().prepare("INSERT OR IGNORE INTO stripePayments (paymentIntentId, sessionId) VALUES (?,?)").run(paymentId, session.id);
+    if (recorded) {
+      Users.grant(userId, pack.credits);
+      Users.update(userId, { plan: pack.id === "studio" ? "pro" : pack.id, stripeCustomerId: objectId(session.customer) });
+      log.info("credits granted", { userId, credits: pack.credits, pack: pack.id });
+    }
+    // Also handles a refund delivered before checkout completion.
+    reconcileRefund(paymentId);
+    return { ok: true, message: recorded ? `granted ${pack.credits} credits` : "already applied" };
+  })();
+}
+
+function objectId(value: string | { id: string } | null): string | null {
+  return typeof value === "string" ? value : value?.id ?? null;
+}
+
+/** Must run within the receipt transaction. A negative balance preserves debt for already-spent credits. */
+function reconcileRefund(paymentId: string): number {
+  const payment = db().prepare(`SELECT p.userId, p.credits, p.amountCents, p.currency, s.revokedCredits
+    FROM stripePayments s JOIN purchases p ON p.externalId=s.sessionId WHERE s.paymentIntentId=?`)
+    .get(paymentId) as { userId: string; credits: number; amountCents: number; currency: string; revokedCredits: number } | undefined;
+  if (!payment || payment.amountCents <= 0) return 0;
+  const { amount } = db().prepare("SELECT COALESCE(SUM(amountRefunded),0) amount FROM stripeRefundTotals WHERE paymentIntentId=? AND currency=?")
+    .get(paymentId, payment.currency) as { amount: number };
+  const target = Math.min(payment.credits, Math.floor(payment.credits * amount / payment.amountCents));
+  const delta = Math.max(0, target - payment.revokedCredits);
+  if (delta) {
+    Users.grant(payment.userId, -delta);
+    db().prepare("UPDATE stripePayments SET revokedCredits=? WHERE paymentIntentId=?").run(target, paymentId);
+    log.info("refunded credits revoked", { userId: payment.userId, credits: delta });
+  }
+  return delta;
 }

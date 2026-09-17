@@ -15,7 +15,7 @@ const secret = env.STRIPE_WEBHOOK_SECRET;
 if (!secret) { console.error("STRIPE_WEBHOOK_SECRET missing from .env.local"); process.exit(1); }
 const sessionId = `cs_selftest_${Date.now()}`;
 const event = { id: `evt_selftest_${Date.now()}`, object: "event", type: "checkout.session.completed", created: Math.floor(Date.now() / 1000), livemode: false,
-  data: { object: { id: sessionId, object: "checkout.session", client_reference_id: userId, amount_total: 900, currency: "usd", customer: null, metadata: { pack: "starter", credits: "30", selftest: "1" }, payment_status: "paid" } } };
+  data: { object: { id: sessionId, payment_intent: `pi_selftest_${Date.now()}`, object: "checkout.session", client_reference_id: userId, amount_total: 900, currency: "usd", customer: null, metadata: { pack: "starter", credits: "30", selftest: "1" }, payment_status: "paid" } } };
 const payload = JSON.stringify(event);
 const t = Math.floor(Date.now() / 1000);
 const v1 = createHmac("sha256", secret).update(`${t}.${payload}`).digest("hex");

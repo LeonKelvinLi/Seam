@@ -3,6 +3,8 @@ import { describeRuntime } from "@/core/config";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { opsAccessAllowed } from "@/lib/server/ops-access";
+import { falBalanceStatus } from "@/lib/server/provider-health";
+import { backupStatus } from "@/lib/server/offsite-backup";
 
 export const dynamic = "force-dynamic";
 
@@ -13,10 +15,18 @@ export default async function OpsPage() {
   if (!opsAccessAllowed((await headers()).get("authorization"))) notFound();
   const m = computeMetrics();
   const rt = describeRuntime();
+  const fal = await falBalanceStatus();
+  const backup = backupStatus();
   return (
     <div className="mx-auto max-w-6xl px-5 pb-20 pt-8 text-sm">
       <h1 className="display text-3xl">Ops</h1>
       <p className="mt-2 muted">vision: {rt.vision} · judge: {rt.judge} · providers: {rt.providers.join(", ")} · mode: {rt.mode}</p>
+      <Section title="Launch readiness">
+        <KV k="fal balance" v={fal.balanceUsd === null ? fal.state : `${usd(fal.balanceUsd)} · ${fal.state}`} />
+        <KV k="fal alert threshold" v={usd(fal.thresholdUsd)} />
+        <KV k="off-site backup" v={backup.state} />
+        <KV k="last upload" v={backup.lastSuccessAt ?? "None verified"} />
+      </Section>
 
       <Section title="Funnel">
         <table className="w-full"><tbody>

@@ -304,3 +304,63 @@ The pixel seam gate passed all ten, including the double exposure and the hard c
 
 A preview now costs about $0.16 in fees against $0.45 to $0.60 of revenue, down from about $0.55 with the Kling and
 DoP fan-out. The outputs are in `data/live-results/2026-09-16-local-proof/`.
+
+## Launch follow-through — 2026-09-17
+
+### Refund receipts
+
+Stripe must deliver `checkout.session.completed`, `checkout.session.async_payment_succeeded`, and
+`charge.refunded` to `/api/stripe/webhook`. Payment status must be `paid`; only recognized USD pack prices grant
+credits. Purchase recording and granting are one SQLite transaction. Each PaymentIntent links to its purchase;
+charge refund totals are monotonic so retries and out-of-order events cannot debit twice. Partial refunds revoke
+proportional whole credits (rounded down); a full refund revokes all purchased credits. Already-spent credits
+produce a negative balance that blocks further generation until replenished. No customer money is refunded by
+this webhook; it reacts to Stripe refunds. For old receipts without a PaymentIntent mapping, replay the original
+checkout event first; it links the receipt without granting again. A real purchase/refund still needs separate evidence.
+
+### Balance and readiness
+
+The documented fal account billing API is `GET https://api.fal.ai/v1/account/billing?expand=credits`
+(https://fal.ai/docs/platform-apis/v1/account/billing). It requires ADMIN scope. The existing generation key returned
+403 on September 17; set a private `FAL_ADMIN_KEY` on Render. Do not replace the generation key merely to monitor
+billing. Status is cached for 60 seconds with a 5-second network timeout; missing/inaccessible/malformed data is
+`unknown`, never a fabricated zero or stale success. The default low-balance threshold is $5.
+
+Render continues checking `/api/health` for database/FFmpeg/disk failures. An external monitor should check
+`/api/health?readiness=1`, which additionally returns 503 for low/unknown fal funds and absent/stale off-site backups.
+This avoids provider credit depletion causing Render to restart the service. Exact balance is available only in
+protected `/ops`; public readiness exposes a state. Existing ops access uses `Authorization: Bearer <SEAM_OPS_TOKEN>`.
+Never put that token in a query string or public deployment file.
+
+### Off-site snapshots and verification
+
+Set `SEAM_BACKUP_BUCKET`, `SEAM_BACKUP_REGION` (`auto` for R2), optionally `SEAM_BACKUP_ENDPOINT` (HTTPS),
+`SEAM_BACKUP_PREFIX`, and restricted `SEAM_BACKUP_ACCESS_KEY_ID` / `SEAM_BACKUP_SECRET_ACCESS_KEY` on Render.
+Use a private encrypted bucket with Head/Get/Put permissions on this prefix. No public ACL is added. The existing
+AWS SDK dependency was preserved and integrated. Without a bucket, uploads remain disabled.
+
+Maintenance uploads from the service owning the disk, once after startup and every six hours. Each snapshot uses
+SQLite's online backup API, validates integrity, then reads all asset, frame, export, and delivered-result media
+references from the frozen database. Missing media causes failure instead of publishing an incomplete snapshot.
+Files are stored under SHA-256 object keys; the dated manifest is uploaded last, and a success receipt is written
+only after that. Referenced media must be inside uploads/frames/renders, including symlink targets. Temporary
+snapshots are removed after completion/failure. Local daily SQLite files are renamed atomically after completion.
+The backup does not include failed provider takes, temporary files, credentials, or unrelated local artifacts.
+
+Run explicitly from the service environment:
+
+```sh
+npx tsx scripts/backup-offsite.ts upload
+npx tsx scripts/backup-offsite.ts verify seamcut/snapshots/ACTUAL-MANIFEST.json /tmp/seam-restore-NEW
+```
+
+Verification downloads every object to a new isolated directory, checks size/SHA-256, SQLite integrity/foreign keys,
+and coverage of all media references. It refuses an existing destination or a directory inside the live data root.
+It never replaces production data. Restore to the same absolute data root after stopping all writers (follow the
+restore procedure above), or explicitly migrate embedded absolute paths before serving from another root.
+
+Configure retention deliberately: manifests share content-addressed media objects, so do NOT expire objects by age
+while retaining manifests that reference them. This implementation does not delete remote objects. Configure bucket
+storage/budget alerts; add a reference-aware retention policy before usage grows. `uploaded` proves the last upload,
+not a successful restore drill; the new test covers a simulated object-store round trip, corruption, missing media,
+and traversal refusal. A real bucket upload/retrieval remains required.
