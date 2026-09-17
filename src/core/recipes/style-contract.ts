@@ -35,3 +35,9 @@ export const STYLE_REQUIREMENTS: Readonly<Record<string, string>> = {
 export function styleRequirement(recipe: TransitionRecipe): string {
   return STYLE_REQUIREMENTS[recipe.id] ?? recipe.description;
 }
+
+/** Staging guidance goes to the director, not the judge: acceptance stays independent of the proposed solution. */
+export function styleStaging(recipe: TransitionRecipe): string | undefined {
+  if (recipe.id !== "orbit") return undefined;
+  return "Choose a substantial foreground subject visible in the source. Describe a clockwise or counterclockwise arc with distinct rear, side and three-quarter views, not just a sideways reframe. Bring the camera close enough that the subject's opaque side or back passes across the view at the midpoint. Continue the SAME arc to reveal the destination from behind that foreground mass. Use this physical concealment for the change of room or person; never turn clothing, faces, laptops or walls into their destination counterparts while visible. Specify which real foreground surface hides the change. Keep substantial orbital movement visible before and after the concealment; simply pushing into the surface is not an orbit.";
+}

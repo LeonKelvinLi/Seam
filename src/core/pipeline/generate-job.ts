@@ -16,6 +16,7 @@ import { writeShot } from "@/core/prompt/director";
 import { openaiErrorSummary } from "@/core/openai";
 import { ProviderError } from "@/core/providers/types";
 import { isBillingError, markProviderUnavailable } from "@/core/providers/cooldown";
+import { styleStaging } from "@/core/recipes/style-contract";
 import { budgetExhausted } from "./budget";
 import { firstPassing } from "./race";
 import { Attempts as AttemptRows } from "@/db/repo";
@@ -143,7 +144,7 @@ export async function runGenerateJob(job: Job, report: Reporter, judge = judgeTr
       let shot = shots.get(rec.id);
       if (!shot) {
         const styleMiss = outcomes.findLast((o) => o.scores && !passesStyle(o.scores));
-        shot = writeShot({ sourceFrame: frameA.path, destFrame: frameB.path, transition: ir.transition, styleRequirement: ir.styleRequirement, retryFeedback: styleMiss?.scores?.styleEvidence || styleMiss?.message, expectedStructure: rec.expectedStructure, pair: pairRow.data })
+        shot = writeShot({ sourceFrame: frameA.path, destFrame: frameB.path, transition: ir.transition, staging: styleStaging(rec), styleRequirement: ir.styleRequirement, retryFeedback: styleMiss?.scores?.styleEvidence || styleMiss?.message, expectedStructure: rec.expectedStructure, pair: pairRow.data })
           .then((r) => {
             if (r.costUsd > 0) Costs.add({ attemptId: null, generationId: gen.id, kind: "analysis", providerId: "openai", modelId: config.openai.directorModel, units: 1, usd: r.costUsd });
             return r.shot;

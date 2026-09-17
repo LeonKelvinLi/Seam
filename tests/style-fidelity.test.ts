@@ -60,3 +60,23 @@ test("a director-written shot cannot remove the chosen effect or truncate the no
     assert.ok(p.length <= (dialect === "kling" ? 2400 : dialect === "runway" ? 1000 : 1800));
   }
 });
+
+
+test("director failure cannot drop the style contract or no-blend rules in any provider dialect", () => {
+  for (const recipe of RECIPES) {
+    const ir = compileIR({ a: coffee, b: ocean, pair: coffeeOceanPair, recipe, hints: {}, fineTune: DEFAULT_FINE_TUNE, durationSec: 2, aspectRatio: "16:9", attempt: 1 });
+    for (const dialect of ["plain", "higgsfield", "kling", "runway", "generic"] as const) {
+      const p = renderPrompt({ ...ir, source: ir.source.repeat(100), bridge: ir.bridge.repeat(100) }, dialect).positive;
+      assert.ok(p.includes(STYLE_REQUIREMENTS[recipe.id]), `${recipe.id}/${dialect} lost its effect`);
+      assert.match(p, /no dissolves, no double exposure/);
+      assert.ok(p.length <= (dialect === "kling" ? 2400 : dialect === "runway" ? 1000 : 1800));
+    }
+  }
+});
+
+
+test("orbit staging does not turn its proposed occlusion into a required style feature", () => {
+  const recipe = getRecipe("orbit");
+  assert.doesNotMatch(recipe.expectedStructure.join(" "), /opaque|occlu|conceal/i);
+  assert.doesNotMatch(STYLE_REQUIREMENTS.orbit, /opaque|occlu|conceal/i);
+});

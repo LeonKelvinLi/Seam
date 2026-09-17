@@ -7,7 +7,7 @@ import type { TransitionRecipe } from "@/core/recipes/types";
 import { fillTemplate } from "@/core/opportunities/scorer";
 import { styleRequirement } from "@/core/recipes/style-contract";
 
-export const PROMPT_COMPILER_VERSION = "1.1";
+export const PROMPT_COMPILER_VERSION = "1.2";
 
 /** "plain" is one plain-language paragraph with the rules written in, for models that take no negative prompt. */
 export type PromptDialect = "kling" | "runway" | "higgsfield" | "plain" | "generic";
@@ -83,17 +83,15 @@ export function compileIR(input: CompileInput): PromptIR {
 
 /** Render the IR into the wording a specific model family responds to best. */
 export function renderPrompt(ir: PromptIR, dialect: PromptDialect): { positive: string; negative: string | null } {
-  if (ir.shot) {
-    // A written shot names the real objects and the one motivated change; video models follow that far better than the
-    // recipe template, which reads the same for every pair.
-    const required = `Required effect: ${ir.transition}. ${ir.styleRequirement ?? ""} `;
-    const suffix = ` ${CRAFT} ${NO_BLEND}`;
-    const limit = dialect === "kling" ? 2400 : dialect === "runway" ? 1000 : 1800;
-    const positive = `${required}${ir.shot.slice(0, Math.max(0, limit - required.length - suffix.length))}${suffix}`;
-    return dialect === "kling"
-      ? { positive: positive.slice(0, 2400), negative: ir.avoid.join(", ").slice(0, 500) }
-      : { positive: positive.slice(0, 1800), negative: null };
-  }
+  const body = renderBody(ir, dialect);
+  const required = `Required effect: ${ir.transition}. ${ir.styleRequirement ?? ""} `;
+  const suffix = ` ${CRAFT} ${NO_BLEND}`;
+  const limit = dialect === "kling" ? 2400 : dialect === "runway" ? 1000 : 1800;
+  return { ...body, positive: `${required}${body.positive.slice(0, Math.max(0, limit - required.length - suffix.length))}${suffix}` };
+}
+
+function renderBody(ir: PromptIR, dialect: PromptDialect): { positive: string; negative: string | null } {
+  if (ir.shot) return { positive: ir.shot, negative: dialect === "kling" ? ir.avoid.join(", ").slice(0, 500) : null };
   switch (dialect) {
     case "kling": {
       // Kling likes one dense paragraph: subject, motion, camera, then constraints. Negative prompt is a separate field.

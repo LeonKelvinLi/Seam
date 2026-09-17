@@ -92,7 +92,7 @@ test("the director sends both boundary frames and the style, and returns one con
     await sharp({ create: { width: 24, height: 24, channels: 3, background: "#1f4e79" } }).png().toFile(b);
     const fields = { start: "two hands hold a white cup", move: "the camera pushes in over the rim", change: "the coffee surface ripples and widens into open sea", arrival: "the push slows to a glide", end: "open ocean under low sun." };
     const { api, requests } = mockApi(fields);
-    const r = await writeShot({ sourceFrame: a, destFrame: b, transition: "Liquid Transform: the coffee becomes water", expectedStructure: ["starts on A", "ends on B"], pair: { ...coffeeOceanPair, risks: ["fingers cover the cup rim"] } }, api);
+    const r = await writeShot({ sourceFrame: a, destFrame: b, transition: "Liquid Transform: the coffee becomes water", staging: "Move continuously over the visible rim.", retryFeedback: "The previous move stopped before reaching the rim.", expectedStructure: ["starts on A", "ends on B"], pair: { ...coffeeOceanPair, risks: ["fingers cover the cup rim"] } }, api);
     assert.equal(r.shot, "One continuous shot. Start: two hands hold a white cup. The camera pushes in over the rim. The coffee surface ripples and widens into open sea. The push slows to a glide. It settles exactly on the last frame: open ocean under low sun.");
     assert.ok(r.costUsd > 0);
     const body = requests[0].body;
@@ -101,6 +101,8 @@ test("the director sends both boundary frames and the style, and returns one con
     const content = body.input[0].content as { type: string; text?: string }[];
     assert.equal(content.filter((c) => c.type === "input_image").length, 2);
     assert.match(content.at(-1)!.text!, /Liquid Transform/);
+    assert.match(content.at(-1)!.text!, /Mandatory staging: Move continuously over the visible rim/);
+    assert.match(content.at(-1)!.text!, /previous move stopped before reaching the rim/);
     assert.match(content.at(-1)!.text!, /Editor's notes on this pair:\ncoffee to ocean\nRisk: fingers cover the cup rim/);
     // The instructions describe the form of a shot, never a sample scene that would come back as output.
     assert.doesNotMatch(body.instructions, /coffee|ocean|cup/i);

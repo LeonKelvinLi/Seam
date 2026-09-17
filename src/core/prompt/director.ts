@@ -35,6 +35,8 @@ export interface ShotInput {
   expectedStructure: string[];
   styleRequirement?: string;
   retryFeedback?: string;
+  /** Concrete staging for styles whose generic descriptions produced a different effect. */
+  staging?: string;
   pair: PairAnalysis;
 }
 
@@ -53,7 +55,7 @@ export async function writeShot(input: ShotInput, api: OpenAI = openai()): Promi
       { type: "input_text", text: "FIRST frame of clip B (the shot ends here):" }, await imageInput(input.destFrame),
       {
         type: "input_text",
-        text: `Transition style: ${input.transition}\nRequired visual behavior: ${input.styleRequirement ?? input.transition}\nExpected structure: ${input.expectedStructure.join(" -> ")}.${notes ? `\nEditor's notes on this pair:\n${notes}` : ""}${input.retryFeedback ? `\nThe previous take failed the selected effect: ${input.retryFeedback}\nRewrite the move to make the required behavior unmistakable. Keep the same style.` : ""}`,
+        text: `Transition style: ${input.transition}\nRequired visual behavior: ${input.styleRequirement ?? input.transition}\nExpected structure: ${input.expectedStructure.join(" -> ")}.${input.staging ? `\nMandatory staging: ${input.staging}` : ""}${notes ? `\nEditor's notes on this pair:\n${notes}` : ""}${input.retryFeedback ? `\nThe previous take failed the selected effect: ${input.retryFeedback}\nRewrite the move to make the required behavior unmistakable. Keep the same style.` : ""}`,
       },
     ],
     schema: Schema, name: "bridge_shot", maxOutputTokens: 2000,
