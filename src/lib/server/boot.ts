@@ -1,4 +1,4 @@
-import { Jobs } from "@/db/repo";
+import { Generations, Jobs } from "@/db/repo";
 import { startRunner } from "@/core/pipeline/runner";
 import { startMaintenance } from "@/lib/server/maintenance";
 import { logger } from "@/core/log";
@@ -17,6 +17,8 @@ export function boot() {
   try {
     const n = Jobs.requeueStale();
     if (n) log.info("requeued stale jobs", { count: n });
+    const restored = Generations.restoreFinished();
+    if (restored) log.info("restored finished generations left running", { count: restored });
     startRunner();
     startMaintenance();
   } catch (e) {

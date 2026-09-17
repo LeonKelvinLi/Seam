@@ -223,3 +223,27 @@ $0.45 to $0.60 of revenue per preview, so the fan-out is roughly break-even on S
 
 Operational note: a push that touches `render.yaml` deploys twice. Put blueprint changes in their own commit, or mark the
 code commit `[skip render]`, and never push while a customer generation is running.
+
+The double deploy is confirmed in Render's deploy list: 2e0aa79 deployed from `blueprint_sync` at 21:12 UTC and again from
+`new_commit` at 21:16 UTC.
+
+### Late fan-out sibling reverted ready previews (found and fixed the same evening)
+
+A fan-out sibling that finished after its round ended still wrote the generation's stage, and every stage write sets
+`status: "running"`. A ready preview therefore went back to "Checking the result" about a minute later, stayed there,
+and its share page returned 404. It happened on every fan-out run: the e2e test stopped watching at the first "ready".
+
+- Fix: attempts report stages only while their round is open (`live` in `src/core/pipeline/generate-job.ts`).
+  `tests/fan-out-late-sibling.test.ts` runs the real job with a held second model and fails without the fix.
+- Repair: on boot, `Generations.restoreFinished()` marks ready any generation that holds a result and whose job is done.
+- Gate: `scripts/e2e.ts` now waits for every attempt to settle, then fails unless the run still reads ready and its share
+  page loads for a signed-out visitor. `E2E_SAVE_DIR` keeps the video, frames and guest session of a paid run.
+
+### OpenAI answered 429 on production from 21:14 UTC
+
+Every OpenAI call on the live service from 21:14 UTC on 09-16 to 04:27 UTC on 09-17 (clip analysis and the judge) returned HTTP 429, so those runs used
+the heuristic analyzer and judge. The "quality 93" results above are heuristic scores, not vision-judge scores. The morning
+run at 19:25 UTC (Kling 84) was judged by OpenAI. The same key answered normally from a local machine at about 04:35 UTC on 09-17, with
+both a text request and a production-sized vision request. Log lines now include OpenAI's error code
+(`rate_limit_exceeded` or `insufficient_quota`) so the next failure names its cause. While the judge falls back, the model
+acceptance rates in `previewRoute` are built on heuristic passes.

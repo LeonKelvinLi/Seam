@@ -252,6 +252,16 @@ export const Generations = {
   get: (id: string) => get<Generation>("generations", id),
   update(id: string, patch: Partial<Generation>) { update("generations", id, { ...patch, updatedAt: now() }); },
   forProject: (projectId: string) => find<Generation>("generations", "projectId=?", [projectId], "createdAt DESC"),
+  /**
+   * A generation that holds a result and whose job finished is ready, whatever its status says. Until 2026-09-16 a
+   * fan-out sibling landing after the result could set such a generation back to "running"; this restores those rows.
+   */
+  restoreFinished(): number {
+    return db().prepare(
+      `UPDATE generations SET status='ready', stage='ready', stageLabel='Ready', progress=1, updatedAt=?
+        WHERE status='running' AND result IS NOT NULL AND jobId IN (SELECT id FROM jobs WHERE status='done')`,
+    ).run(now()).changes;
+  },
 };
 
 export const Attempts = {

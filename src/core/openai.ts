@@ -26,7 +26,11 @@ export class OpenAIOutputError extends Error {
 /** Never log provider response bodies, prompts, image data, or credential-bearing errors. */
 export function openaiErrorSummary(error: unknown): string {
   if (error instanceof OpenAIOutputError) return error.reason;
-  if (error instanceof OpenAI.APIError) return `API error (status ${error.status ?? "unknown"})`;
+  if (error instanceof OpenAI.APIError) {
+    // The code is a short enum that tells a rate limit (rate_limit_exceeded) from an empty account (insufficient_quota).
+    const code = typeof error.code === "string" && /^[a-z0-9_]{1,40}$/.test(error.code) ? `, ${error.code}` : "";
+    return `API error (status ${error.status ?? "unknown"}${code})`;
+  }
   return "OpenAI request or media preparation failed";
 }
 

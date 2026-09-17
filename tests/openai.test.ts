@@ -73,5 +73,9 @@ test("OpenAI cost estimate counts cached tokens and diagnostics omit provider bo
   assert.ok(Math.abs(usageCost("gpt-5.4-mini", usage) - 0.001065) < 1e-12);
   const error = new OpenAI.APIError(401, { message: "secret prompt and sk-private-key" }, "sk-private-key", new Headers());
   assert.equal(openaiErrorSummary(error), "API error (status 401)");
+  const limited = new OpenAI.APIError(429, { message: "Rate limit reached for org-private on tokens", code: "rate_limit_exceeded" }, "Rate limit reached", new Headers());
+  assert.equal(openaiErrorSummary(limited), "API error (status 429, rate_limit_exceeded)");
+  const odd = new OpenAI.APIError(429, { message: "x", code: "sk-private-key and more" }, "x", new Headers());
+  assert.equal(openaiErrorSummary(odd), "API error (status 429)");
   assert.doesNotMatch(openaiErrorSummary(new Error("sk-private-key")), /sk-private|secret prompt/);
 });

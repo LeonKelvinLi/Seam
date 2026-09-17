@@ -73,7 +73,8 @@ function focusPoint(analysis: FrameAnalysis, frame: ExtractedFrame, recipe: Tran
 
 interface Best { attempt: GenerationAttempt; bridgePath: string; scores: QualityScores; model: ModelSpec; recipe: TransitionRecipe; durationSec: number }
 
-export async function runGenerateJob(job: Job, report: Reporter) {
+/** `judge` is replaceable so tests can drive the pipeline without a model judge. */
+export async function runGenerateJob(job: Job, report: Reporter, judge = judgeTransition) {
   const generationId = String(job.payload.generationId);
   const gen = Generations.get(generationId);
   if (!gen) throw new Error("generation not found");
@@ -110,7 +111,11 @@ export async function runGenerateJob(job: Job, report: Reporter) {
 
     type RunOutcome = { attempt: GenerationAttempt; model: ModelSpec; ok: boolean; scores: QualityScores | null; bridgePath: string | null; error: string | null; recipeId: string; durationSec: number };
     // One provider attempt: create the row, generate, normalise, judge, book costs. Safe to run several concurrently.
-    const runOne = async (model: ModelSpec, n: number, rec: TransitionRecipe, ft: FineTune): Promise<RunOutcome> => {
+    // `live` turns false when the attempt's round is over. A fan-out sibling still rendering after that must not write
+    // the generation's stage: the generation has moved on to stitching, ready or failed, and setStage would put it
+    // back to "running" (a ready preview reverted to "Checking the result" and its share link 404ed, 2026-09-16).
+    const runOne = async (model: ModelSpec, n: number, rec: TransitionRecipe, ft: FineTune, live: { current: boolean }): Promise<RunOutcome> => {
+      const stage = (s: string, progress: number, label?: string) => { if (live.current) setStage(s, progress, label); };
       const durationSec = durationFor(rec, ft);
       const ir = compileIR({ a: analysisA, b: analysisB, pair: pairRow.data, recipe: rec, hints: opp.hints, fineTune: ft, durationSec, aspectRatio: aspect, attempt: n });
       const provider = getProvider(model.providerId);
@@ -121,7 +126,7 @@ export async function runGenerateJob(job: Job, report: Reporter) {
         params: { durationSec, fineTune: ft, mode: gen.mode }, status: "running", providerJobId: null, outputPath: null, error: null, costUsd: 0, durationMs: 0,
       });
       attempts.push(attempt);
-      setStage(n > 1 ? "retry" : "generate", 0.15 + (n - 1) * 0.2, n > 1 ? labelFor("retry") : `${labelFor("generate")} · ${model.label}`);
+      stage(n > 1 ? "retry" : "generate", 0.15 + (n - 1) * 0.2, n > 1 ? labelFor("retry") : `${labelFor("generate")} · ${model.label}`);
       log.info("attempt", { gen: gen.id, n, recipe: rec.id, model: model.id, durationSec });
       const ta = Date.now();
       try {
@@ -129,12 +134,12 @@ export async function runGenerateJob(job: Job, report: Reporter) {
           firstFramePath: frameA.path, lastFramePath: frameB.path, prompt, durationSec, aspectRatio: aspect, outputPath: rawPath,
           transitionType: rec.id, motionStrength: ir.motionStrength,
           local: { spec, recipe: rec, focusA: focusPoint(analysisA, frameA, rec, opp.hints.shapeA), focusB: focusPoint(analysisB, frameB, rec, opp.hints.shapeB) },
-          onProgress: (m) => setStage(n > 1 ? "retry" : "generate", 0.25 + (n - 1) * 0.2, m),
+          onProgress: (m) => stage(n > 1 ? "retry" : "generate", 0.25 + (n - 1) * 0.2, m),
         }, model);
         const bridgePath = path.join(dir, `attempt_${n}_bridge.mp4`);
         await normalizeBridge(result.outputPath, bridgePath, spec, durationSec);
-        setStage("judge", 0.55 + (n - 1) * 0.1);
-        const judged = await judgeTransition({ bridgePath, sourceFrame: frameA.path, destFrame: frameB.path, recipe: rec, prompt: prompt.positive, tmpDir: dir, cheap: model.providerId === "local" });
+        stage("judge", 0.55 + (n - 1) * 0.1);
+        const judged = await judge({ bridgePath, sourceFrame: frameA.path, destFrame: frameB.path, recipe: rec, prompt: prompt.positive, tmpDir: dir, cheap: model.providerId === "local" });
         capProcedural(judged.scores, model.providerId);
         const ok = passes(judged.scores, gen.mode);
         Quality.create({ attemptId: attempt.id, judge: judged.judge, scores: judged.scores, passed: ok });
@@ -170,7 +175,9 @@ export async function runGenerateJob(job: Job, report: Reporter) {
       const round: ModelSpec[] = fanOut > 1 && remote.length >= 2 ? remote.slice(0, Math.min(fanOut, maxAttempts)) : ranked.slice(0, 1);
       if (!round.length) throw new GenerationStopped(FRIENDLY_NO_MODEL, "no bridge model available for this recipe");
       // The round ends as soon as one model passes; a slower sibling keeps rendering and is logged when it lands.
-      const { done: results, pending } = await firstPassing(round.map((m, i) => runOne(m, attemptNo + i + 1, recipe, fineTune)));
+      const live = { current: true };
+      const { done: results, pending } = await firstPassing(round.map((m, i) => runOne(m, attemptNo + i + 1, recipe, fineTune, live)));
+      live.current = false;
       for (const late of pending) void late.then((r) => log.info("late attempt finished", { gen: gen.id, n: r.attempt.n, model: r.model.id, status: r.attempt.status }));
       attemptNo += round.length;
       let passed = false;
@@ -217,7 +224,7 @@ export async function runGenerateJob(job: Job, report: Reporter) {
       }, LOCAL_MODEL);
       const bridgePath = path.join(dir, `fallback_bridge.mp4`);
       await normalizeBridge(result.outputPath, bridgePath, spec, durationSec);
-      const judged = await judgeTransition({ bridgePath, sourceFrame: frameA.path, destFrame: frameB.path, recipe: safe, prompt: prompt.positive, tmpDir: dir, cheap: true });
+      const judged = await judge({ bridgePath, sourceFrame: frameA.path, destFrame: frameB.path, recipe: safe, prompt: prompt.positive, tmpDir: dir, cheap: true });
       capProcedural(judged.scores, "local");
       const ok = passes(judged.scores, gen.mode);
       Quality.create({ attemptId: attempt.id, judge: judged.judge, scores: judged.scores, passed: ok });
