@@ -26,7 +26,10 @@ export function GenerationHistory() {
     <StudioTabs active="history" />
     <div className="history-heading">
       <div><h1 className="display text-4xl sm:text-5xl">Previous generations</h1><p className="mt-3 muted">Your finished transitions, ready to watch and use again.</p></div>
-      <button className="btn btn-ghost btn-sm" disabled={loading} onClick={() => void load()}>Refresh</button>
+      <div className="flex shrink-0 flex-wrap items-center gap-3">
+        <button className="btn btn-ghost btn-sm" disabled={loading} onClick={() => void load()}>Refresh</button>
+        <Link href="/create" className="btn btn-primary">Create transition <span aria-hidden="true">↗</span></Link>
+      </div>
     </div>
     {page?.isGuest && <p className="mb-7 text-sm muted">Showing footage from this browser. <Link href="/signup" className="text-[var(--accent)] underline underline-offset-4">Create an account</Link> to keep it with you.</p>}
     {error && <div role="alert" className="mb-6 rounded-lg border border-[var(--hair)] p-4"><p>{error}</p><button className="btn btn-ghost btn-sm mt-3" onClick={() => void load(failedCursor.current)} disabled={loading}>Try again</button></div>}
