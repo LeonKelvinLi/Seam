@@ -280,6 +280,8 @@ export interface PromptIR {
   creativity: number;
   /** A shot written for this pair by the bridge director (prompt/director.ts). When present it replaces the recipe template. */
   shot?: string;
+  /** Defining visual behavior that a written shot cannot replace. */
+  styleRequirement?: string;
 }
 
 export interface GenerationAttempt {
@@ -313,6 +315,9 @@ export interface QualityScores {
   issues: string[];
   /** Set by the pixel check (quality/seamless.ts): false means a cross-dissolve or a hard cut; absent means not checked. */
   seamless?: boolean;
+  /** Vision assessment; omitted on historical rows and procedural diagnostics. */
+  styleMatch?: "matched" | "mismatched" | "uncertain";
+  styleEvidence?: string;
 }
 
 export interface QualityEvaluation {

@@ -33,14 +33,14 @@ const passing: QualityScores = {
 const passingJudge = async () => ({ judge: "openai" as const, costUsd: 0, scores: { ...passing } });
 
 /** An analysed project and a queued preview generation for it, as createGeneration leaves them (minus the runner). */
-async function queuedGeneration(tag: string) {
+async function queuedGeneration(tag: string, recipeId = "dissolve-match") {
   const user = Users.ensure(`usr_${tag}`);
   const project = Projects.create(user.id, tag);
   for (const [role, file] of [["start", clipA], ["end", clipB]] as const) {
     await ingestFile({ projectId: project.id, userId: user.id, role, buffer: fs.readFileSync(file), originalName: path.basename(file), mime: "video/mp4" });
   }
   await runAnalyzeJob(Jobs.create("analyze", { projectId: project.id }), () => {});
-  const opp = ensureOpportunityForRecipe(project.id, "dissolve-match");
+  const opp = ensureOpportunityForRecipe(project.id, recipeId);
   const gen = Generations.create({
     projectId: project.id, opportunityId: opp.id, recipeId: opp.recipeId, intent: "smooth", fineTune: DEFAULT_FINE_TUNE, mode: "preview",
     status: "queued", stage: "queued", stageLabel: "Getting ready", progress: 0, friendlyError: null, result: null, jobId: null, parentGenerationId: null,
@@ -136,4 +136,23 @@ test("a take no vision judge could check is refused, and the generation stops an
   assert.equal(g.status, "failed");
   assert.match(g.friendlyError ?? "", /quality check is briefly unavailable/);
   assert.equal(Users.get(user.id)!.credits, before + 2, "the preview's credits come back");
+});
+
+test("wrong-style renders are retried in the same style, never delivered, and refunded once", async (t) => {
+  const requested: string[] = [];
+  useProviders(t, true, async (req) => { requested.push(req.transitionType); return rendered(req, "wrong-style"); });
+  const previousAttempts = config.generation.maxAttempts;
+  config.generation.maxAttempts = 3;
+  t.after(() => { config.generation.maxAttempts = previousAttempts; });
+  const { user, gen, job } = await queuedGeneration("style_failure", "orbit");
+  assert.ok(Users.spend(user.id, 2));
+  const wrongStyle = async () => ({ judge: "openai" as const, costUsd: 0, scores: { ...passing, overall: 99, styleMatch: "mismatched" as const, styleEvidence: "The camera pushes in without circling the subject.", issues: ["No orbit is visible."] } });
+  await assert.rejects(runGenerateJob(job, () => {}, wrongStyle), /every AI bridge attempt failed or was rejected/);
+  assert.equal(requested.length, 3);
+  assert.ok(requested.every(r => r === "orbit"));
+  assert.ok(Attempts.forGeneration(gen.id).every(a => a.recipeId === "orbit" && a.status === "rejected"));
+  assert.equal(Generations.get(gen.id)?.result, null);
+  assert.equal(Generations.get(gen.id)?.status, "failed");
+  assert.equal(Generations.get(gen.id)?.recipeId, "orbit");
+  assert.equal(Users.get(user.id)!.credits, user.credits, "refund restores the balance");
 });

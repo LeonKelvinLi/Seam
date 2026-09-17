@@ -1,11 +1,11 @@
 /**
  * What to do when a generation fails or scores badly (spec §12, §28).
  * Attempt 1: chosen recipe on the best model. Quality miss -> same recipe, faithful settings, next-best model.
- * Provider error -> next model. Final attempt -> the recipe's safer alternative (or the smoothest opportunity).
+ * Provider error -> next model. Every attempt keeps the selected recipe, including the final attempt.
  */
 import type { FineTune, QualityScores, TransitionOpportunity } from "@/core/types";
-import { SAFE_SEAMLESS_RECIPE_ID, getRecipe, isOffered } from "@/core/recipes/registry";
 import type { TransitionRecipe } from "@/core/recipes/types";
+import { passesStyle } from "./style";
 
 export interface AttemptOutcome { kind: "error" | "quality"; message: string; scores: QualityScores | null; modelId: string }
 
@@ -20,15 +20,6 @@ export interface NextAttempt {
   suggestion: string | null;
 }
 
-/** The calmer second choice. It must still be a seamless transition: retries never drop to an effect or a dissolve. */
-export function saferRecipeFor(recipe: TransitionRecipe, opps: TransitionOpportunity[]): TransitionRecipe {
-  if (recipe.saferAlternative && isOffered(recipe.saferAlternative)) return getRecipe(recipe.saferAlternative);
-  const smooth = opps
-    .filter((o) => isOffered(o.recipeId) && getRecipe(o.recipeId).intensity < recipe.intensity)
-    .sort((a, b) => b.scores.overall - a.scores.overall)[0];
-  return smooth ? getRecipe(smooth.recipeId) : getRecipe(SAFE_SEAMLESS_RECIPE_ID);
-}
-
 export function planNextAttempt(args: {
   attempt: number; maxAttempts: number; recipe: TransitionRecipe; fineTune: FineTune;
   outcomes: AttemptOutcome[]; opportunities: TransitionOpportunity[];
@@ -37,24 +28,9 @@ export function planNextAttempt(args: {
   if (attempt >= maxAttempts) return null;
   const last = outcomes[outcomes.length - 1];
   const tried = outcomes.map((o) => o.modelId);
-  const isLast = attempt + 1 >= maxAttempts;
   const fidelityMiss = last.scores ? last.scores.startFidelity < 60 || last.scores.endFidelity < 60 : false;
   const artifactMiss = last.scores ? last.scores.artifacts < 60 || last.scores.subjectConsistency < 60 : false;
-  const persistentQualityMiss = outcomes.filter((o) => o.kind === "quality").length >= 2;
-
-  if (isLast || persistentQualityMiss) {
-    const safer = saferRecipeFor(recipe, args.opportunities);
-    if (safer.id !== recipe.id) {
-      return {
-        recipeId: safer.id,
-        fineTune: { ...fineTune, creativity: Math.min(fineTune.creativity, 0.3), cameraMovement: Math.min(fineTune.cameraMovement, 0.5) },
-        excludeModels: last.kind === "error" ? tried : [],
-        reason: `switched to safer recipe ${safer.id}`,
-        userMessage: `This footage is fighting the ${recipe.name.toLowerCase()}. Trying a ${safer.name.toLowerCase()} instead.`,
-        suggestion: `This footage is fighting the ${recipe.name.toLowerCase()}. A ${safer.name.toLowerCase()} will likely look cleaner.`,
-      };
-    }
-  }
+  const styleMiss = last.scores ? !passesStyle(last.scores) : false;
   if (last.kind === "error") {
     return {
       recipeId: recipe.id, fineTune, excludeModels: tried,
@@ -68,11 +44,12 @@ export function planNextAttempt(args: {
     fineTune: {
       ...fineTune,
       creativity: Math.max(0, fineTune.creativity - (fidelityMiss ? 0.3 : 0.15)),
-      cameraMovement: Math.max(0.1, fineTune.cameraMovement - (artifactMiss ? 0.25 : 0.1)),
+      // A missing orbit/push/pull is not repaired by suppressing the camera move further.
+      cameraMovement: styleMiss ? fineTune.cameraMovement : Math.max(0.1, fineTune.cameraMovement - (artifactMiss ? 0.25 : 0.1)),
     },
-    excludeModels: artifactMiss ? tried : [],
+    excludeModels: artifactMiss || styleMiss ? tried : [],
     reason: `quality ${last.scores?.overall ?? "?"}: ${last.scores?.issues.join("; ") ?? ""}`,
-    userMessage: "That transition didn't come out cleanly. We're trying a better approach.",
+    userMessage: styleMiss ? `That take didn't match ${recipe.name}. Trying the same style with another model.` : "That transition didn't come out cleanly. We're trying a better approach.",
     suggestion: null,
   };
 }

@@ -23,8 +23,9 @@ import { getProvider } from "@/core/providers/registry";
 import { LOCAL_MODEL } from "@/core/providers/local";
 import type { ModelSpec, TransitionRequest } from "@/core/providers/types";
 import { judgeTransition, passes } from "@/core/quality/judge";
+import { passesStyle } from "@/core/quality/style";
 import { selectPassingCandidate } from "@/core/quality/selection";
-import { planNextAttempt, saferRecipeFor, type AttemptOutcome } from "@/core/quality/retry-policy";
+import { planNextAttempt, type AttemptOutcome } from "@/core/quality/retry-policy";
 import { recordGeneration, learnedModelQuality } from "@/core/learning/records";
 import type { ExtractedFrame, FineTune, FrameAnalysis, Generation, GenerationAttempt, Job, PromptIR, QualityScores } from "@/core/types";
 import type { TransitionRecipe } from "@/core/recipes/types";
@@ -141,7 +142,8 @@ export async function runGenerateJob(job: Job, report: Reporter, judge = judgeTr
       if (!config.openai.enabled) return Promise.resolve(null);
       let shot = shots.get(rec.id);
       if (!shot) {
-        shot = writeShot({ sourceFrame: frameA.path, destFrame: frameB.path, transition: ir.transition, expectedStructure: rec.expectedStructure, pair: pairRow.data })
+        const styleMiss = outcomes.findLast((o) => o.scores && !passesStyle(o.scores));
+        shot = writeShot({ sourceFrame: frameA.path, destFrame: frameB.path, transition: ir.transition, styleRequirement: ir.styleRequirement, retryFeedback: styleMiss?.scores?.styleEvidence || styleMiss?.message, expectedStructure: rec.expectedStructure, pair: pairRow.data })
           .then((r) => {
             if (r.costUsd > 0) Costs.add({ attemptId: null, generationId: gen.id, kind: "analysis", providerId: "openai", modelId: config.openai.directorModel, units: 1, usd: r.costUsd });
             return r.shot;
@@ -247,6 +249,7 @@ export async function runGenerateJob(job: Job, report: Reporter, judge = judgeTr
         if (r.scores) {
           log.warn("quality rejected", { gen: gen.id, n: r.attempt.n, overall: r.scores.overall, issues: r.scores.issues });
           outcomes.push({ kind: "quality", message: r.scores.issues.join("; "), scores: r.scores, modelId: r.model.id });
+          if (!passesStyle(r.scores)) shots.delete(recipe.id);
         } else {
           outcomes.push({ kind: "error", message: r.error ?? "failed", scores: null, modelId: r.model.id });
         }
@@ -263,9 +266,9 @@ export async function runGenerateJob(job: Job, report: Reporter, judge = judgeTr
       if (next.suggestion) suggestion = next.suggestion;
     }
 
-    // If every candidate failed, try a procedural bridge with the safest recipe. Offline and CI only.
+    // Offline diagnostics keep the selected recipe too. This is never a substitute style.
     if (!best && proceduralAllowed()) {
-      const safe = saferRecipeFor(recipe, opps);
+      const safe = getRecipe(gen.recipeId);
       const durationSec = durationFor(safe, fineTune);
       const ir = compileIR({ a: analysisA, b: analysisB, pair: pairRow.data, recipe: safe, hints: opp.hints, fineTune, durationSec, aspectRatio: aspect, attempt: maxAttempts + 1 });
       const prompt = renderPrompt(ir, "generic");
@@ -274,7 +277,7 @@ export async function runGenerateJob(job: Job, report: Reporter, judge = judgeTr
         params: { durationSec, fallback: true }, status: "running", providerJobId: null, outputPath: null, error: null, costUsd: 0, durationMs: 0,
       });
       attempts.push(attempt);
-      setStage("retry", 0.7, "Using a cleaner, simpler move instead");
+      setStage("retry", 0.7, `Preparing a procedural preview of ${safe.name}`);
       const ta = Date.now();
       const rawPath = path.join(dir, `fallback_raw.mp4`);
       const result = await getProvider("local").generateTransition({
@@ -292,7 +295,7 @@ export async function runGenerateJob(job: Job, report: Reporter, judge = judgeTr
       best = selectPassingCandidate(best, { attempt, bridgePath, scores: judged.scores, model: LOCAL_MODEL, recipe: safe, durationSec }, gen.mode);
       if (!best) throw new Error("The fallback transition failed the quality checks");
       fellBackToLocal = true;
-      suggestion = suggestion ?? `This footage is fighting the ${getRecipe(gen.recipeId).name.toLowerCase()}. A ${safe.name.toLowerCase()} will likely look cleaner.`;
+      suggestion = "This is a procedural preview of the selected style, not a verified AI transition.";
     }
 
     // AI transitions only: a bridge that never passed is a refunded failure, not a crossfade dressed up as a result.

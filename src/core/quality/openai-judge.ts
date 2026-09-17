@@ -9,12 +9,15 @@ import { imageInput, openai, structuredResponse } from "@/core/openai";
 import { sampleFrames } from "@/core/media/ffmpeg";
 import type { TransitionRecipe } from "@/core/recipes/types";
 import type { QualityScores } from "@/core/types";
+import { styleRequirement } from "@/core/recipes/style-contract";
+import { enforceStyleAssessment } from "./style";
 
 const log = logger("judge");
 
 const Schema = z.object({
   startFidelity: z.number(), endFidelity: z.number(), subjectConsistency: z.number(), continuity: z.number(),
   artifacts: z.number(), aesthetic: z.number(), transitionSuccess: z.number(), overall: z.number(), issues: z.array(z.string()),
+  styleMatch: z.enum(["matched", "mismatched", "uncertain"]), styleEvidence: z.string().min(1),
 });
 
 const SYSTEM = `You are a ruthless VFX quality inspector for AI-generated video transitions.
@@ -29,6 +32,8 @@ Score 0-100 (higher is better) for:
 - aesthetic: does it look good as cinema?
 - transitionSuccess: did the requested transition actually happen as described?
 - overall: your honest verdict for a short-form creator, weighted toward fidelity and artifacts.
+Separately assess styleMatch as matched, mismatched, or uncertain. The REQUIRED VISUAL BEHAVIOR defines the selected effect and takes precedence over the prompt that was used. A smooth, attractive transition of a different type is mismatched. If sampled frames do not establish the defining action, use uncertain; never assume it happened between frames.
+In styleEvidence, describe the visible camera direction, parallax, scale change, occluder, portal or transformation and cite the relevant bridge frame numbers. Use matched only when the defining action is visibly present. For mismatched or uncertain, transitionSuccess must be below 50. Do not let fidelity, aesthetics or a convincing prompt compensate for the wrong effect.
 A transition fails when the scenes are blended instead of joined: a cross-dissolve, a fade, a double exposure (one scene see-through over the
 other in the same place), a half-and-half wipe, or a hard cut. For any of these, score continuity and transitionSuccess 30 or lower and
 overall 50 or lower, and name it in "issues". A portal is not a blend: the next scene may appear inside a real shape of the first one
@@ -53,18 +58,19 @@ export async function openaiJudge(bridgePath: string, sourceFrame: string, destF
   }
   content.push({
     type: "input_text",
-    text: `Requested transition: ${recipe.name}. Expected structure: ${recipe.expectedStructure.join(" -> ")}. ` +
+    text: `Requested transition: ${recipe.name}. REQUIRED VISUAL BEHAVIOR: ${styleRequirement(recipe)} Expected structure: ${recipe.expectedStructure.join(" -> ")}. ` +
       `Quality criteria to emphasise: ${recipe.qualityCriteria.join(", ")}. Prompt used: ${prompt.slice(0, 800)}`,
   });
   const res = await structuredResponse({
     model, instructions: SYSTEM, content, schema: Schema, name: "quality_scores", maxOutputTokens: 4000,
   }, api);
   const p = res.data;
-  const scores: QualityScores = {
+  const scores = enforceStyleAssessment({
     startFidelity: clamp(p.startFidelity), endFidelity: clamp(p.endFidelity), subjectConsistency: clamp(p.subjectConsistency),
     continuity: clamp(p.continuity), artifacts: clamp(p.artifacts), aesthetic: clamp(p.aesthetic), transitionSuccess: clamp(p.transitionSuccess),
     overall: clamp(p.overall), issues: p.issues.slice(0, 8),
-  };
+    styleMatch: p.styleMatch, styleEvidence: p.styleEvidence,
+  });
   log.info("judged", { model, overall: scores.overall, issues: scores.issues.length, costUsd: Number(res.costUsd.toFixed(4)) });
   return { scores, costUsd: res.costUsd };
 }

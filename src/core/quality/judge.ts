@@ -12,6 +12,7 @@ import type { QualityScores } from "@/core/types";
 import { openaiJudge } from "./openai-judge";
 import { heuristicJudge } from "./heuristic-judge";
 import { detectSeamBreaks, type SeamBreak } from "./seamless";
+import { passesStyle } from "./style";
 
 const log = logger("quality");
 
@@ -72,7 +73,7 @@ async function scoreTransition(input: JudgeInput): Promise<Judged> {
     heuristicJudge(input.bridgePath, input.sourceFrame, input.destFrame, input.tmpDir),
     scoreWithVision(input),
   ]);
-  if (!input.cheap && config.openai.enabled) {
+  if (!input.cheap) {
     if (vision) {
       const merged: QualityScores = {
         ...vision.scores,
@@ -109,5 +110,5 @@ export function thresholdFor(mode: "preview" | "final" = "final"): number {
 }
 
 export function passes(scores: QualityScores, mode: "preview" | "final" = "final"): boolean {
-  return scores.seamless !== false && scores.overall >= thresholdFor(mode) && scores.startFidelity >= 45 && scores.endFidelity >= 45;
+  return scores.seamless !== false && passesStyle(scores) && scores.overall >= thresholdFor(mode) && scores.startFidelity >= 45 && scores.endFidelity >= 45;
 }

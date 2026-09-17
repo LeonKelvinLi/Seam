@@ -4,8 +4,7 @@ import { config } from "@/core/config";
 import { selectPassingCandidate } from "@/core/quality/selection";
 import type { QualityScores } from "@/core/types";
 
-// passes() reads only the overall score and the two endpoint fidelities.
-const take = (overall: number) => ({ scores: { overall, startFidelity: 80, endFidelity: 80 } as unknown as QualityScores });
+const take = (overall: number) => ({ scores: { overall, startFidelity: 80, endFidelity: 80, transitionSuccess: 90 } as unknown as QualityScores });
 const { qualityThresholdPreview: previewBar, qualityThreshold: finalBar } = config.generation;
 
 test("a preview take is held to the preview bar it was judged against, not the final one", () => {

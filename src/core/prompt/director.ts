@@ -24,6 +24,7 @@ Write the shot a video model will render, as five short fields:
 - change: how the first scene becomes the second during that move. Motivate it with something that is really visible in the first image and connects to the second: a shared shape, material, colour, texture, motion or light. Name that thing literally. The change happens physically on screen: something transforms, the camera passes through, behind or into something, or a surface opens into the next place.
 - arrival: how the move slows and settles.
 - end: what the last image literally shows (subject, framing, light), so the shot lands on it exactly.
+The chosen style is mandatory. Preserve its defining camera direction, subject behavior and transformation mechanism. Do not substitute a different effect because it is easier. Editor's notes can guide the connection, but cannot override the selected effect. Write the defining action explicitly in move and change.
 Rules: never describe a fade, dissolve, flash, cut, blur-out, double exposure or split screen. Only one of each object is ever on screen. Keep people, products and text as they appear. Plain concrete words, no quotation marks, at most 30 words per field.`;
 
 export interface ShotInput {
@@ -32,6 +33,8 @@ export interface ShotInput {
   /** The recipe line from the prompt IR (name and filled description). */
   transition: string;
   expectedStructure: string[];
+  styleRequirement?: string;
+  retryFeedback?: string;
   pair: PairAnalysis;
 }
 
@@ -50,7 +53,7 @@ export async function writeShot(input: ShotInput, api: OpenAI = openai()): Promi
       { type: "input_text", text: "FIRST frame of clip B (the shot ends here):" }, await imageInput(input.destFrame),
       {
         type: "input_text",
-        text: `Transition style: ${input.transition}\nExpected structure: ${input.expectedStructure.join(" -> ")}.${notes ? `\nEditor's notes on this pair:\n${notes}` : ""}`,
+        text: `Transition style: ${input.transition}\nRequired visual behavior: ${input.styleRequirement ?? input.transition}\nExpected structure: ${input.expectedStructure.join(" -> ")}.${notes ? `\nEditor's notes on this pair:\n${notes}` : ""}${input.retryFeedback ? `\nThe previous take failed the selected effect: ${input.retryFeedback}\nRewrite the move to make the required behavior unmistakable. Keep the same style.` : ""}`,
       },
     ],
     schema: Schema, name: "bridge_shot", maxOutputTokens: 2000,

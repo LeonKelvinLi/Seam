@@ -26,10 +26,11 @@ test("a written shot replaces the template, keeps the no-blend rules, and the ne
   assert.ok(ir.avoid.includes("double exposure"));
   const shot = "One continuous shot. Start: a mug on a desk. The camera pushes in. The rim opens into a skylight. The move slows. It settles exactly on the last frame: a sky.";
   const plain = renderPrompt({ ...ir, shot }, "plain"), kling = renderPrompt({ ...ir, shot }, "kling");
-  assert.ok(plain.positive.startsWith(shot));
+  assert.match(plain.positive, /^Required effect: Liquid Transformation/);
+  assert.ok(plain.positive.includes(shot));
   assert.match(plain.positive, /no dissolves, no double exposure/);
   assert.equal(plain.negative, null);
-  assert.ok(kling.positive.startsWith(shot));
+  assert.ok(kling.positive.includes(shot));
   assert.match(kling.negative ?? "", /double exposure/);
   // Without a shot, the plain dialect is the Higgsfield template: rules written in, no negative field.
   assert.deepEqual(renderPrompt(ir, "plain"), renderPrompt(ir, "higgsfield"));
