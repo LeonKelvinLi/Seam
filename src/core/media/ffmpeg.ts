@@ -6,6 +6,7 @@
 import { spawn } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
+import sharp from "sharp";
 import { config } from "@/core/config";
 import { logger } from "@/core/log";
 
@@ -204,14 +205,40 @@ export async function extractFrameAt(video: string, t: number, output: string) {
 
 /** Frames at evenly spaced fractions of a clip (used by the quality judge). */
 export async function sampleFrames(video: string, outDir: string, count: number, prefix = "s"): Promise<ExtractedFrameFile[]> {
+  if (count <= 0) return [];
   const info = await probe(video);
   fs.mkdirSync(outDir, { recursive: true });
   const out: ExtractedFrameFile[] = [];
   for (let i = 0; i < count; i++) {
     const t = count === 1 ? 0 : Math.min(info.durationSec - 1 / (info.fps || 30), (info.durationSec * i) / (count - 1));
     const p = path.join(outDir, `${prefix}_${i}.jpg`);
-    await extractFrameAt(video, Math.max(0, t), p);
+    fs.rmSync(p, { force: true });
     out.push({ t, path: p });
+  }
+  // Decode the short bridge once instead of starting a decoder for every judge frame. Each branch selects the
+  // same timestamp as extractFrameAt (including its millisecond rounding); frame counts and resolution stay intact.
+  const branches = out.map((_, i) => `[s${i}]`).join("");
+  const filter = `[0:v]split=${count}${branches};` + out.map((f, i) =>
+    `[s${i}]select='gte(t,${Math.max(0, f.t).toFixed(3)})'[f${i}]`,
+  ).join(";");
+  let batchFailed = false;
+  try {
+    await ffmpeg(["-i", video, "-filter_complex_threads", "1", "-filter_complex", filter, ...out.flatMap((f, i) =>
+      ["-map", `[f${i}]`, "-frames:v", "1", "-fps_mode", "vfr", "-q:v", "2", "-threads", "1", f.path],
+    )]);
+  } catch {
+    // Some FFmpeg versions reject a multi-output encode when the last timestamp falls into an audio-only tail.
+    // Completed branches can still be used, but validate their JPEGs before giving them to either inspector.
+    batchFailed = true;
+  }
+  // Audio can outlast video, and very short clips may not have a frame at a requested timestamp. Retain the exact
+  // seek-from-end fallback used by the old sampler rather than silently dropping a quality-check sample.
+  for (const f of out) {
+    let usable = fs.existsSync(f.path) && fs.statSync(f.path).size > 0;
+    if (usable && batchFailed) {
+      try { await sharp(f.path, { failOn: "warning" }).resize(1, 1).raw().toBuffer(); } catch { usable = false; }
+    }
+    if (!usable) await extractFrameAt(video, Math.max(0, f.t), f.path);
   }
   return out;
 }

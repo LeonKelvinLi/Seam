@@ -83,9 +83,14 @@ export async function runAnalyzeJob(job: Job, report: Reporter) {
     // ---- visual understanding
     report("analysis", 0.4);
     const idx = (frames: ExtractedFrame[], f: ExtractedFrame) => frames.findIndex((x) => x.id === f.id);
-    const aRes = await analyzeFrames(aCand.map((f) => ({ path: f.path, t: f.t, features: f.features, next: aFrames[idx(aFrames, f) + 1]?.features })), "start");
+    // Neither clip's vision call depends on the other. Keep their outputs ordered while the network work overlaps.
+    const visionStart = Date.now();
+    const [aRes, bRes] = await Promise.all([
+      analyzeFrames(aCand.map((f) => ({ path: f.path, t: f.t, features: f.features, next: aFrames[idx(aFrames, f) + 1]?.features })), "start"),
+      analyzeFrames(bCand.map((f) => ({ path: f.path, t: f.t, features: f.features, next: bFrames[idx(bFrames, f) + 1]?.features })), "end"),
+    ]);
+    const frameVisionMs = Date.now() - visionStart;
     report("analysis", 0.6);
-    const bRes = await analyzeFrames(bCand.map((f) => ({ path: f.path, t: f.t, features: f.features, next: bFrames[idx(bFrames, f) + 1]?.features })), "end");
     const analyses = new Map<string, FrameAnalysis>();
     aCand.forEach((f, i) => { analyses.set(f.id, aRes.data[i]); VisualAnalyses.create({ assetId: a.id, frameId: f.id, analyzer: aRes.analyzer, data: aRes.data[i] }); });
     bCand.forEach((f, i) => { analyses.set(f.id, bRes.data[i]); VisualAnalyses.create({ assetId: b.id, frameId: f.id, analyzer: bRes.analyzer, data: bRes.data[i] }); });
@@ -113,7 +118,7 @@ export async function runAnalyzeJob(job: Job, report: Reporter) {
     const costUsd = aRes.costUsd + bRes.costUsd + pairRes.costUsd;
     if (costUsd > 0) Costs.add({ attemptId: null, generationId: null, kind: "analysis", providerId: "openai", modelId: config.openai.visionModel, units: 3, usd: costUsd });
     Projects.update(projectId, { status: "analyzed" });
-    Events.track("analysis_completed", { userId: project.userId, projectId, props: { ms: Date.now() - t0, analyzer: pairRes.analyzer, top: opps[0]?.recipeId, costUsd } });
+    Events.track("analysis_completed", { userId: project.userId, projectId, props: { ms: Date.now() - t0, frameVisionMs, analyzer: pairRes.analyzer, top: opps[0]?.recipeId, costUsd } });
     log.info("analysis complete", { projectId, ms: Date.now() - t0, analyzer: pairRes.analyzer, top: opps.slice(0, 3).map((o) => `${o.recipeId}:${o.scores.overall}`) });
   } catch (e) {
     Projects.update(projectId, { status: "failed", analysisError: (e as Error).message });

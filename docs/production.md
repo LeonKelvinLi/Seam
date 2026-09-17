@@ -364,3 +364,28 @@ while retaining manifests that reference them. This implementation does not dele
 storage/budget alerts; add a reference-aware retention policy before usage grows. `uploaded` proves the last upload,
 not a successful restore drill; the new test covers a simulated object-store round trip, corruption, missing media,
 and traversal refusal. A real bucket upload/retrieval remains required.
+
+## Generation latency (2026-09-17)
+
+The preceding live coffee/ocean flow spent about 33 seconds on analysis and 62 seconds from generation request to ready.
+Its accepted H3 Max attempt took 26 seconds including normalization and judging; that attempt timer excluded the director
+and final assembly. The local 28-style sweep had median analysis 24.3 seconds; its 16 accepted runs had median generation
+28.1 seconds. Those are different environments and workloads, not interchangeable benchmarks.
+
+The pipeline now overlaps the two independent clip-vision requests, source trimming with director/provider network waits,
+and pixel-fidelity scoring with the vision judge. Source encodes remain sequential to limit CPU contention; outstanding
+preparation is drained on failure before releasing the worker slot. All judges, scores, nine vision samples, fidelity floors,
+retry limits, and output encoding settings are unchanged.
+
+Judge samples use one FFmpeg decode with several outputs instead of one decode per image. A missing final sample caused by
+an audio-only tail still uses the old seek-from-end fallback. If a branch makes FFmpeg fail, completed JPEGs are decoded for
+validation before reuse. Regression coverage compares decoded pixels against the old individual seeks at integer/fractional
+frame rates, on a one-frame clip, and with an audio tail. A local alternating-order benchmark on two saved production bridges
+(three repetitions each) measured seven samples at 485 ms -> 326.5 ms and nine at 615.5 ms -> 372 ms. This is a local media-stage
+measurement, not a claim of a 33–40% reduction in total production generation time.
+
+Attempt params now include `timings.directorMs`, `providerMs` (including queue, polling and download), `normalizeMs`, and
+`judgeMs`. The `generation_succeeded` event and completion log include source-preparation total/wait, stitch, and export times;
+`analysis_completed` includes the combined frame-vision wall time. Overlapped durations must not be added as though serial.
+Use these measurements before changing models, encoder presets, or server size. Further model races consume extra credits;
+faster director/judge models need held-out quality comparisons before activation.

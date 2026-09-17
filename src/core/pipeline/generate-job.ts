@@ -93,6 +93,8 @@ export async function runGenerateJob(job: Job, report: Reporter, judge = judgeTr
     Generations.update(gen.id, { status: "running", stage, stageLabel: label ?? labelFor(stage), progress });
   };
   const t0 = Date.now();
+  const timings: Record<string, number> = {};
+  let sourcePreparation: Promise<{ error: unknown } | null> | undefined;
 
   try {
     setStage("compile", 0.05);
@@ -107,6 +109,21 @@ export async function runGenerateJob(job: Job, report: Reporter, judge = judgeTr
     const aspect = aspectFor(spec);
     const opps = Opportunities.forProject(gen.projectId);
     const dir = storage.ensureDir(storage.renderDir(gen.id));
+
+    // These trims depend only on the chosen boundary frames, not on the generated bridge. Prepare them during
+    // the director/provider network wait. Keep local encodes sequential on the small production instance.
+    const fps = spec.fps;
+    const durA = assetA.durationSec ?? (await probe(assetA.proxyPath!)).durationSec;
+    const durB = assetB.durationSec ?? (await probe(assetB.proxyPath!)).durationSec;
+    const cutA = Math.min(durA, Math.max(0.35, frameA.t + 1 / fps));
+    const cutB = Math.max(0, Math.min(durB - 0.35, frameB.t + 1 / fps));
+    const partA = path.join(dir, "part_a.mp4"), partB = path.join(dir, "part_b.mp4");
+    const preparationStart = Date.now();
+    sourcePreparation = (async () => {
+      await trimClip(assetA.proxyPath!, partA, null, cutA, spec);
+      await trimClip(assetB.proxyPath!, partB, cutB, null, spec);
+      timings.prepareSourcesMs = Date.now() - preparationStart;
+    })().then(() => null, (error: unknown) => ({ error }));
 
     let recipe = getRecipe(gen.recipeId);
     let fineTune = gen.fineTune;
@@ -141,11 +158,14 @@ export async function runGenerateJob(job: Job, report: Reporter, judge = judgeTr
     // the generation's stage: the generation has moved on to stitching, ready or failed, and setStage would put it
     // back to "running" (a ready preview reverted to "Checking the result" and its share link 404ed, 2026-09-16).
     const runOne = async (model: ModelSpec, n: number, rec: TransitionRecipe, ft: FineTune, live: { current: boolean }): Promise<RunOutcome> => {
+      const attemptTimings: Record<string, number> = {};
       const stage = (s: string, progress: number, label?: string) => { if (live.current) setStage(s, progress, label); };
       const durationSec = durationFor(rec, ft);
       const ir = compileIR({ a: analysisA, b: analysisB, pair: pairRow.data, recipe: rec, hints: opp.hints, fineTune: ft, durationSec, aspectRatio: aspect, attempt: n });
       if (model.providerId !== "local") {
+        const directorStart = Date.now();
         const shot = await shotFor(rec, ir);
+        attemptTimings.directorMs = Date.now() - directorStart;
         if (shot) ir.shot = shot;
       }
       const provider = getProvider(model.providerId);
@@ -166,17 +186,23 @@ export async function runGenerateJob(job: Job, report: Reporter, judge = judgeTr
           local: { spec, recipe: rec, focusA: focusPoint(analysisA, frameA, rec, opp.hints.shapeA), focusB: focusPoint(analysisB, frameB, rec, opp.hints.shapeB) },
           onProgress: (m) => stage(n > 1 ? "retry" : "generate", 0.25 + (n - 1) * 0.2, m),
         }, model);
+        attemptTimings.providerMs = Date.now() - ta;
         const bridgePath = path.join(dir, `attempt_${n}_bridge.mp4`);
+        const normalizeStart = Date.now();
         const bridgeSec = await normalizeBridge(result.outputPath, bridgePath, spec, durationSec, config.output.maxBridgeSpeedup);
+        attemptTimings.normalizeMs = Date.now() - normalizeStart;
         stage("judge", 0.55 + (n - 1) * 0.1);
+        const judgeStart = Date.now();
         const judged = await judge({ bridgePath, sourceFrame: frameA.path, destFrame: frameB.path, recipe: rec, prompt: prompt.positive, tmpDir: path.join(dir, `judge_${n}`), cheap: model.providerId === "local" });
+        attemptTimings.judgeMs = Date.now() - judgeStart;
         capProcedural(judged.scores, model.providerId);
         const ok = passes(judged.scores, gen.mode);
         Quality.create({ attemptId: attempt.id, judge: judged.judge, scores: judged.scores, passed: ok });
         const cost = result.costUsd + judged.costUsd;
         if (result.costUsd > 0) Costs.add({ attemptId: attempt.id, generationId: gen.id, kind: "generation", providerId: model.providerId, modelId: model.id, units: result.rawDurationSec, usd: result.costUsd });
         if (judged.costUsd > 0) Costs.add({ attemptId: attempt.id, generationId: gen.id, kind: "judge", providerId: "openai", modelId: config.openai.judgeModel, units: 1, usd: judged.costUsd });
-        Attempts.update(attempt.id, { status: ok ? "succeeded" : "rejected", providerJobId: result.providerJobId, outputPath: bridgePath, costUsd: cost, durationMs: Date.now() - ta, params: { ...attempt.params, ...result.params, bridgeSec } });
+        Attempts.update(attempt.id, { status: ok ? "succeeded" : "rejected", providerJobId: result.providerJobId, outputPath: bridgePath, costUsd: cost, durationMs: Date.now() - ta, params: { ...attempt.params, ...result.params, bridgeSec, timings: attemptTimings } });
+        log.info("attempt timings", { gen: gen.id, n, model: model.id, ...attemptTimings });
         attempt.recipeId = rec.id; attempt.durationMs = Date.now() - ta; attempt.status = ok ? "succeeded" : "rejected";
         return { attempt, model, ok, scores: judged.scores, bridgePath, error: null, recipeId: rec.id, durationSec: bridgeSec, unjudged: judged.judge === "unavailable" };
       } catch (e) {
@@ -274,17 +300,16 @@ export async function runGenerateJob(job: Job, report: Reporter, judge = judgeTr
 
     // ---- stitch: A[..cutA] + bridge + B[cutB..]
     setStage("stitch", 0.8);
-    const fps = spec.fps;
-    const durA = assetA.durationSec ?? (await probe(assetA.proxyPath!)).durationSec;
-    const durB = assetB.durationSec ?? (await probe(assetB.proxyPath!)).durationSec;
-    const cutA = Math.min(durA, Math.max(0.35, frameA.t + 1 / fps));
-    const cutB = Math.max(0, Math.min(durB - 0.35, frameB.t + 1 / fps));
-    const partA = path.join(dir, "part_a.mp4"), partB = path.join(dir, "part_b.mp4");
-    await trimClip(assetA.proxyPath!, partA, null, cutA, spec);
-    await trimClip(assetB.proxyPath!, partB, cutB, null, spec);
+    const preparationWait = Date.now();
+    const preparationFailure = await sourcePreparation;
+    timings.prepareSourcesWaitMs = Date.now() - preparationWait;
+    if (preparationFailure) throw preparationFailure.error;
+    const stitchStart = Date.now();
     const fullPath = path.join(dir, "full.mp4");
     await stitch(partA, best.bridgePath, partB, fullPath, spec, config.output.seamCrossfadeSec);
+    timings.stitchMs = Date.now() - stitchStart;
     setStage("export", 0.95);
+    const exportStart = Date.now();
     const posterPath = path.join(dir, "poster.jpg");
     await poster(fullPath, posterPath, Math.max(0, cutA - 0.05));
     const finalBridge = path.join(dir, "transition.mp4");
@@ -292,6 +317,7 @@ export async function runGenerateJob(job: Job, report: Reporter, judge = judgeTr
     const full = await probe(fullPath);
     Exports.create({ generationId: gen.id, kind: "full", path: fullPath });
     Exports.create({ generationId: gen.id, kind: "bridge", path: finalBridge });
+    timings.exportMs = Date.now() - exportStart;
 
     const result: Generation["result"] = {
       bridgePath: finalBridge, fullPath, posterPath, bridgeDurationSec: best.durationSec, fullDurationSec: full.durationSec,
@@ -300,13 +326,16 @@ export async function runGenerateJob(job: Job, report: Reporter, judge = judgeTr
     };
     Generations.update(gen.id, { status: "ready", stage: "ready", stageLabel: labelFor("ready"), progress: 1, result, recipeId: best.recipe.id, friendlyError: null });
     recordGeneration({ generation: { ...gen, recipeId: best.recipe.id }, a: analysisA, b: analysisB, attempts, quality: best.scores, promptVersion: best.attempt.promptIR.version, durationSec: best.durationSec });
-    Events.track("generation_succeeded", { userId: project.userId, projectId: gen.projectId, generationId: gen.id, props: { ms: Date.now() - t0, recipe: best.recipe.id, model: best.model.id, attempts: attempts.length, quality: best.scores.overall, fellBackToLocal } });
-    log.info("generation ready", { gen: gen.id, ms: Date.now() - t0, recipe: best.recipe.id, model: best.model.id, quality: best.scores.overall });
+    Events.track("generation_succeeded", { userId: project.userId, projectId: gen.projectId, generationId: gen.id, props: { ms: Date.now() - t0, timings, recipe: best.recipe.id, model: best.model.id, attempts: attempts.length, quality: best.scores.overall, fellBackToLocal } });
+    log.info("generation ready", { gen: gen.id, ms: Date.now() - t0, timings, recipe: best.recipe.id, model: best.model.id, quality: best.scores.overall });
   } catch (e) {
     const msg = (e as Error).message;
     Users.grant(project.userId, CREDITS_PER_GENERATION[gen.mode]); // never charge for a failure
     Generations.update(gen.id, { status: "failed", stage: "failed", stageLabel: labelFor("failed"), friendlyError: e instanceof GenerationStopped ? e.friendly : FRIENDLY_FAIL });
     Events.track("generation_failed", { userId: project.userId, projectId: gen.projectId, generationId: gen.id, props: { error: msg } });
     throw e;
+  } finally {
+    // If generation failed first, drain the already-started local work before the runner releases this job's slot.
+    await sourcePreparation;
   }
 }

@@ -66,23 +66,22 @@ export function applySeamBreaks(scores: QualityScores, breaks: SeamBreak[]): Qua
 }
 
 async function scoreTransition(input: JudgeInput): Promise<Judged> {
-  const heuristic = await heuristicJudge(input.bridgePath, input.sourceFrame, input.destFrame, input.tmpDir);
+  // Start the vision request without waiting for the independent pixel-fidelity check. Neither result is accepted
+  // until both finish, and the same fidelity floor and unavailable-judge rejection still apply.
+  const [heuristic, vision] = await Promise.all([
+    heuristicJudge(input.bridgePath, input.sourceFrame, input.destFrame, input.tmpDir),
+    scoreWithVision(input),
+  ]);
   if (!input.cheap && config.openai.enabled) {
-    const models = [...new Set([config.openai.judgeModel, config.openai.judgeFallbackModel].filter(Boolean))];
-    for (const model of models) {
-      try {
-        const r = await openaiJudge(input.bridgePath, input.sourceFrame, input.destFrame, input.recipe, input.prompt, undefined, model);
-        const merged: QualityScores = {
-          ...r.scores,
-          startFidelity: Math.min(r.scores.startFidelity, heuristic.startFidelity + 25),
-          endFidelity: Math.min(r.scores.endFidelity, heuristic.endFidelity + 25),
-          issues: [...new Set([...r.scores.issues, ...heuristic.issues])],
-        };
-        merged.overall = Math.round(Math.min(r.scores.overall, (merged.startFidelity + merged.endFidelity) / 2 + 20));
-        return { scores: merged, judge: "openai", costUsd: r.costUsd };
-      } catch (e) {
-        log.warn("OpenAI judge failed", { model, error: openaiErrorSummary(e) });
-      }
+    if (vision) {
+      const merged: QualityScores = {
+        ...vision.scores,
+        startFidelity: Math.min(vision.scores.startFidelity, heuristic.startFidelity + 25),
+        endFidelity: Math.min(vision.scores.endFidelity, heuristic.endFidelity + 25),
+        issues: [...new Set([...vision.scores.issues, ...heuristic.issues])],
+      };
+      merged.overall = Math.round(Math.min(vision.scores.overall, (merged.startFidelity + merged.endFidelity) / 2 + 20));
+      return { scores: merged, judge: "openai", costUsd: vision.costUsd };
     }
     return {
       scores: { ...heuristic, overall: Math.min(heuristic.overall, UNJUDGED_CAP), issues: [JUDGE_UNAVAILABLE, ...heuristic.issues].slice(0, 8) },
@@ -90,6 +89,19 @@ async function scoreTransition(input: JudgeInput): Promise<Judged> {
     };
   }
   return { scores: heuristic, judge: "heuristic", costUsd: 0 };
+}
+
+async function scoreWithVision(input: JudgeInput) {
+  if (input.cheap || !config.openai.enabled) return null;
+  const models = [...new Set([config.openai.judgeModel, config.openai.judgeFallbackModel].filter(Boolean))];
+  for (const model of models) {
+    try {
+      return await openaiJudge(input.bridgePath, input.sourceFrame, input.destFrame, input.recipe, input.prompt, undefined, model);
+    } catch (e) {
+      log.warn("OpenAI judge failed", { model, error: openaiErrorSummary(e) });
+    }
+  }
+  return null;
 }
 
 export function thresholdFor(mode: "preview" | "final" = "final"): number {

@@ -102,13 +102,24 @@ test("a fan-out sibling that lands after the result leaves the generation ready"
 
 test("a quick lead model runs alone: no second model is paid for behind it", async (t) => {
   const models: string[] = [];
-  useProviders(t, true, async (req) => rendered(req, "h3"));
+  let preparedDuringRender = false;
+  useProviders(t, true, async (req) => {
+    // A provider can wait on the network while source clips are prepared; a sequential pipeline deadlocks here.
+    const partB = path.join(path.dirname(req.outputPath), "part_b.mp4");
+    const deadline = Date.now() + 10_000;
+    while (!fs.existsSync(partB) && Date.now() < deadline) await new Promise((r) => setTimeout(r, 20));
+    preparedDuringRender = fs.existsSync(partB);
+    return rendered(req, "h3");
+  });
   const { gen, job } = await queuedGeneration("fanout_quick");
   await runGenerateJob(job, () => {}, passingJudge);
   for (const a of Attempts.forGeneration(gen.id)) models.push(a.modelId);
   assert.deepEqual(models, ["fal:minimax-h3-max"]);
   const g = Generations.get(gen.id)!;
   assert.equal(g.status, "ready");
+  assert.equal(preparedDuringRender, true, "source preparation overlaps the provider wait");
+  const timing = Attempts.forGeneration(gen.id)[0].params.timings as Record<string, number>;
+  for (const key of ["providerMs", "normalizeMs", "judgeMs"]) assert.ok(timing[key] >= 0, `recorded ${key}`);
   // Dissolve Match asks for 0.9 s at the default pace; a 1.2 s render only needs 1.3x, well inside the speed cap.
   assert.ok(Math.abs(g.result!.bridgeDurationSec - 0.9) < 0.01, `bridge ${g.result!.bridgeDurationSec}s`);
 });
