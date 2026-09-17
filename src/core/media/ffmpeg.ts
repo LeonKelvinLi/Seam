@@ -88,6 +88,15 @@ function fitFilter(w: number, h: number): string {
   );
 }
 
+/**
+ * Fill the frame edge to edge when the source is nearly the target shape. Bridge models render from our own frames but
+ * at their own sizes (MiniMax H3 Max: 1344x768 for a 1280x720 project); fitFilter would pad that with thin dark bars.
+ */
+function coverFilter(w: number, h: number): string {
+  return `scale=${w}:${h}:force_original_aspect_ratio=increase,crop=${w}:${h},format=yuv420p`;
+}
+const COVER_MAX_ASPECT_GAP = 0.08;
+
 /** Normalise any video into the proxy spec. Always emits an audio track (silent if the source has none). */
 export async function makeProxy(input: string, output: string, spec: FrameSpec, hasAudio: boolean, maxDurationSec?: number) {
   const args = ["-i", input];
@@ -223,17 +232,25 @@ export async function trimClip(input: string, output: string, startSec: number |
  * Bring a provider-generated bridge into the proxy spec and time-remap it to the target duration
  * (models emit 5-10s clips; transitions want ~1-2s). Adds a silent audio track.
  */
-export async function normalizeBridge(input: string, output: string, spec: FrameSpec, targetDurationSec: number) {
+/**
+ * Fit a generated bridge to the output spec and retime it toward `targetDurationSec`. A model paces its move over its
+ * own clip length, and playing that more than `maxSpeedup` times faster turns a smooth move into a flash (a 5 s morph
+ * squeezed into 1.1 s on 2026-09-16), so the bridge only shortens that far. Returns the bridge's final duration.
+ */
+export async function normalizeBridge(input: string, output: string, spec: FrameSpec, targetDurationSec: number, maxSpeedup = Infinity): Promise<number> {
   const info = await probe(input);
-  const factor = info.durationSec > 0 ? targetDurationSec / info.durationSec : 1;
-  const filter = `[0:v]${fitFilter(spec.width, spec.height)},setpts=${factor.toFixed(5)}*PTS,fps=${spec.fps},setsar=1[v]`;
+  const durationSec = info.durationSec > 0 ? Math.max(targetDurationSec, info.durationSec / maxSpeedup) : targetDurationSec;
+  const factor = info.durationSec > 0 ? durationSec / info.durationSec : 1;
+  const gap = info.width > 0 && info.height > 0 ? Math.abs((info.width / info.height) / (spec.width / spec.height) - 1) : 1;
+  const frame = gap <= COVER_MAX_ASPECT_GAP ? coverFilter(spec.width, spec.height) : fitFilter(spec.width, spec.height);
+  const filter = `[0:v]${frame},setpts=${factor.toFixed(5)}*PTS,fps=${spec.fps},setsar=1[v]`;
   await ffmpeg([
     "-i", input, "-f", "lavfi", "-i", "anullsrc=channel_layout=stereo:sample_rate=48000",
-    "-filter_complex", filter, "-map", "[v]", "-map", "1:a:0", "-t", targetDurationSec.toFixed(3),
+    "-filter_complex", filter, "-map", "[v]", "-map", "1:a:0", "-t", durationSec.toFixed(3),
     "-c:v", "libx264", "-preset", "veryfast", "-crf", "18", "-pix_fmt", "yuv420p", "-r", String(spec.fps),
     "-c:a", "aac", "-ar", "48000", "-ac", "2", "-movflags", "+faststart", output,
   ]);
-  return output;
+  return Math.round(durationSec * 1000) / 1000;
 }
 
 /** Add a silent audio track to a silent video without re-encoding video. */

@@ -278,6 +278,8 @@ export interface PromptIR {
   aspectRatio: string;
   motionStrength: number;
   creativity: number;
+  /** A shot written for this pair by the bridge director (prompt/director.ts). When present it replaces the recipe template. */
+  shot?: string;
 }
 
 export interface GenerationAttempt {
@@ -316,7 +318,8 @@ export interface QualityScores {
 export interface QualityEvaluation {
   id: string;
   attemptId: string;
-  judge: "openai" | "claude" | "heuristic";
+  /** "unavailable": no vision judge answered, so the take was refused on principle (quality/judge.ts). */
+  judge: "openai" | "claude" | "heuristic" | "unavailable";
   scores: QualityScores;
   passed: boolean;
   createdAt: string;

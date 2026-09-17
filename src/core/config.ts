@@ -27,7 +27,13 @@ export const config = {
       return env("OPENAI_API_KEY") !== "";
     },
     visionModel: env("SEAM_VISION_MODEL", "gpt-5.4-mini"),
-    judgeModel: env("SEAM_JUDGE_MODEL", "gpt-5.4-mini"),
+    // gpt-5.6-sol matched a human review of eleven bridges on 2026-09-16 (good ones 90 to 95, blends and cuts 43 to 78);
+    // gpt-5.4-mini passed three blends and a hard cut above 90, and gpt-6-astra failed clean morphs.
+    judgeModel: env("SEAM_JUDGE_MODEL", "gpt-5.6-sol"),
+    /** Answers when the judge model is rate limited or down. */
+    judgeFallbackModel: env("SEAM_JUDGE_FALLBACK_MODEL", "gpt-5.4-mini"),
+    /** Writes the shot each bridge model renders (prompt/director.ts). */
+    directorModel: env("SEAM_DIRECTOR_MODEL", "gpt-5.6-sol"),
   },
   providers: {
     falKey: env("FAL_KEY"),
@@ -40,9 +46,9 @@ export const config = {
   },
   generation: {
     maxAttempts: num("SEAM_MAX_ATTEMPTS", 3),
-    qualityThreshold: num("SEAM_QUALITY_THRESHOLD", 72),
-    // 70, not 65: in the 2026-09-10 proof runs a 66 take melted into a dissolve while an 82 was a clean portal.
-    qualityThresholdPreview: num("SEAM_QUALITY_THRESHOLD_PREVIEW", 70),
+    qualityThreshold: num("SEAM_QUALITY_THRESHOLD", 82),
+    // Calibrated for gpt-5.6-sol on 2026-09-16: clean morphs scored 90 to 95, a ghosted rim 78, blends 43 to 49.
+    qualityThresholdPreview: num("SEAM_QUALITY_THRESHOLD_PREVIEW", 80),
     /** Bridge models tried concurrently on the first round (1 = sequential; 2 halves the wait at double provider cost). */
     parallelAttempts: num("SEAM_PARALLEL_ATTEMPTS", 1),
     /** Provider generation fees allowed per UTC day. Past it, generation stops rather than shipping a crossfade. 0 disables the guard. */
@@ -65,6 +71,11 @@ export const config = {
     maxEdge: 1280,
     /** Seconds of crossfade at each seam between footage and the AI bridge. */
     seamCrossfadeSec: 0.12,
+    /**
+     * The fastest an AI bridge is played back relative to how the model rendered it: 2.5 plays a 5 s render in 2 s,
+     * the length of the site's example bridges (scripts/build-examples.ts). Faster than that, a camera move reads as a flash.
+     */
+    maxBridgeSpeedup: num("SEAM_MAX_BRIDGE_SPEEDUP", 2.5),
     /** Hold duration used when an uploaded still image needs to become footage. */
     imageHoldSec: 1.6,
   },
@@ -77,7 +88,7 @@ export function describeRuntime() {
     judge: config.openai.enabled ? `OpenAI (${config.openai.judgeModel})` : "heuristic",
     providers: [
       config.generation.allowProcedural ? "local (ffmpeg, fallback forced on)" : "local (ffmpeg, only when no bridge model is configured)",
-      config.providers.falKey ? "fal (Kling 2.1)" : null,
+      config.providers.falKey ? "fal (Wan 3.0 Prime, MiniMax H3 Max, Kling O3 Pro, Kling 2.1)" : null,
       config.providers.runwaySecret ? "runway (Gen-4 Turbo)" : null,
       config.providers.higgsfieldKeyId && config.providers.higgsfieldKeySecret ? "higgsfield (DoP, Hailuo-02)" : null,
     ].filter(Boolean),

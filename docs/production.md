@@ -247,3 +247,60 @@ run at 19:25 UTC (Kling 84) was judged by OpenAI. The same key answered normally
 both a text request and a production-sized vision request. Log lines now include OpenAI's error code
 (`rate_limit_exceeded` or `insufficient_quota`) so the next failure names its cause. While the judge falls back, the model
 acceptance rates in `previewRoute` are built on heuristic passes.
+
+## Transition quality overhaul (2026-09-16, night)
+
+Leon's verdict on the live results: not good enough, it has to look smooth and professional. The live bridges came from
+Kling 2.1 Pro with the recipe template prompt, sped up 4.5x into 1.1 s. Higgsfield's Cinema Studio, which made the library
+previews, is not on Higgsfield's developer API (every guessed path answers `model_not_found`; the catalogue is behind the
+console login).
+
+### Model comparison
+
+One take per model on the live pair's boundary frames, with one hand-written shot, native length, audio off. The outputs
+are in `data/live-results/2026-09-16-model-eval/`.
+
+| Model (fal) | Take | Time | Cost | Verdict |
+|---|---|---|---|---|
+| Wan 3.0 Prime | 5 s 720p | 101 s | $0.25 | best: the drop's ripple carries onto the sea |
+| MiniMax H3 Max | 5 s 768p | 13 s | $0.13 | clean: the coffee opens into the sea inside the rim |
+| Kling O3 Pro | 4 s 1080p | 106 s | $0.56 | clean morph |
+| Veo 3.1 | 4 s | 48 s | $1.60 | half-and-half wipe, ghosted rim |
+| Veo 3.1 Fast | 4 s | 38 s | $0.60 | ghosted frame |
+| PixVerse V6 Transition | 5 s | 54 s | cheap | lovely macro, then a hard cut |
+| Flux 3 first/last frame | 5 s | 70 s | $0.43 | blends through black |
+| Seedance 2.5 | 4 s | 288 s | ~$1.90 | blends through black |
+| Kling v3 Pro | 4 s 1080p | 159 s | $0.56 | double exposure |
+| Kling 2.1 Pro, same shot | 5 s 1080p | 109 s | $0.49 | the sea floods the kitchen; ignores the move |
+
+The pixel seam gate passed all ten, including the double exposure and the hard cut.
+
+### What changed
+
+- Routing (`src/core/providers/fal.ts`): H3 Max leads previews, then Wan 3.0 Prime, then Kling O3 Pro. Finals rank the
+  same three on quality. Kling 2.1, DoP and Hailuo-02 remain as fallbacks. A second first-round model now starts only
+  when the lead is expected to take over 60 s; racing Wan behind H3 would book $0.25 a preview for nothing.
+- Director (`src/core/prompt/director.ts`, gpt-5.6-sol): one vision call per generation and style writes the shot the
+  model renders, naming the real objects and the one motivated change. The recipe template is the fallback. The
+  instructions describe the form of a shot and never a sample scene.
+- Pacing (`config.output.maxBridgeSpeedup`, 2.5): a 5 s render plays in 2 s, the length of the site's example bridges,
+  instead of being squeezed into the recipe's 0.8 to 1.4 s.
+- Framing: a render within 8% of the project's shape is cropped to fill the frame. The blur-fit padded H3 Max's
+  1344x768 with thin dark side bars.
+- Judge (`src/core/quality/openai-judge.ts`): gpt-5.6-sol, nine sampled frames instead of five, and an explicit rule
+  that blends, double exposures, half-and-half wipes and cuts fail while portals pass. On eleven reviewed bridges,
+  clean morphs scored 90 to 95, a ghosted rim 78, and blends 43 to 49. gpt-5.4-mini passed three blends and a cut
+  above 90, and gpt-6-astra failed clean morphs. Pass marks are now 80 for previews and 82 for finals (`render.yaml`).
+  gpt-5.4-mini answers if sol fails. When neither answers, the take is refused, the generation stops, and the credits
+  are refunded. The pixel heuristic scored 93 on a take the vision judge failed at 45.
+- The negative prompt keeps short phrases only; the pair's risk sentences go to the director.
+
+### Local proof through the full pipeline (real models, no forced route)
+
+| Pair | Style | Model | Judge | Bridge | Spend |
+|---|---|---|---|---|---|
+| coffee to ocean | Liquid Transform | H3 Max, 21 s | 87 | 2.07 s | $0.125 + $0.011 director + $0.027 judge |
+| door to beach | Push Through | H3 Max, 20 s | 91 | 2.07 s | $0.125 + $0.011 + $0.026 |
+
+A preview now costs about $0.16 in fees against $0.45 to $0.60 of revenue, down from about $0.55 with the Kling and
+DoP fan-out. The outputs are in `data/live-results/2026-09-16-local-proof/`.

@@ -8,7 +8,8 @@ import { fillTemplate } from "@/core/opportunities/scorer";
 
 export const PROMPT_COMPILER_VERSION = "1.0";
 
-export type PromptDialect = "kling" | "runway" | "higgsfield" | "generic";
+/** "plain" is one plain-language paragraph with the rules written in, for models that take no negative prompt. */
+export type PromptDialect = "kling" | "runway" | "higgsfield" | "plain" | "generic";
 
 export interface CompileInput {
   a: FrameAnalysis;
@@ -26,7 +27,11 @@ export interface CompileInput {
 const BASE_AVOID = [
   "extra hands", "extra limbs", "duplicated objects", "warped faces", "distorted fingers", "text", "watermarks", "subtitles",
   "sudden cuts", "flicker", "inconsistent perspective", "morphing artifacts on people", "blurry mush",
+  "cross-dissolve", "double exposure", "split screen",
 ];
+
+const CRAFT = "Smooth, steady, cinematic camera motion with natural motion blur.";
+const NO_BLEND = "No cuts, no flashes, no fades, no dissolves, no double exposure, no split screen. Only one of each object is ever on screen: things transform, they are never replaced by a second copy.";
 
 function describe(a: FrameAnalysis): string {
   const subj = [...a.subjects].sort((p, q) => q.prominence - p.prominence).slice(0, 2).map((s) => s.label).join(" and ");
@@ -65,7 +70,8 @@ export function compileIR(input: CompileInput): PromptIR {
       "lighting direction", "general colour temperature", "identity and proportions of any person", "the exact appearance of products and text-free surfaces",
       creative,
     ].join(", "),
-    avoid: [...BASE_AVOID, ...recipe.riskFactors, ...input.pair.risks.map((r) => `problems with ${r}`)],
+    // The pair's risks are whole sentences; they belong to the director, not to a negative prompt of short phrases.
+    avoid: [...BASE_AVOID, ...recipe.riskFactors],
     durationSec: input.durationSec,
     aspectRatio: input.aspectRatio,
     motionStrength: Math.round((0.3 + fineTune.cameraMovement * 0.6) * 100) / 100,
@@ -75,6 +81,14 @@ export function compileIR(input: CompileInput): PromptIR {
 
 /** Render the IR into the wording a specific model family responds to best. */
 export function renderPrompt(ir: PromptIR, dialect: PromptDialect): { positive: string; negative: string | null } {
+  if (ir.shot) {
+    // A written shot names the real objects and the one motivated change; video models follow that far better than the
+    // recipe template, which reads the same for every pair.
+    const positive = `${ir.shot} ${CRAFT} ${NO_BLEND}`;
+    return dialect === "kling"
+      ? { positive: positive.slice(0, 2400), negative: ir.avoid.join(", ").slice(0, 500) }
+      : { positive: positive.slice(0, 1800), negative: null };
+  }
   switch (dialect) {
     case "kling": {
       // Kling likes one dense paragraph: subject, motion, camera, then constraints. Negative prompt is a separate field.
@@ -84,14 +98,15 @@ export function renderPrompt(ir: PromptIR, dialect: PromptDialect): { positive: 
         `${ir.continuity}. Preserve ${ir.preserve}. Cinematic, photoreal, smooth motion, high detail.`;
       return { positive: positive.slice(0, 2400), negative: ir.avoid.join(", ").slice(0, 500) };
     }
-    case "higgsfield": {
+    case "higgsfield":
+    case "plain": {
       // Higgsfield's bridge models (DoP, Veo 3.1, Hailuo-02) take one plain-language prompt and have no negative field,
       // so the rules that keep a bridge invisible are written into the prompt itself.
       const sentence = (s: string) => { const t = s.trim().replace(/[.\s]+$/, ""); return t ? `${t.charAt(0).toUpperCase()}${t.slice(1)}.` : ""; };
       const positive = [
         sentence(ir.camera), sentence(ir.bridge), sentence(ir.end),
         `One continuous shot that starts exactly on the first image (${ir.source}) and lands exactly on the last image (${ir.destination}).`,
-        "No cuts, no flashes, no fades, no dissolves. Only one of each object is ever on screen: things transform, they are never replaced by a second copy.",
+        NO_BLEND,
         sentence(ir.continuity), sentence(`keep ${ir.preserve}`), sentence(`avoid ${ir.avoid.slice(0, 10).join(", ")}`),
       ].filter(Boolean).join(" ");
       return { positive: positive.slice(0, 1800), negative: null };

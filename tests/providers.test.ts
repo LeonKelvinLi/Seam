@@ -57,6 +57,44 @@ test("Kling Pro submits both JPEG endpoints; Standard never sends or opens a las
   assert.equal(Object.hasOwn(requests[0].body!, "tail_image_url"), false);
 });
 
+test("the 2026-09-16 bridge models send both frames under their own field names, with audio off", async (t) => {
+  const req = await requestFixture(t);
+  const requests: { url: string; body: Record<string, unknown> }[] = [];
+  t.mock.method(globalThis, "fetch", async (url: string | URL | Request, init?: RequestInit) => {
+    const u = String(url);
+    if (u.startsWith("https://queue.fal.run/") && init?.method === "POST") {
+      requests.push({ url: u, body: JSON.parse(String(init.body)) });
+      return Response.json({ request_id: "test-new", status_url: "https://unit.test/status", response_url: "https://unit.test/result" });
+    }
+    if (u === "https://unit.test/status") return Response.json({ status: "COMPLETED" });
+    if (u === "https://unit.test/result") return Response.json({ video: { url: "https://unit.test/output" } });
+    if (u === "https://unit.test/output") return new Response("mock-video");
+    throw new Error(`Unexpected provider request in contract test: ${u}`);
+  });
+  const expected: Record<string, { url: string; first: string; last: string; duration: unknown; extra: Record<string, unknown> }> = {
+    "fal:minimax-h3-max": { url: "https://queue.fal.run/minimax/h3-max/image-to-video", first: "image_url", last: "end_image_url", duration: 5, extra: { resolution: "768P" } },
+    "fal:wan-3.0-prime": { url: "https://queue.fal.run/alibaba/wan-3.0-prime/image-to-video", first: "start_image_url", last: "end_image_url", duration: 5, extra: { audio: false, aspect_ratio: "16:9", resolution: "720p" } },
+    "fal:kling-o3-pro": { url: "https://queue.fal.run/fal-ai/kling-video/o3/pro/image-to-video", first: "image_url", last: "end_image_url", duration: "4", extra: { generate_audio: false } },
+  };
+  for (const [id, e] of Object.entries(expected)) {
+    const model = FAL_MODELS.find((m) => m.id === id)!;
+    assert.ok(model.supportsLastFrame && model.dialect === "plain", id);
+    const result = await falProvider.generateTransition(req, model);
+    const { url, body } = requests.at(-1)!;
+    assert.equal(url, e.url);
+    assert.equal(body.prompt, req.prompt.positive);
+    assert.match(String(body[e.first]), /^data:image\/jpeg;base64,\/9j\//);
+    assert.match(String(body[e.last]), /^data:image\/jpeg;base64,\/9j\//);
+    assert.notEqual(body[e.first], body[e.last]);
+    assert.equal(body.duration, e.duration);
+    for (const [k, v] of Object.entries(e.extra)) assert.equal(body[k], v, `${id} ${k}`);
+    assert.equal(Object.hasOwn(body, "tail_image_url"), false);
+    assert.equal(Object.hasOwn(body, "negative_prompt"), false);
+    assert.equal(result.costUsd, Number(e.duration) * model.costPerSecondUsd);
+    assert.equal(await readFile(req.outputPath, "utf8"), "mock-video");
+  }
+});
+
 test("Gen-4 Turbo sends the valid single-image body and documented output ratios", async (t) => {
   const req = await requestFixture(t);
   const bodies: Record<string, unknown>[] = [];

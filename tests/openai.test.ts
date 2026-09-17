@@ -8,6 +8,8 @@ import OpenAI from "openai";
 import { z } from "zod";
 import { openaiAnalyzeFrames, openaiAnalyzePair } from "@/core/analysis/openai-analyzer";
 import { OpenAIOutputError, openaiErrorSummary, structuredResponse, usageCost } from "@/core/openai";
+import { writeShot } from "@/core/prompt/director";
+import { config } from "@/core/config";
 import { coffee, ocean, coffeeOceanPair } from "./fixtures";
 
 const usage = { input_tokens: 1000, input_tokens_details: { cached_tokens: 200, cache_write_tokens: 0 }, output_tokens: 100, output_tokens_details: { reasoning_tokens: 20 }, total_tokens: 1100 };
@@ -71,6 +73,8 @@ test("OpenAI adapter rejects incomplete, refused, malformed and schema-invalid o
 
 test("OpenAI cost estimate counts cached tokens and diagnostics omit provider bodies", () => {
   assert.ok(Math.abs(usageCost("gpt-5.4-mini", usage) - 0.001065) < 1e-12);
+  assert.ok(Math.abs(usageCost("gpt-5.6-sol", usage) - 0.00528) < 1e-12);
+  assert.equal(usageCost("gpt-unknown", usage), 0);
   const error = new OpenAI.APIError(401, { message: "secret prompt and sk-private-key" }, "sk-private-key", new Headers());
   assert.equal(openaiErrorSummary(error), "API error (status 401)");
   const limited = new OpenAI.APIError(429, { message: "Rate limit reached for org-private on tokens", code: "rate_limit_exceeded" }, "Rate limit reached", new Headers());
@@ -78,4 +82,29 @@ test("OpenAI cost estimate counts cached tokens and diagnostics omit provider bo
   const odd = new OpenAI.APIError(429, { message: "x", code: "sk-private-key and more" }, "x", new Headers());
   assert.equal(openaiErrorSummary(odd), "API error (status 429)");
   assert.doesNotMatch(openaiErrorSummary(new Error("sk-private-key")), /sk-private|secret prompt/);
+});
+
+test("the director sends both boundary frames and the style, and returns one continuous shot", async () => {
+  const dir = await mkdtemp(path.join(os.tmpdir(), "seam-director-"));
+  try {
+    const a = path.join(dir, "a.png"), b = path.join(dir, "b.png");
+    await sharp({ create: { width: 24, height: 24, channels: 3, background: "#5a3418" } }).png().toFile(a);
+    await sharp({ create: { width: 24, height: 24, channels: 3, background: "#1f4e79" } }).png().toFile(b);
+    const fields = { start: "two hands hold a white cup", move: "the camera pushes in over the rim", change: "the coffee surface ripples and widens into open sea", arrival: "the push slows to a glide", end: "open ocean under low sun." };
+    const { api, requests } = mockApi(fields);
+    const r = await writeShot({ sourceFrame: a, destFrame: b, transition: "Liquid Transform: the coffee becomes water", expectedStructure: ["starts on A", "ends on B"], pair: { ...coffeeOceanPair, risks: ["fingers cover the cup rim"] } }, api);
+    assert.equal(r.shot, "One continuous shot. Start: two hands hold a white cup. The camera pushes in over the rim. The coffee surface ripples and widens into open sea. The push slows to a glide. It settles exactly on the last frame: open ocean under low sun.");
+    assert.ok(r.costUsd > 0);
+    const body = requests[0].body;
+    assert.equal(body.model, config.openai.directorModel);
+    assert.equal(body.text.format.name, "bridge_shot");
+    const content = body.input[0].content as { type: string; text?: string }[];
+    assert.equal(content.filter((c) => c.type === "input_image").length, 2);
+    assert.match(content.at(-1)!.text!, /Liquid Transform/);
+    assert.match(content.at(-1)!.text!, /Editor's notes on this pair:\ncoffee to ocean\nRisk: fingers cover the cup rim/);
+    // The instructions describe the form of a shot, never a sample scene that would come back as output.
+    assert.doesNotMatch(body.instructions, /coffee|ocean|cup/i);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
 });

@@ -8,6 +8,7 @@ import { promisify } from "node:util";
 import { ffmpeg, probe, extractFrames, stillWithMove, xfadeClips, normalizeBridge, stitch, makeProxy, extractFrameAt } from "@/core/media/ffmpeg";
 import { config } from "@/core/config";
 import { computeFeatures, loadRasters } from "@/core/analysis/features";
+import sharp from "sharp";
 import { heuristicJudge } from "@/core/quality/heuristic-judge";
 
 const spec = { width: 320, height: 180, fps: 24 };
@@ -51,6 +52,19 @@ test("ffmpeg pipeline: proxy, frames, features, procedural bridge, stitch, judge
   await normalizeBridge(bridge, norm, spec, 0.8);
   const ni = await probe(norm);
   assert.ok(Math.abs(ni.durationSec - 0.8) < 0.15 && ni.hasAudio, `normalized ${ni.durationSec}`);
+  // A 5 s render asked to fit 0.8 s would play 6x fast; with a 2.5x cap it stops at 2 s.
+  const render = path.join(dir, "render5.mp4"), capped = path.join(dir, "capped.mp4");
+  await ffmpeg(["-f", "lavfi", "-i", "testsrc=size=320x180:rate=24", "-t", "5", "-pix_fmt", "yuv420p", render]);
+  assert.equal(await normalizeBridge(render, capped, spec, 0.8, 2.5), 2);
+  assert.ok(Math.abs((await probe(capped)).durationSec - 2) < 0.1, `capped ${(await probe(capped)).durationSec}`);
+  // A render a few percent wider than the project (H3 Max: 1344x768) fills the frame; it is not padded with dark bars.
+  const wide = path.join(dir, "wide.mp4"), filled = path.join(dir, "filled.mp4"), edge = path.join(dir, "edge.png");
+  await ffmpeg(["-f", "lavfi", "-i", "color=c=white:size=1344x768:rate=24", "-t", "1", "-pix_fmt", "yuv420p", wide]);
+  await normalizeBridge(wide, filled, spec, 1);
+  await ffmpeg(["-i", filled, "-frames:v", "1", "-vf", "crop=8:ih:0:0", edge]);
+  const { data } = await sharp(edge).greyscale().raw().toBuffer({ resolveWithObject: true });
+  const leftEdge = data.reduce((sum, v) => sum + v, 0) / data.length;
+  assert.ok(leftEdge > 245, `left edge luma ${leftEdge.toFixed(0)}`);
   const full = path.join(dir, "full.mp4");
   await stitch(proxy, norm, proxy, full, spec, 0.12);
   const fi = await probe(full);

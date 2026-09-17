@@ -34,15 +34,21 @@ export function openaiErrorSummary(error: unknown): string {
   return "OpenAI request or media preparation failed";
 }
 
-/** Standard token-rate estimate, verified 2026-09-05; not the provider's billing total. */
+/** Standard token rates in USD per million (input, cached input, output); not the provider's billing total. */
+const PRICES: Record<string, { input: number; cached: number; output: number }> = {
+  "gpt-5.4-mini": { input: 0.75, cached: 0.075, output: 4.5 }, // verified 2026-09-05
+  "gpt-5.6-sol": { input: 4, cached: 0.4, output: 20 }, // verified 2026-09-16 on developers.openai.com
+};
+
 export function usageCost(model: string, usage?: ResponseUsage): number {
   if (!usage) return 0;
-  if (model !== "gpt-5.4-mini" && !model.startsWith("gpt-5.4-mini-")) {
+  const price = PRICES[model] ?? Object.entries(PRICES).find(([id]) => model.startsWith(`${id}-`))?.[1];
+  if (!price) {
     log.warn("cost estimate unavailable for configured model", { model });
     return 0;
   }
   const cached = Math.min(usage.input_tokens, Math.max(0, usage.input_tokens_details?.cached_tokens ?? 0));
-  return ((usage.input_tokens - cached) * 0.75 + cached * 0.075 + usage.output_tokens * 4.5) / 1e6;
+  return ((usage.input_tokens - cached) * price.input + cached * price.cached + usage.output_tokens * price.output) / 1e6;
 }
 
 export async function structuredResponse<T extends z.ZodType>(args: {

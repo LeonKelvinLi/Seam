@@ -26,7 +26,14 @@ export interface JudgeInput {
   cheap: boolean;
 }
 
-type Judged = { scores: QualityScores; judge: "openai" | "heuristic"; costUsd: number };
+type Judged = { scores: QualityScores; judge: "openai" | "heuristic" | "unavailable"; costUsd: number };
+
+/**
+ * Pixel statistics cannot tell a blend from a morph: the heuristic scored 93 a take the vision judge failed at 45
+ * (2026-09-16). When the vision judge is configured but no model answers, an AI take is refused rather than shipped.
+ */
+export const UNJUDGED_CAP = 60;
+export const JUDGE_UNAVAILABLE = "The quality check was unavailable, so this take was not accepted.";
 
 export async function judgeTransition(input: JudgeInput): Promise<Judged> {
   // The pixel check runs on every AI take, with or without OpenAI. The procedural bridge is a crossfade by design.
@@ -61,19 +68,26 @@ export function applySeamBreaks(scores: QualityScores, breaks: SeamBreak[]): Qua
 async function scoreTransition(input: JudgeInput): Promise<Judged> {
   const heuristic = await heuristicJudge(input.bridgePath, input.sourceFrame, input.destFrame, input.tmpDir);
   if (!input.cheap && config.openai.enabled) {
-    try {
-      const r = await openaiJudge(input.bridgePath, input.sourceFrame, input.destFrame, input.recipe, input.prompt);
-      const merged: QualityScores = {
-        ...r.scores,
-        startFidelity: Math.min(r.scores.startFidelity, heuristic.startFidelity + 25),
-        endFidelity: Math.min(r.scores.endFidelity, heuristic.endFidelity + 25),
-        issues: [...new Set([...r.scores.issues, ...heuristic.issues])],
-      };
-      merged.overall = Math.round(Math.min(r.scores.overall, (merged.startFidelity + merged.endFidelity) / 2 + 20));
-      return { scores: merged, judge: "openai", costUsd: r.costUsd };
-    } catch (e) {
-      log.warn("OpenAI judge failed, using heuristic", { error: openaiErrorSummary(e) });
+    const models = [...new Set([config.openai.judgeModel, config.openai.judgeFallbackModel].filter(Boolean))];
+    for (const model of models) {
+      try {
+        const r = await openaiJudge(input.bridgePath, input.sourceFrame, input.destFrame, input.recipe, input.prompt, undefined, model);
+        const merged: QualityScores = {
+          ...r.scores,
+          startFidelity: Math.min(r.scores.startFidelity, heuristic.startFidelity + 25),
+          endFidelity: Math.min(r.scores.endFidelity, heuristic.endFidelity + 25),
+          issues: [...new Set([...r.scores.issues, ...heuristic.issues])],
+        };
+        merged.overall = Math.round(Math.min(r.scores.overall, (merged.startFidelity + merged.endFidelity) / 2 + 20));
+        return { scores: merged, judge: "openai", costUsd: r.costUsd };
+      } catch (e) {
+        log.warn("OpenAI judge failed", { model, error: openaiErrorSummary(e) });
+      }
     }
+    return {
+      scores: { ...heuristic, overall: Math.min(heuristic.overall, UNJUDGED_CAP), issues: [JUDGE_UNAVAILABLE, ...heuristic.issues].slice(0, 8) },
+      judge: "unavailable", costUsd: 0,
+    };
   }
   return { scores: heuristic, judge: "heuristic", costUsd: 0 };
 }

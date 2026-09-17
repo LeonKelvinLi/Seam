@@ -11,7 +11,9 @@ import { normalizeBridge, poster, probe, stitch, trimClip, type FrameSpec } from
 import { storage } from "@/core/media/storage";
 import { getRecipe } from "@/core/recipes/registry";
 import { compileIR, renderPrompt } from "@/core/prompt/compiler";
-import { proceduralAllowed, routeModels } from "@/core/providers/router";
+import { expectedProfile, proceduralAllowed, routeModels } from "@/core/providers/router";
+import { writeShot } from "@/core/prompt/director";
+import { openaiErrorSummary } from "@/core/openai";
 import { ProviderError } from "@/core/providers/types";
 import { isBillingError, markProviderUnavailable } from "@/core/providers/cooldown";
 import { budgetExhausted } from "./budget";
@@ -24,7 +26,7 @@ import { judgeTransition, passes } from "@/core/quality/judge";
 import { selectPassingCandidate } from "@/core/quality/selection";
 import { planNextAttempt, saferRecipeFor, type AttemptOutcome } from "@/core/quality/retry-policy";
 import { recordGeneration, learnedModelQuality } from "@/core/learning/records";
-import type { ExtractedFrame, FineTune, FrameAnalysis, Generation, GenerationAttempt, Job, QualityScores } from "@/core/types";
+import type { ExtractedFrame, FineTune, FrameAnalysis, Generation, GenerationAttempt, Job, PromptIR, QualityScores } from "@/core/types";
 import type { TransitionRecipe } from "@/core/recipes/types";
 import type { Reporter } from "./runner";
 import { labelFor } from "./stages";
@@ -37,8 +39,15 @@ function capProcedural(scores: QualityScores, providerId: string) {
   if (providerId === "local") scores.overall = Math.min(scores.overall, 80);
 }
 
+/**
+ * A second first-round model only pays for itself when the first is slow. MiniMax H3 Max answers in about 15 s, so racing
+ * Wan behind it would book $0.25 a preview for a result that is almost never used.
+ */
+const FAN_OUT_MIN_WAIT_SEC = 60;
+
 const FRIENDLY_FAIL = "We couldn't build that transition from these clips. Try another style, or a different cut point.";
 const FRIENDLY_BUSY = "SeamCut has reached today's AI limit. Your credits are untouched; try again later.";
+const FRIENDLY_NO_JUDGE = "Our quality check is briefly unavailable, so nothing was delivered. Your credits are untouched; try again in a few minutes.";
 const FRIENDLY_NO_MODEL = "No AI bridge model is available right now. Your credits are untouched; try again shortly.";
 
 /** A stop we can explain: the generation's friendlyError comes from `friendly`, never from the raw error. */
@@ -109,7 +118,24 @@ export async function runGenerateJob(job: Job, report: Reporter, judge = judgeTr
     let fellBackToLocal = false;
     const maxAttempts = Math.max(1, config.generation.maxAttempts);
 
-    type RunOutcome = { attempt: GenerationAttempt; model: ModelSpec; ok: boolean; scores: QualityScores | null; bridgePath: string | null; error: string | null; recipeId: string; durationSec: number };
+    // One written shot per recipe, shared by concurrent attempts. Without OpenAI, or when the call fails, the template stands.
+    const shots = new Map<string, Promise<string | null>>();
+    const shotFor = (rec: TransitionRecipe, ir: PromptIR): Promise<string | null> => {
+      if (!config.openai.enabled) return Promise.resolve(null);
+      let shot = shots.get(rec.id);
+      if (!shot) {
+        shot = writeShot({ sourceFrame: frameA.path, destFrame: frameB.path, transition: ir.transition, expectedStructure: rec.expectedStructure, pair: pairRow.data })
+          .then((r) => {
+            if (r.costUsd > 0) Costs.add({ attemptId: null, generationId: gen.id, kind: "analysis", providerId: "openai", modelId: config.openai.directorModel, units: 1, usd: r.costUsd });
+            return r.shot;
+          })
+          .catch((e) => { log.warn("director failed; using the recipe template", { gen: gen.id, error: openaiErrorSummary(e) }); return null; });
+        shots.set(rec.id, shot);
+      }
+      return shot;
+    };
+
+    type RunOutcome = { attempt: GenerationAttempt; model: ModelSpec; ok: boolean; scores: QualityScores | null; bridgePath: string | null; error: string | null; recipeId: string; durationSec: number; unjudged?: boolean };
     // One provider attempt: create the row, generate, normalise, judge, book costs. Safe to run several concurrently.
     // `live` turns false when the attempt's round is over. A fan-out sibling still rendering after that must not write
     // the generation's stage: the generation has moved on to stitching, ready or failed, and setStage would put it
@@ -118,6 +144,10 @@ export async function runGenerateJob(job: Job, report: Reporter, judge = judgeTr
       const stage = (s: string, progress: number, label?: string) => { if (live.current) setStage(s, progress, label); };
       const durationSec = durationFor(rec, ft);
       const ir = compileIR({ a: analysisA, b: analysisB, pair: pairRow.data, recipe: rec, hints: opp.hints, fineTune: ft, durationSec, aspectRatio: aspect, attempt: n });
+      if (model.providerId !== "local") {
+        const shot = await shotFor(rec, ir);
+        if (shot) ir.shot = shot;
+      }
       const provider = getProvider(model.providerId);
       const prompt = renderPrompt(ir, model.dialect);
       const rawPath = path.join(dir, `attempt_${n}_raw.mp4`);
@@ -137,18 +167,18 @@ export async function runGenerateJob(job: Job, report: Reporter, judge = judgeTr
           onProgress: (m) => stage(n > 1 ? "retry" : "generate", 0.25 + (n - 1) * 0.2, m),
         }, model);
         const bridgePath = path.join(dir, `attempt_${n}_bridge.mp4`);
-        await normalizeBridge(result.outputPath, bridgePath, spec, durationSec);
+        const bridgeSec = await normalizeBridge(result.outputPath, bridgePath, spec, durationSec, config.output.maxBridgeSpeedup);
         stage("judge", 0.55 + (n - 1) * 0.1);
-        const judged = await judge({ bridgePath, sourceFrame: frameA.path, destFrame: frameB.path, recipe: rec, prompt: prompt.positive, tmpDir: dir, cheap: model.providerId === "local" });
+        const judged = await judge({ bridgePath, sourceFrame: frameA.path, destFrame: frameB.path, recipe: rec, prompt: prompt.positive, tmpDir: path.join(dir, `judge_${n}`), cheap: model.providerId === "local" });
         capProcedural(judged.scores, model.providerId);
         const ok = passes(judged.scores, gen.mode);
         Quality.create({ attemptId: attempt.id, judge: judged.judge, scores: judged.scores, passed: ok });
         const cost = result.costUsd + judged.costUsd;
         if (result.costUsd > 0) Costs.add({ attemptId: attempt.id, generationId: gen.id, kind: "generation", providerId: model.providerId, modelId: model.id, units: result.rawDurationSec, usd: result.costUsd });
         if (judged.costUsd > 0) Costs.add({ attemptId: attempt.id, generationId: gen.id, kind: "judge", providerId: "openai", modelId: config.openai.judgeModel, units: 1, usd: judged.costUsd });
-        Attempts.update(attempt.id, { status: ok ? "succeeded" : "rejected", providerJobId: result.providerJobId, outputPath: bridgePath, costUsd: cost, durationMs: Date.now() - ta, params: { ...attempt.params, ...result.params } });
+        Attempts.update(attempt.id, { status: ok ? "succeeded" : "rejected", providerJobId: result.providerJobId, outputPath: bridgePath, costUsd: cost, durationMs: Date.now() - ta, params: { ...attempt.params, ...result.params, bridgeSec } });
         attempt.recipeId = rec.id; attempt.durationMs = Date.now() - ta; attempt.status = ok ? "succeeded" : "rejected";
-        return { attempt, model, ok, scores: judged.scores, bridgePath, error: null, recipeId: rec.id, durationSec };
+        return { attempt, model, ok, scores: judged.scores, bridgePath, error: null, recipeId: rec.id, durationSec: bridgeSec, unjudged: judged.judge === "unavailable" };
       } catch (e) {
         const msg = (e as Error).message;
         log.warn("attempt failed", { gen: gen.id, n, error: msg });
@@ -170,8 +200,9 @@ export async function runGenerateJob(job: Job, report: Reporter, judge = judgeTr
       // its tier or price: a run that ends with nothing is worse than a dearer take that works.
       const lastChance = attemptNo > 0 && attemptNo + 1 >= maxAttempts;
       const ranked = overBudget ? [LOCAL_MODEL] : routeModels({ recipe, mode: gen.mode, exclude, learned, best: lastChance, measured });
-      const fanOut = attemptNo === 0 ? Math.max(1, config.generation.parallelAttempts) : 1;
       const remote = ranked.filter((m) => m.providerId !== "local");
+      const leadIsQuick = remote.length > 0 && expectedProfile(remote[0], measured[remote[0].id]).expectedWaitSec <= FAN_OUT_MIN_WAIT_SEC;
+      const fanOut = attemptNo === 0 && !leadIsQuick ? Math.max(1, config.generation.parallelAttempts) : 1;
       const round: ModelSpec[] = fanOut > 1 && remote.length >= 2 ? remote.slice(0, Math.min(fanOut, maxAttempts)) : ranked.slice(0, 1);
       if (!round.length) throw new GenerationStopped(FRIENDLY_NO_MODEL, "no bridge model available for this recipe");
       // The round ends as soon as one model passes; a slower sibling keeps rendering and is logged when it lands.
@@ -195,6 +226,8 @@ export async function runGenerateJob(job: Job, report: Reporter, judge = judgeTr
         }
       }
       if (passed) break;
+      // Another model would be judged by the same missing judge: stop and refund instead of paying for renders nobody can check.
+      if (results.some((r) => r.unjudged)) throw new GenerationStopped(FRIENDLY_NO_JUDGE, "no vision judge answered");
       const next = planNextAttempt({ attempt: attemptNo, maxAttempts, recipe, fineTune, outcomes, opportunities: opps });
       if (!next) break;
       setStage("retry", 0.2 + attemptNo * 0.15, next.userMessage);

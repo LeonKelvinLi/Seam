@@ -41,6 +41,9 @@ jobs:
           SEAM_DATA_DIR: /tmp/seam-e2e
           SEAM_FORCE_PROVIDER: local
           SEAM_DEFAULT_MODE: preview
+          # The quality bars are calibrated for the vision judge. CI has no OpenAI key, so the ffmpeg bridge is scored on
+          # pixel statistics and capped at 80; this job tests the flow, not the bar.
+          SEAM_QUALITY_THRESHOLD_PREVIEW: "70"
           NODE_ENV: production
           PORT: "3100"
         run: |

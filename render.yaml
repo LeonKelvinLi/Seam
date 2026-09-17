@@ -24,9 +24,9 @@ services:
       - key: SEAM_FORCE_PROVIDER
         value: ""
       - key: SEAM_QUALITY_THRESHOLD_PREVIEW
-        value: "70"
+        value: "80"
       - key: SEAM_QUALITY_THRESHOLD
-        value: "72"
+        value: "82"
       - key: SEAM_PARALLEL_ATTEMPTS
         value: "2"
       - key: SEAM_DAILY_PROVIDER_BUDGET_USD
@@ -34,7 +34,11 @@ services:
       - key: SEAM_VISION_MODEL
         value: gpt-5.4-mini
       - key: SEAM_JUDGE_MODEL
+        value: gpt-5.6-sol
+      - key: SEAM_JUDGE_FALLBACK_MODEL
         value: gpt-5.4-mini
+      - key: SEAM_DIRECTOR_MODEL
+        value: gpt-5.6-sol
       - key: FFMPEG_PATH
         value: /usr/bin/ffmpeg
       - key: FFPROBE_PATH
