@@ -31,8 +31,8 @@ export default async function SharePage({ params }: { params: Promise<{ id: stri
       </div>
       <div className="mt-12 flex flex-col items-start gap-3">
         <h2 className="display text-3xl">Make one with your clips.</h2>
-        <p className="muted">Upload two clips. SeamCut figures out the transition.</p>
-        <Link href="/create" className="btn btn-primary">Try SeamCut</Link>
+        <p className="muted">Upload two clips. Clipmelt figures out the transition.</p>
+        <Link href="/create" className="btn btn-primary">Try Clipmelt</Link>
       </div>
     </div>
   );

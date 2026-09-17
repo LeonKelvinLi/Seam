@@ -2,7 +2,7 @@
   "name": "seam",
   "version": "0.1.0",
   "private": true,
-  "description": "Seam — turn any two clips into one impossible shot. AI transition director MVP.",
+  "description": "Clipmelt — AI video transitions between your clips.",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

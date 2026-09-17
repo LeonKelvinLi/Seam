@@ -1,5 +1,5 @@
 import { LegalPage, Section } from "@/components/Legal";
-export const metadata = { title: "Refund Policy — SeamCut" };
+export const metadata = { title: "Refund Policy — Clipmelt" };
 export default function RefundsPage() {
   return (
     <LegalPage title="Refund Policy" intro="Credits are prepaid. Here is exactly when money comes back.">

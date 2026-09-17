@@ -1,6 +1,6 @@
 # Production readiness (updated 2026-09-09)
 
-Status of the SeamCut deployment at https://seamcut.onrender.com. "Done" means implemented, tested locally and
+Status of the Clipmelt deployment at https://seamcut.onrender.com. "Done" means implemented, tested locally and
 verified on the live service unless a row states a narrower result. Account configuration, delivered email,
 real payment settlement, and monitoring alerts require their own evidence; implemented code alone does not prove them.
 

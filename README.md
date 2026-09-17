@@ -1,4 +1,4 @@
-# SeamCut
+# Clipmelt
 
 Live preview deployment: https://seamcut.onrender.com (Render Docker service `seamcut`, see `docs/deploy-render.md`; deploys are manual from the Render dashboard).
 
@@ -9,7 +9,7 @@ transition the footage actually supports, writes the generation prompt, routes i
 judges the result, retries when needed, and stitches a finished edit. Users never see prompts, models,
 frames or parameters — they see three recommendations, a *Surprise me* button, and a video.
 
-Every transition SeamCut offers is a seamless AI bridge: a generated shot that starts on the last frame of clip A and
+Every transition Clipmelt offers is a seamless AI bridge: a generated shot that starts on the last frame of clip A and
 lands on the first frame of clip B, so the join is not meant to be visible. Effect moves (crash zoom, whip pan, spin,
 tunnel rush, explosions) and plain cuts or dissolves stay in the catalog for older generations but are never offered.
 

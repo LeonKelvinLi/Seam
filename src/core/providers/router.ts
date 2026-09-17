@@ -25,7 +25,7 @@ export function expectedProfile(m: ModelSpec, stats?: ModelStats) {
 
 /**
  * The procedural ffmpeg bridge is an offline/test path, not a product transition: a crossfade is exactly
- * the "default" transition SeamCut exists to replace. It is only used when no AI bridge model is configured
+ * the "default" transition Clipmelt exists to replace. It is only used when no AI bridge model is configured
  * at all (local development, CI) or when SEAM_ALLOW_PROCEDURAL is set deliberately.
  */
 export function proceduralAllowed(): boolean {

@@ -19,7 +19,7 @@ export function DownloadOptions({ generationId, result, trackDownloads = false }
       <div className="mt-3 grid gap-3 sm:grid-cols-2">
         {options.map((option) => {
           if (!option.url) return null;
-          const filename = `seamcut-${option.filename}-${generationId}.mp4`;
+          const filename = `clipmelt-${option.filename}-${generationId}.mp4`;
           const href = `${option.url}${option.url.includes("?") ? "&" : "?"}download=${encodeURIComponent(filename)}`;
           return (
             <a key={option.kind} href={href} download={filename} aria-label={`Download ${option.label.toLowerCase()}`}

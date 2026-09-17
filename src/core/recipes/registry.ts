@@ -2,7 +2,7 @@ import { RECIPES as CATALOG, RECIPE_MAP } from "./catalog";
 import type { LibraryTag, TransitionClass, TransitionRecipe } from "./types";
 
 /**
- * SeamCut offers seamless transitions only: AI bridges whose seam you are not meant to see.
+ * Clipmelt offers seamless transitions only: AI bridges whose seam you are not meant to see.
  * Effect moves (crash zoom, whip pan, spin, tunnel rush, drone dive, explosions) and the plain
  * dissolve/cut stay in the catalog so older generations still resolve by id, but they are never
  * recommended, listed in the library, or offered to the vision model as an idea.

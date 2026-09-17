@@ -53,7 +53,7 @@ export const config = {
     parallelAttempts: num("SEAM_PARALLEL_ATTEMPTS", 1),
     /** Provider generation fees allowed per UTC day. Past it, generation stops rather than shipping a crossfade. 0 disables the guard. */
     dailyBudgetUsd: num("SEAM_DAILY_PROVIDER_BUDGET_USD", 25),
-    /** Deliver the procedural ffmpeg bridge when no AI bridge passes. Off by default: SeamCut ships AI transitions only. */
+    /** Deliver the procedural ffmpeg bridge when no AI bridge passes. Off by default: Clipmelt ships AI transitions only. */
     allowProcedural: ["1", "true", "yes"].includes(env("SEAM_ALLOW_PROCEDURAL").toLowerCase()),
     defaultMode: (env("SEAM_DEFAULT_MODE", "preview") as GenerationMode) || "preview",
   },

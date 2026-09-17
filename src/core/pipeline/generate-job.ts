@@ -46,7 +46,7 @@ function capProcedural(scores: QualityScores, providerId: string) {
 const FAN_OUT_MIN_WAIT_SEC = 60;
 
 const FRIENDLY_FAIL = "We couldn't build that transition from these clips. Try another style, or a different cut point.";
-const FRIENDLY_BUSY = "SeamCut has reached today's AI limit. Your credits are untouched; try again later.";
+const FRIENDLY_BUSY = "Clipmelt has reached today's AI limit. Your credits are untouched; try again later.";
 const FRIENDLY_NO_JUDGE = "Our quality check is briefly unavailable, so nothing was delivered. Your credits are untouched; try again in a few minutes.";
 const FRIENDLY_NO_MODEL = "No AI bridge model is available right now. Your credits are untouched; try again shortly.";
 

@@ -1,5 +1,5 @@
 import { LegalPage, Section } from "@/components/Legal";
-export const metadata = { title: "Privacy Policy — SeamCut" };
+export const metadata = { title: "Privacy Policy — Clipmelt" };
 export default function PrivacyPage() {
   return (
     <LegalPage title="Privacy Policy" intro="What we collect, why, who processes it, and how to get it deleted.">
@@ -25,7 +25,7 @@ export default function PrivacyPage() {
         <p>You can ask us to export or delete your data, correct your email, or close your account. Residents of the EU, UK and California have additional statutory rights, including the right to complain to a supervisory authority.</p>
       </Section>
       <Section heading="Children">
-        <p>SeamCut is not directed at children under 13 and we do not knowingly collect their data.</p>
+        <p>Clipmelt is not directed at children under 13 and we do not knowingly collect their data.</p>
       </Section>
       <Section heading="Changes">
         <p>We will post changes here and update the date above. Material changes will be announced in the app.</p>

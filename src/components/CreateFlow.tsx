@@ -88,7 +88,7 @@ export function CreateFlow() {
     if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "default") void Notification.requestPermission().catch(() => {});
     const t = setInterval(() => api<{ generation: GenerationView }>(`/api/generations/${gen.id}`).then((r) => {
       if (r.generation.status === "ready" && gen.status !== "ready" && document.hidden && "Notification" in window && Notification.permission === "granted") {
-        try { new Notification("Your transition is ready", { body: r.generation.title ?? "Open SeamCut to watch it." }); } catch { /* notifications unavailable */ }
+        try { new Notification("Your transition is ready", { body: r.generation.title ?? "Open Clipmelt to watch it." }); } catch { /* notifications unavailable */ }
       }
       setGen(r.generation);
       if (r.generation.status === "ready" || r.generation.status === "failed") api<ProjectView>(`/api/projects/${r.generation.projectId}`).then(setView).catch(() => {});

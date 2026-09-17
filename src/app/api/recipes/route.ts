@@ -52,7 +52,7 @@ async function fitsFor(projectId: string | null): Promise<Map<string, { fit: str
 
 export async function GET(req: Request) {
   // Only real AI bridges may be shown as previews. The old `public/library` clips were ffmpeg effects
-  // rendered on a sample still, which is exactly what SeamCut does not sell.
+  // rendered on a sample still, which is exactly what Clipmelt does not sell.
   const dir = path.join(process.cwd(), "public", "library-ai");
   const files = fs.existsSync(dir) ? fs.readdirSync(dir) : [];
   const previews = new Set(files.filter((f) => f.endsWith(".mp4")).map((f) => f.replace(/\.mp4$/, "")));

@@ -1,5 +1,5 @@
 /** Public site facts shared by metadata, legal pages and share links. */
-export const SITE_NAME = "SeamCut";
+export const SITE_NAME = "Clipmelt";
 
 export function legalContact() {
   return {

@@ -1,5 +1,5 @@
 /**
- * Pixel check for the two things SeamCut never ships: a cross-dissolve (both shots on screen while one fades into the
+ * Pixel check for the two things Clipmelt never ships: a cross-dissolve (both shots on screen while one fades into the
  * other) and a hard cut. First-last-frame models fall back to exactly these when they find no continuous move between
  * two unrelated frames. On 2026-09-10 DoP Lite held a paper plane still for 3.5 s and then cross-dissolved to an
  * airliner, and the vision judge still scored the take 73.

@@ -105,7 +105,7 @@ async function endCardSerif(card: EndCard, out: string) {
     <defs><radialGradient id="wash" cx="0.5" cy="0.56" r="0.62"><stop offset="0" stop-color="#000" stop-opacity="0.36"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient></defs>
     <rect width="${W}" height="${H}" fill="url(#wash)"/>
     ${mark ? `<image href="data:image/png;base64,${mark}" x="${W / 2 - 100}" y="520" width="200" height="200"/>` : ""}
-    ${t("SeamCut", 880, 150, "700", ivory, serif)}
+    ${t("Clipmelt", 880, 150, "700", ivory, serif)}
     ${t(card.headline, 1030, 92, "400", ivory, serif)}
     ${card.headline2 ? t(card.headline2, 1120, 92, "400", gold, serif) : ""}
     ${card.sub ? t(card.sub, 1200, 30, "500", "rgba(244,239,230,0.74)", sans, 7) : ""}
@@ -144,7 +144,7 @@ async function endCard(card: EndCard, out: string) {
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}">
     <rect width="${W}" height="${H}" fill="rgba(0,0,0,0.38)"/>
     ${mark ? `<image href="data:image/png;base64,${mark}" x="${W / 2 - 130}" y="470" width="260" height="260"/>` : ""}
-    ${textLines("SeamCut", W / 2, 860, 132, "700", "#f2f0ea", 0, "'Helvetica Neue', Helvetica, Arial, sans-serif")}
+    ${textLines("Clipmelt", W / 2, 860, 132, "700", "#f2f0ea", 0, "'Helvetica Neue', Helvetica, Arial, sans-serif")}
     ${textLines(card.headline, W / 2, 1010, 64, "700", "#f2f0ea", 0, "'Helvetica Neue', Helvetica, Arial, sans-serif")}
     ${card.sub ? textLines(card.sub, W / 2, 1170, 40, "400", "rgba(242,240,234,0.78)", 0, "'Helvetica Neue', Helvetica, Arial, sans-serif") : ""}
     ${card.cta ? `<rect x="${W / 2 - 250}" y="1330" width="500" height="104" rx="52" fill="#ffb84d"/>${textLines(card.cta, W / 2, 1397, 42, "700", "#1a1205", 0, "'Helvetica Neue', Helvetica, Arial, sans-serif")}` : ""}

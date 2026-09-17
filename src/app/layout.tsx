@@ -7,11 +7,11 @@ import { publicOrigin } from "@/lib/server/site";
 const description = "Keep your footage. Generate only the transition between your shots.";
 export const metadata: Metadata = {
   metadataBase: new URL(publicOrigin()),
-  title: { default: "SeamCut — turn any two clips into one impossible shot", template: "%s" },
+  title: { default: "Clipmelt — AI Video Transitions", template: "%s" },
   description,
-  applicationName: "SeamCut",
-  openGraph: { title: "SeamCut", description, siteName: "SeamCut", type: "website", images: [{ url: "/brand/og.png", width: 1200, height: 630, alt: "SeamCut" }] },
-  twitter: { card: "summary_large_image", title: "SeamCut", description, images: ["/brand/og.png"] },
+  applicationName: "Clipmelt",
+  openGraph: { title: "Clipmelt", description, siteName: "Clipmelt", type: "website" },
+  twitter: { card: "summary_large_image", title: "Clipmelt", description, images: ["/opengraph-image"] },
   robots: { index: true, follow: true },
 };
 export const viewport = { themeColor: "#0b0b0c" };
@@ -23,22 +23,22 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <a className="skip-link" href="#main-content">Skip to content</a>
         <header className="site-header">
           <nav className="site-nav" aria-label="Main navigation">
-            <Link href="/" className="site-wordmark" aria-label="SeamCut home">
+            <Link href="/" className="site-wordmark" aria-label="Clipmelt home">
               <img className="site-mark" src="/brand/seamcut-mark-256.png" alt="" width={28} height={28} aria-hidden="true" />
-              SeamCut
+              Clipmelt
             </Link>
             <span className="site-nav-label mono">AI transition studio</span>
             <div className="site-nav-actions">
-              <Link href="/library" className="site-nav-link">See what SeamCut makes</Link>
+              <Link href="/library" className="site-nav-link">See what Clipmelt makes</Link>
               <Link href="/create" className="btn btn-primary btn-sm">Open studio <span aria-hidden="true">↗</span></Link>
             </div>
           </nav>
         </header>
         <main id="main-content" tabIndex={-1}>{children}</main>
         <footer className="site-footer">
-          <Link href="/" className="site-footer-brand">SeamCut</Link>
+          <Link href="/" className="site-footer-brand">Clipmelt</Link>
           <p>Two clips. Infinite possibilities.<br /><span className="muted">Footage stays yours.</span></p>
-          <div className="site-footer-links"><Link href="/library">See what SeamCut makes ↗</Link><Link href="/create">Open studio ↗</Link><Link href="/pricing">Pricing</Link><Link href="/terms">Terms</Link><Link href="/privacy">Privacy</Link><Link href="/refunds">Refunds</Link></div>
+          <div className="site-footer-links"><Link href="/library">See what Clipmelt makes ↗</Link><Link href="/create">Open studio ↗</Link><Link href="/pricing">Pricing</Link><Link href="/terms">Terms</Link><Link href="/privacy">Privacy</Link><Link href="/refunds">Refunds</Link></div>
           <span className="site-footer-note mono">FRAME A → FRAME B</span>
         </footer>
       </body>

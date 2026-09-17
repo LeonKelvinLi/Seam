@@ -1,14 +1,14 @@
 import { LegalPage, Section } from "@/components/Legal";
 import { CREDITS_PER_GENERATION } from "@/lib/server/billing";
-export const metadata = { title: "Terms of Service — SeamCut" };
+export const metadata = { title: "Terms of Service — Clipmelt" };
 export default function TermsPage() {
   return (
     <LegalPage title="Terms of Service" intro="The short version: your footage stays yours, our transitions are yours to use, and you agree not to upload what you have no right to use.">
       <Section heading="1. The service">
-        <p>SeamCut generates short transition clips ("bridges") between two pieces of footage you upload, and stitches them into a shareable result. Generation runs on our servers and on third-party AI model providers we select. Output quality varies with the footage; a generation can fail, in which case the credits it consumed are returned automatically.</p>
+        <p>Clipmelt generates short transition clips ("bridges") between two pieces of footage you upload, and stitches them into a shareable result. Generation runs on our servers and on third-party AI model providers we select. Output quality varies with the footage; a generation can fail, in which case the credits it consumed are returned automatically.</p>
       </Section>
       <Section heading="2. Accounts and credits">
-        <p>You can try SeamCut as a guest; creating an account keeps your projects and credits across devices. Credits are prepaid units consumed per generation (currently {CREDITS_PER_GENERATION.preview} for a preview, {CREDITS_PER_GENERATION.final} for a final-quality render). Credits are not a currency, do not expire, and are not transferable. Prices are shown before purchase; taxes may apply based on your location.</p>
+        <p>You can try Clipmelt as a guest; creating an account keeps your projects and credits across devices. Credits are prepaid units consumed per generation (currently {CREDITS_PER_GENERATION.preview} for a preview, {CREDITS_PER_GENERATION.final} for a final-quality render). Credits are not a currency, do not expire, and are not transferable. Prices are shown before purchase; taxes may apply based on your location.</p>
         <p>You are responsible for keeping your password confidential and for activity under your account.</p>
       </Section>
       <Section heading="3. Your content">
