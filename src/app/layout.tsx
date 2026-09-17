@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import "./globals.css";
-import { NavUser } from "@/components/NavUser";
 import { publicOrigin } from "@/lib/server/site";
 
 const description = "Keep your footage. Generate only the transition between your shots.";
@@ -29,7 +28,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </Link>
             <span className="site-nav-label mono">AI transition studio</span>
             <div className="site-nav-actions">
-              <Link href="/library" className="site-nav-link">See what Clipmelt makes</Link>
+              <Link href="/library" className="site-nav-link site-library-link" data-mobile-label="Library">See what Clipmelt makes</Link>
+              <Link href="/history" className="site-nav-link" data-mobile-label="History">Your footage</Link>
               <Link href="/create" className="btn btn-primary btn-sm">Open studio <span aria-hidden="true">↗</span></Link>
             </div>
           </nav>

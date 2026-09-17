@@ -4,7 +4,7 @@ import { publicOrigin } from "@/lib/server/site";
 export default function robots(): MetadataRoute.Robots {
   const base = publicOrigin();
   return {
-    rules: [{ userAgent: "*", allow: "/", disallow: ["/api/", "/ops", "/account", "/t/"] }],
+    rules: [{ userAgent: "*", allow: "/", disallow: ["/api/", "/ops", "/account", "/history", "/t/"] }],
     sitemap: `${base}/sitemap.xml`,
   };
 }

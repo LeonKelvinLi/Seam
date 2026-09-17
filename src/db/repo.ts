@@ -252,6 +252,15 @@ export const Generations = {
   get: (id: string) => get<Generation>("generations", id),
   update(id: string, patch: Partial<Generation>) { update("generations", id, { ...patch, updatedAt: now() }); },
   forProject: (projectId: string) => find<Generation>("generations", "projectId=?", [projectId], "createdAt DESC"),
+  completedForUser(userId: string, before?: { createdAt: string; id: string }, limit = 25): Generation[] {
+    const cursor = before ? "AND (g.createdAt < ? OR (g.createdAt = ? AND g.id < ?))" : "";
+    const rows = db().prepare(`SELECT g.* FROM generations g JOIN projects p ON p.id=g.projectId
+      WHERE p.userId=? AND g.status='ready' AND g.result IS NOT NULL ${cursor}
+      ORDER BY g.createdAt DESC, g.id DESC LIMIT ?`).all(
+      userId, ...(before ? [before.createdAt, before.createdAt, before.id] : []), Math.min(100, Math.max(1, limit)),
+    ) as Row[];
+    return rows.map((row) => hydrate<Generation>("generations", row)!);
+  },
   /**
    * A generation that holds a result and whose job finished is ready, whatever its status says. Until 2026-09-16 a
    * fan-out sibling landing after the result could set such a generation back to "running"; this restores those rows.

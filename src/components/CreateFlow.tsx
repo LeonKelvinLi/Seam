@@ -10,6 +10,7 @@ import { DownloadOptions } from "@/components/DownloadOptions";
 import { createProjectUploadQueue } from "@/lib/project-uploads";
 import { DropZone } from "./DropZone";
 import { Steps } from "./Steps";
+import { StudioTabs } from "./StudioTabs";
 import { LaneCard } from "./LaneCard";
 import { FineTunePanel } from "./FineTune";
 import { ANALYZE_STEPS, GENERATE_STEPS } from "@/core/pipeline/stages";
@@ -174,7 +175,8 @@ export function CreateFlow() {
 
   return (
     <div className="studio-shell mx-auto max-w-6xl px-5 pb-20">
-      <div className="studio-topline mono"><Link href="/">SEAM / STUDIO</Link><span><span className="studio-status-dot" /> YOUR NEXT GREAT CUT</span></div>
+      <StudioTabs active="create" />
+      <div className="studio-topline mono"><Link href="/">CLIPMELT / STUDIO</Link><span><span className="studio-status-dot" /> YOUR NEXT GREAT CUT</span></div>
       <ol className="studio-phase-rail" aria-label="Creation progress">
         <li data-active={phase === "upload" || phase === "analyzing"} aria-current={phase === "upload" || phase === "analyzing" ? "step" : undefined}><span className="mono">01</span> Bring your clips</li>
         <li data-active={phase === "choose"} aria-current={phase === "choose" ? "step" : undefined}><span className="mono">02</span> Find your transition</li>
