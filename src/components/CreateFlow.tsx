@@ -8,6 +8,7 @@ import { api, track, uploadFile } from "@/lib/api";
 import { Paywall } from "@/components/Paywall";
 import { DownloadOptions } from "@/components/DownloadOptions";
 import { createProjectUploadQueue } from "@/lib/project-uploads";
+import { studioUrl } from "@/lib/studio-url";
 import { DropZone } from "./DropZone";
 import { Steps } from "./Steps";
 import { StudioTabs } from "./StudioTabs";
@@ -18,7 +19,7 @@ import { ANALYZE_STEPS, GENERATE_STEPS } from "@/core/pipeline/stages";
 type Phase = "upload" | "analyzing" | "choose" | "generating" | "ready" | "failed";
 interface Sample { id: string; title: string; aPoster: string; bPoster: string }
 
-export function CreateFlow() {
+export function CreateFlow({ styles }: { styles: { id: string; name: string; needs: string }[] }) {
   const params = useSearchParams();
   const router = useRouter();
   const [view, setView] = useState<ProjectView | null>(null);
@@ -33,6 +34,8 @@ export function CreateFlow() {
   const [copied, setCopied] = useState(false);
   const [needCredits, setNeedCredits] = useState(false);
   const autoRecipe = useRef<string | null>(params.get("recipe"));
+  const [selectedRecipeId, setSelectedRecipeId] = useState(params.get("recipe"));
+  const selectedStyle = styles.find((r) => r.id === selectedRecipeId);
   const analyzeRequested = useRef<string | null>(null);
   const uploadQueue = useRef(createProjectUploadQueue<{ state: ProjectView }>(params.get("p")));
   const loadingSample = useRef(false);
@@ -52,10 +55,7 @@ export function CreateFlow() {
   }, [view, gen]);
 
   const setUrl = useCallback((p: string | null, g: string | null) => {
-    const q = new URLSearchParams();
-    if (p) q.set("p", p);
-    if (g) q.set("g", g);
-    router.replace(`/create${q.toString() ? `?${q}` : ""}`);
+    router.replace(studioUrl(p, g, autoRecipe.current));
   }, [router]);
 
   // Boot: resume from URL, load samples.
@@ -126,8 +126,14 @@ export function CreateFlow() {
 
   // Library pick (?recipe=) fires once analysis is done.
   useEffect(() => {
-    if (phase === "choose" && autoRecipe.current) { const r = autoRecipe.current; autoRecipe.current = null; void generate({ recipeId: r }); }
-  }, [phase, generate]);
+    if (phase === "choose" && autoRecipe.current) {
+      const r = autoRecipe.current;
+      autoRecipe.current = null;
+      setSelectedRecipeId(null);
+      setUrl(projectId, null);
+      void generate({ recipeId: r });
+    }
+  }, [phase, generate, projectId, setUrl]);
 
   const onFile = async (role: "start" | "end", file: File) => {
     if (loadingSample.current) return;
@@ -166,6 +172,8 @@ export function CreateFlow() {
     } catch (e) { setError((e as Error).message); }
   };
   const reset = () => {
+    autoRecipe.current = null;
+    setSelectedRecipeId(null);
     uploadQueue.current = createProjectUploadQueue();
     setUp({ start: { uploading: false, progress: 0 }, end: { uploading: false, progress: 0 } });
     setView(null); setGen(null); setError(null); analyzeRequested.current = null; setUrl(null, null);
@@ -189,6 +197,11 @@ export function CreateFlow() {
             <h1 className="display">Two clips.<br /><span>One impossible shot.</span></h1>
             <p>Bring the beginning and the end.<br />We’ll find a way through.</p>
           </div>
+          {selectedStyle && <div className="mb-6 rounded-xl border border-[var(--hair)] p-5" role="status">
+            <p className="text-[var(--accent)]">Selected style: <strong>{selectedStyle.name}</strong></p>
+            <p className="mt-2 text-sm muted">Add your two clips. We’ll check they fit, then generate this transition. Each preview uses 2 credits.</p>
+            <p className="mt-1 text-sm muted">{selectedStyle.needs}</p>
+          </div>}
           <div className="studio-upload-grid grid gap-4 md:grid-cols-2">
             <DropZone role="start" asset={view?.assets.start ?? null} uploading={up.start.uploading} progress={up.start.progress} onFile={(f) => onFile("start", f)} disabled={phase === "analyzing" || busy} />
             <DropZone role="end" asset={view?.assets.end ?? null} uploading={up.end.uploading} progress={up.end.progress} onFile={(f) => onFile("end", f)} disabled={phase === "analyzing" || busy} />
