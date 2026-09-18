@@ -1,5 +1,18 @@
 # Production readiness (updated 2026-09-09)
 
+## Higgsfield submission safety — 2026-09-17
+
+Generation POSTs are sent once. Network/response loss, HTTP 408/5xx, or a missing request ID stop automatic model
+fallback because the provider may already be rendering. Status GETs still retry transient failures with bounded
+backoff. Accepted request IDs and correlation IDs are saved before polling; polling/output failures preserve them
+for reconciliation instead of buying another take. Confirmed provider failures remain eligible for fallback.
+
+Submission intent is persisted before the paid POST. After a restart, an interrupted Higgsfield attempt stops and
+returns the user's credits rather than starting over; this is conservative recovery, not automatic retrieval of the
+original video. Already-finished generations are not rendered/refunded again when a stale runner job is replayed.
+Transport fault tests and pipeline tests cover lost responses, read recovery, receipt persistence, fallback suppression,
+restart handling and replay protection. These tests use mocked provider responses and do not spend generation credits.
+
 Status of the Clipmelt deployment at https://seamcut.onrender.com. "Done" means implemented, tested locally and
 verified on the live service unless a row states a narrower result. Account configuration, delivered email,
 real payment settlement, and monitoring alerts require their own evidence; implemented code alone does not prove them.

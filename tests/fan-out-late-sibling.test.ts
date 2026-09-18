@@ -5,7 +5,8 @@ import os from "node:os";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
 import type { TransitionRequest, TransitionResult } from "@/core/providers/types";
-import { DEFAULT_FINE_TUNE, type QualityScores } from "@/core/types";
+import { ProviderOutcomeUnknownError } from "@/core/providers/types";
+import { DEFAULT_FINE_TUNE, type QualityScores, type PromptIR } from "@/core/types";
 
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), "seam-fanout-"));
 process.env.SEAM_DATA_DIR = dir;
@@ -156,3 +157,62 @@ test("wrong-style renders are retried in the same style, never delivered, and re
   assert.equal(Generations.get(gen.id)?.recipeId, "orbit");
   assert.equal(Users.get(user.id)!.credits, user.credits, "refund restores the balance");
 });
+
+for (const requestId of [null, "accepted-job"] as const) {
+  test(`uncertain Higgsfield ${requestId ? "result" : "submission"} stops fallback and refunds only once`, async (t) => {
+    let calls = 0;
+    let genId = "";
+    useProviders(t, false, async (req) => {
+      calls++;
+      req.onSubmission?.({ state: "submitting" });
+      assert.equal(Attempts.forGeneration(genId)[0].params.providerRequestState, "submitting");
+      if (requestId) {
+        req.onSubmission?.({ state: "submitted", requestId, correlationId: "correlation" });
+        assert.equal(Attempts.forGeneration(genId)[0].providerJobId, requestId, "receipt persisted before polling completes");
+      }
+      throw new ProviderOutcomeUnknownError("lost response", "higgsfield", requestId, "correlation");
+    });
+    config.generation.parallelAttempts = 1;
+    const { user, gen, job } = await queuedGeneration(`unknown_${requestId ?? "submission"}`);
+    genId = gen.id;
+    assert.ok(Users.spend(user.id, 2));
+    await assert.rejects(runGenerateJob(job, () => {}, passingJudge), /automatic generation fallback stopped/);
+    assert.equal(calls, 1, "neither another model nor a procedural fallback is launched");
+    const [attempt] = Attempts.forGeneration(gen.id);
+    assert.equal(attempt.providerJobId, requestId);
+    assert.equal(attempt.params.correlationId, "correlation");
+    assert.equal(attempt.params.providerRequestState, "unknown");
+    assert.equal(Generations.get(gen.id)?.status, "failed");
+    assert.match(Generations.get(gen.id)?.friendlyError ?? "", /stopped without starting another render/);
+    assert.equal(Users.get(user.id)!.credits, user.credits);
+    await assert.rejects(runGenerateJob(job, () => {}, passingJudge), /already failed/);
+    assert.equal(Users.get(user.id)!.credits, user.credits, "a replay cannot refund twice");
+    assert.equal(calls, 1);
+  });
+}
+
+for (const state of ["submitting", "submitted"] as const) {
+  test(`a restart with a ${state} Higgsfield request never resubmits it`, async (t) => {
+    let calls = 0;
+    useProviders(t, false, async () => { calls++; throw new Error("must not generate"); });
+    const { user, gen, job } = await queuedGeneration(`restart_${state}`);
+    assert.ok(Users.spend(user.id, 2));
+    const requestId = state === "submitted" ? "existing-paid-job" : null;
+    Attempts.create({
+      generationId: gen.id, n: 1, recipeId: gen.recipeId, providerId: "higgsfield", modelId: "higgsfield:dop-lite",
+      promptIR: {} as PromptIR, compiledPrompt: { positive: "original shot", negative: null },
+      params: { providerRequestState: state }, status: "running", providerJobId: requestId,
+      outputPath: null, error: null, costUsd: 0, durationMs: 0,
+    });
+    Jobs.update(job.id, { status: "running" });
+    Generations.update(gen.id, { status: "running" });
+    Jobs.requeueStale();
+    assert.equal(Jobs.get(job.id)?.status, "queued");
+    await assert.rejects(runGenerateJob(job, () => {}, passingJudge), /reconciled before resubmitting/);
+    assert.equal(calls, 0);
+    assert.equal(Attempts.forGeneration(gen.id).length, 1);
+    assert.equal(Attempts.forGeneration(gen.id)[0].providerJobId, requestId);
+    assert.equal(Generations.get(gen.id)?.status, "failed");
+    assert.equal(Users.get(user.id)!.credits, user.credits);
+  });
+}

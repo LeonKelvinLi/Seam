@@ -14,7 +14,7 @@ import { compileIR, renderPrompt } from "@/core/prompt/compiler";
 import { expectedProfile, proceduralAllowed, routeModels } from "@/core/providers/router";
 import { writeShot } from "@/core/prompt/director";
 import { openaiErrorSummary } from "@/core/openai";
-import { ProviderError } from "@/core/providers/types";
+import { ProviderError, ProviderOutcomeUnknownError } from "@/core/providers/types";
 import { isBillingError, markProviderUnavailable } from "@/core/providers/cooldown";
 import { styleStaging } from "@/core/recipes/style-contract";
 import { budgetExhausted } from "./budget";
@@ -51,6 +51,7 @@ const FRIENDLY_FAIL = "We couldn't build that transition from these clips. Try a
 const FRIENDLY_BUSY = "Clipmelt has reached today's AI limit. Your credits are untouched; try again later.";
 const FRIENDLY_NO_JUDGE = "Our quality check is briefly unavailable, so nothing was delivered. Your credits are untouched; try again in a few minutes.";
 const FRIENDLY_NO_MODEL = "No AI bridge model is available right now. Your credits are untouched; try again shortly.";
+const FRIENDLY_UNKNOWN = "We couldn't confirm the video provider's result, so we stopped without starting another render. Your credits have been returned.";
 
 /** A stop we can explain: the generation's friendlyError comes from `friendly`, never from the raw error. */
 class GenerationStopped extends Error {
@@ -89,6 +90,9 @@ export async function runGenerateJob(job: Job, report: Reporter, judge = judgeTr
   const generationId = String(job.payload.generationId);
   const gen = Generations.get(generationId);
   if (!gen) throw new Error("generation not found");
+  // A requeued runner must not render or refund a generation that already finished.
+  if (gen.status === "ready") return;
+  if (gen.status === "failed") throw new Error("generation already failed");
   const project = Projects.get(gen.projectId)!;
   const setStage = (stage: string, progress: number, label?: string) => {
     report(stage, progress, label);
@@ -99,6 +103,13 @@ export async function runGenerateJob(job: Job, report: Reporter, judge = judgeTr
   let sourcePreparation: Promise<{ error: unknown } | null> | undefined;
 
   try {
+    const interrupted = Attempts.forGeneration(gen.id).find((a) => a.providerId === "higgsfield" && (
+      ["submitting", "submitted", "unknown", "completed"].includes(String(a.params.providerRequestState)) ||
+      a.status === "running" || a.error === "interrupted by a restart"
+    ));
+    if (interrupted) {
+      throw new GenerationStopped(FRIENDLY_UNKNOWN, `previous Higgsfield attempt must be reconciled before resubmitting: ${interrupted.providerJobId ?? interrupted.id}`);
+    }
     setStage("compile", 0.05);
     const opp = Opportunities.get(gen.opportunityId);
     const pairRow = opp ? PairAnalyses.get(opp.pairAnalysisId) : PairAnalyses.latestForProject(gen.projectId);
@@ -155,7 +166,7 @@ export async function runGenerateJob(job: Job, report: Reporter, judge = judgeTr
       return shot;
     };
 
-    type RunOutcome = { attempt: GenerationAttempt; model: ModelSpec; ok: boolean; scores: QualityScores | null; bridgePath: string | null; error: string | null; recipeId: string; durationSec: number; unjudged?: boolean };
+    type RunOutcome = { attempt: GenerationAttempt; model: ModelSpec; ok: boolean; scores: QualityScores | null; bridgePath: string | null; error: string | null; recipeId: string; durationSec: number; unjudged?: boolean; outcomeUnknown?: boolean };
     // One provider attempt: create the row, generate, normalise, judge, book costs. Safe to run several concurrently.
     // `live` turns false when the attempt's round is over. A fan-out sibling still rendering after that must not write
     // the generation's stage: the generation has moved on to stitching, ready or failed, and setStage would put it
@@ -188,7 +199,16 @@ export async function runGenerateJob(job: Job, report: Reporter, judge = judgeTr
           transitionType: rec.id, motionStrength: ir.motionStrength,
           local: { spec, recipe: rec, focusA: focusPoint(analysisA, frameA, rec, opp.hints.shapeA), focusB: focusPoint(analysisB, frameB, rec, opp.hints.shapeB) },
           onProgress: (m) => stage(n > 1 ? "retry" : "generate", 0.25 + (n - 1) * 0.2, m),
+          onSubmission: (receipt) => {
+            attempt.params = { ...attempt.params, providerRequestState: receipt.state, correlationId: receipt.correlationId ?? null };
+            attempt.providerJobId = receipt.requestId ?? null;
+            Attempts.update(attempt.id, { params: attempt.params, providerJobId: attempt.providerJobId });
+          },
         }, model);
+        if (model.providerId === "higgsfield") {
+          attempt.params = { ...attempt.params, providerRequestState: "completed" };
+          Attempts.update(attempt.id, { params: attempt.params, providerJobId: result.providerJobId });
+        }
         attemptTimings.providerMs = Date.now() - ta;
         const bridgePath = path.join(dir, `attempt_${n}_bridge.mp4`);
         const normalizeStart = Date.now();
@@ -212,9 +232,17 @@ export async function runGenerateJob(job: Job, report: Reporter, judge = judgeTr
         const msg = (e as Error).message;
         log.warn("attempt failed", { gen: gen.id, n, error: msg });
         if (e instanceof ProviderError && !e.retryable && isBillingError(e.message)) { markProviderUnavailable(e.providerId); log.warn("provider parked", { provider: e.providerId, reason: "billing" }); }
-        Attempts.update(attempt.id, { status: "failed", error: msg, durationMs: Date.now() - ta });
+        const outcomeUnknown = e instanceof ProviderOutcomeUnknownError;
+        if (model.providerId === "higgsfield") {
+          attempt.params = { ...attempt.params, providerRequestState: outcomeUnknown ? "unknown" : attempt.params.providerRequestState === "completed" ? "completed" : "failed" };
+          if (e instanceof ProviderOutcomeUnknownError) {
+            attempt.providerJobId = e.requestId ?? attempt.providerJobId;
+            attempt.params.correlationId = e.correlationId ?? attempt.params.correlationId;
+          }
+        }
+        Attempts.update(attempt.id, { status: "failed", error: msg, durationMs: Date.now() - ta, params: attempt.params, providerJobId: attempt.providerJobId });
         attempt.status = "failed"; attempt.durationMs = Date.now() - ta;
-        return { attempt, model, ok: false, scores: null, bridgePath: null, error: msg, recipeId: rec.id, durationSec };
+        return { attempt, model, ok: false, scores: null, bridgePath: null, error: msg, recipeId: rec.id, durationSec, outcomeUnknown };
       }
     };
 
@@ -256,6 +284,7 @@ export async function runGenerateJob(job: Job, report: Reporter, judge = judgeTr
         }
       }
       if (passed) break;
+      if (results.some((r) => r.outcomeUnknown)) throw new GenerationStopped(FRIENDLY_UNKNOWN, "provider outcome unknown; automatic generation fallback stopped");
       // Another model would be judged by the same missing judge: stop and refund instead of paying for renders nobody can check.
       if (results.some((r) => r.unjudged)) throw new GenerationStopped(FRIENDLY_NO_JUDGE, "no vision judge answered");
       const next = planNextAttempt({ attempt: attemptNo, maxAttempts, recipe, fineTune, outcomes, opportunities: opps });

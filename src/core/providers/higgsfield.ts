@@ -10,7 +10,7 @@ import { config } from "@/core/config";
 import { logger } from "@/core/log";
 import { download } from "@/core/media/ffmpeg";
 import { jpegForModel } from "@/core/media/image";
-import { ProviderError, pollUntil, type ModelSpec, type TransitionProvider, type TransitionRequest, type TransitionResult } from "./types";
+import { ProviderError, ProviderOutcomeUnknownError, pollUntil, type ModelSpec, type TransitionProvider, type TransitionRequest, type TransitionResult } from "./types";
 
 const log = logger("higgsfield");
 export const HIGGSFIELD_BASE = "https://api.higgsfield.ai";
@@ -102,22 +102,40 @@ export function authHeader(): string {
   return `Key ${config.providers.higgsfieldKeyId}:${config.providers.higgsfieldKeySecret}`;
 }
 
-async function fetchWithRetry(url: string, init: RequestInit, tries = 3): Promise<Response> {
-  let last: unknown;
-  for (let i = 0; i < tries; i++) {
-    try { return await fetch(url, init); } catch (e) { last = e; await new Promise((r) => setTimeout(r, 1500 * (i + 1))); }
-  }
-  throw new ProviderError(`higgsfield network error: ${(last as Error)?.message ?? String(last)}`, true, "higgsfield");
-}
-
-async function hf<T>(path: string, init: RequestInit): Promise<T> {
+async function hf<T>(path: string, init: RequestInit, submission = false, onResponse?: (res: Response) => void): Promise<T> {
   const url = path.startsWith("http") ? path : `${HIGGSFIELD_BASE}${path}`;
-  const res = await fetchWithRetry(url, { ...init, headers: { Authorization: authHeader(), "Content-Type": "application/json", ...(init.headers ?? {}) } });
-  if (!res.ok) {
-    const text = await res.text();
-    throw new ProviderError(`higgsfield ${res.status}: ${text.slice(0, 300)}`, res.status === 429 || res.status >= 500, "higgsfield");
+  // Only reads can be retried safely. A generation POST has no idempotency key.
+  const read = (init.method ?? "GET").toUpperCase() === "GET";
+  const tries = read ? 3 : 1;
+  let last: unknown;
+  let correlationId: string | null = null;
+  for (let i = 0; i < tries; i++) {
+    try {
+      const res = await fetch(url, {
+        ...init, signal: init.signal ?? AbortSignal.timeout(30_000),
+        headers: { Authorization: authHeader(), "Content-Type": "application/json", ...(init.headers ?? {}) },
+      });
+      correlationId = res.headers.get("x-correlation-id");
+      onResponse?.(res);
+      if (!res.ok) {
+        // An upstream error can arrive after the generation was accepted. Do not buy another take.
+        if (submission && (res.status >= 500 || res.status === 408)) {
+          throw new ProviderOutcomeUnknownError(`higgsfield submission outcome unknown (HTTP ${res.status})`, "higgsfield", null, correlationId);
+        }
+        throw new ProviderError(`higgsfield ${res.status}: ${(await res.text()).slice(0, 300)}`, res.status === 429 || res.status >= 500, "higgsfield");
+      }
+      return await res.json() as T;
+    } catch (e) {
+      if (e instanceof ProviderOutcomeUnknownError) throw e;
+      if (submission && !(e instanceof ProviderError)) {
+        throw new ProviderOutcomeUnknownError("higgsfield submission outcome unknown: response was lost or unreadable", "higgsfield", null, correlationId);
+      }
+      if (e instanceof ProviderError && (!read || !e.retryable)) throw e;
+      last = e;
+      if (i + 1 < tries) await new Promise((r) => setTimeout(r, 1000 * 2 ** i + Math.random() * 500));
+    }
   }
-  return (await res.json()) as T;
+  throw new ProviderError(`higgsfield request failed: ${(last as Error)?.message ?? String(last)}`, true, "higgsfield");
 }
 
 /** Presigned upload: ask for a URL, PUT the bytes with the returned headers, reference the public URL. */
@@ -139,18 +157,33 @@ export const higgsfieldProvider: TransitionProvider = {
     const [firstUrl, lastUrl] = await Promise.all([uploadFrame(req.firstFramePath), uploadFrame(req.lastFramePath)]);
     const body = buildBody(model, req, firstUrl, lastUrl);
     req.onProgress?.("Sending frames to the video model");
-    const created = await hf<{ request_id: string; status: string; status_url?: string }>(model.endpoint, { method: "POST", body: JSON.stringify(body) });
-    log.info("request created", { id: created.request_id, model: model.id });
-    const statusUrl = created.status_url ?? `${HIGGSFIELD_BASE}/requests/${created.request_id}/status`;
-
-    const done = await pollUntil(async () => {
-      const s = await hf<StatusBody>(statusUrl, { method: "GET" });
-      const r = parseStatus(s);
-      if (!r) req.onProgress?.(s.status === "in_progress" ? "Generating the bridge" : "Waiting for the video model");
-      return r;
-    }, 4000, 15 * 60_000, "higgsfield");
-
-    await download(done.url, req.outputPath);
+    req.onSubmission?.({ state: "submitting" });
+    let correlationId: string | null = null;
+    const created = await hf<{ request_id: string }>(model.endpoint, { method: "POST", body: JSON.stringify(body) }, true, (res) => {
+      correlationId = res.headers.get("x-correlation-id");
+    });
+    if (typeof created?.request_id !== "string" || !created.request_id.trim()) {
+      throw new ProviderOutcomeUnknownError("higgsfield submission outcome unknown: missing request ID", "higgsfield", null, correlationId);
+    }
+    let terminalFailure = false;
+    try {
+      req.onSubmission?.({ state: "submitted", requestId: created.request_id, correlationId });
+      log.info("request created", { id: created.request_id, model: model.id, correlationId });
+      // Always use the authenticated API's canonical status route for this receipt.
+      const statusUrl = `/requests/${encodeURIComponent(created.request_id)}/status`;
+      const done = await pollUntil(async () => {
+        const s = await hf<StatusBody>(statusUrl, { method: "GET" });
+        terminalFailure = s.status === "failed" || s.status === "canceled" || s.status === "nsfw";
+        const r = parseStatus(s);
+        if (!r) req.onProgress?.(s.status === "in_progress" ? "Generating the bridge" : "Waiting for the video model");
+        return r;
+      }, 4000, 15 * 60_000, "higgsfield");
+      await download(done.url, req.outputPath);
+    } catch (e) {
+      if (terminalFailure) throw e;
+      // Losing polling or output download is not evidence the accepted job failed.
+      throw new ProviderOutcomeUnknownError(`higgsfield result could not be recovered: ${(e as Error).message}`, "higgsfield", created.request_id, correlationId);
+    }
     const rawDurationSec = model.durations[0] ?? 5;
     return {
       outputPath: req.outputPath, providerJobId: created.request_id, rawDurationSec,

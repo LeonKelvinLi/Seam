@@ -40,6 +40,8 @@ export interface TransitionRequest {
     focusB: { x: number; y: number };
   };
   onProgress?: (message: string) => void;
+  /** Persist intent before a billable POST and its receipt before polling. */
+  onSubmission?: (receipt: { state: "submitting" | "submitted"; requestId?: string; correlationId?: string | null }) => void;
 }
 
 export interface TransitionResult {
@@ -62,6 +64,14 @@ export class ProviderError extends Error {
   constructor(message: string, public readonly retryable: boolean, public readonly providerId: ProviderId) {
     super(message);
     this.name = "ProviderError";
+  }
+}
+
+/** Work may already be paid for or running. Neither transport retries nor model fallback may resubmit it. */
+export class ProviderOutcomeUnknownError extends ProviderError {
+  constructor(message: string, providerId: ProviderId, public readonly requestId: string | null = null, public readonly correlationId: string | null = null) {
+    super(message, false, providerId);
+    this.name = "ProviderOutcomeUnknownError";
   }
 }
 
