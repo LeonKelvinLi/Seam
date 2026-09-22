@@ -149,7 +149,7 @@ async function main() {
 
   const finished: { run: number; genId: string; shareUrl: string | null }[] = [];
   for (let run = 1; run <= RUNS; run++) {
-    const g = await call(`/api/projects/${projectId}/generate`, { method: "POST", headers: { "content-type": "application/json" }, body: "{}" });
+    const g = await call(`/api/projects/${projectId}/generate`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(process.env.E2E_INTENT ? { intent: process.env.E2E_INTENT } : {}) });
     if (g.status !== 200) fail(`generate run ${run}: ${g.status} ${JSON.stringify(g.body).slice(0, 200)}`);
     const genId = g.body.generation.id;
     remember({ [`run${run}GenerationId`]: genId });

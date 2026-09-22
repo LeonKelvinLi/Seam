@@ -1,0 +1,227 @@
+{
+  "id": "clipmelt-master-169",
+  "width": 1920,
+  "height": 1080,
+  "fps": 30,
+  "duration": 15.0,
+  "timeline": "master",
+  "beat": 0.44,
+  "accent": "#d9fc69",
+  "bg": "#0b0b0a",
+  "clips": {
+    "plane": {
+      "src": "public/library-ai/object-morph.mp4",
+      "width": 1920
+    },
+    "tv": {
+      "src": "public/library-ai/portal-tv.mp4",
+      "width": 1920
+    },
+    "eye": {
+      "src": "public/examples/eye-space/after-hd.mp4",
+      "width": 1920
+    },
+    "prism": {
+      "src": "public/library-ai/glass-transform.mp4",
+      "width": 1920
+    },
+    "doorA": {
+      "src": "public/examples/door-beach/a.mp4",
+      "width": 1280
+    },
+    "doorB": {
+      "src": "public/examples/door-beach/b.mp4",
+      "width": 1280
+    },
+    "doorAfter": {
+      "src": "public/examples/door-beach/after.mp4",
+      "width": 1280
+    },
+    "cup": {
+      "src": "public/library-ai/portal-cup.mp4",
+      "width": 1280
+    },
+    "vinyl": {
+      "src": "public/library-ai/object-match.mp4",
+      "width": 1280
+    },
+    "sofa": {
+      "src": "public/library-ai/environment-morph.mp4",
+      "width": 1280
+    },
+    "car": {
+      "src": "public/library-ai/portal-car-window.mp4",
+      "width": 1280
+    }
+  },
+  "images": {
+    "library": "data/ads-tmp/ui/library_desktop.png",
+    "mark": "public/brand/seamcut-mark-1024.png"
+  },
+  "music": {
+    "src": "data/ads/music/track_a.wav",
+    "offset": 10.079,
+    "fadeOut": 0.8
+  },
+  "sfx": [
+    {
+      "kind": "whoosh",
+      "at": 1.1400000000000001,
+      "gainDb": -12
+    },
+    {
+      "kind": "tick",
+      "at": 1.98,
+      "gainDb": -14
+    },
+    {
+      "kind": "tick",
+      "at": 2.42,
+      "gainDb": -14
+    },
+    {
+      "kind": "impact",
+      "at": 2.64,
+      "gainDb": -5
+    },
+    {
+      "kind": "whoosh_long",
+      "at": 3.9299999999999997,
+      "gainDb": -9
+    },
+    {
+      "kind": "whoosh",
+      "at": 4.4,
+      "gainDb": -11
+    },
+    {
+      "kind": "whoosh",
+      "at": 4.470000000000001,
+      "gainDb": -13
+    },
+    {
+      "kind": "whoosh",
+      "at": 5.28,
+      "gainDb": -12
+    },
+    {
+      "kind": "impact",
+      "at": 5.72,
+      "gainDb": -8
+    },
+    {
+      "kind": "sub",
+      "at": 5.72,
+      "gainDb": -10
+    },
+    {
+      "kind": "whoosh",
+      "at": 7.72,
+      "gainDb": -12
+    },
+    {
+      "kind": "whoosh",
+      "at": 8.600000000000001,
+      "gainDb": -12
+    },
+    {
+      "kind": "whoosh",
+      "at": 9.48,
+      "gainDb": -12
+    },
+    {
+      "kind": "whoosh",
+      "at": 10.360000000000001,
+      "gainDb": -12
+    },
+    {
+      "kind": "whoosh_long",
+      "at": 12.02,
+      "gainDb": -12
+    },
+    {
+      "kind": "riser",
+      "at": 12.0,
+      "gainDb": -13
+    },
+    {
+      "kind": "impact",
+      "at": 13.2,
+      "gainDb": -7
+    },
+    {
+      "kind": "sub",
+      "at": 13.2,
+      "gainDb": -9
+    },
+    {
+      "kind": "tick",
+      "at": 11.44,
+      "gainDb": -13
+    },
+    {
+      "kind": "tick",
+      "at": 11.733,
+      "gainDb": -13
+    },
+    {
+      "kind": "tick",
+      "at": 12.027,
+      "gainDb": -13
+    }
+  ],
+  "loudness": -13,
+  "copy": {
+    "brand": "Clipmelt",
+    "claim1": "TWO CLIPS.",
+    "claim2": "ONE <em>IMPOSSIBLE</em> SHOT.",
+    "claimV": [
+      "TWO CLIPS.",
+      "ONE <em>IMPOSSIBLE</em>",
+      "SHOT."
+    ],
+    "claimSub": "AI VIDEO TRANSITIONS",
+    "clipA": "Clip A",
+    "clipB": "Clip B",
+    "whereStarts": "WHERE IT STARTS",
+    "whereGoes": "WHERE IT GOES",
+    "bridge": "AI bridge",
+    "cta1": "TRY 3 FREE ON",
+    "cta2": "CLIPMELT",
+    "l1": "Cup Portal",
+    "l2": "Object Match",
+    "l3": "Environment Morph",
+    "l4": "Car Window Portal",
+    "parade": [
+      "Whip Pan",
+      "Orbit Transition",
+      "Dolly Through"
+    ],
+    "hub1": "49",
+    "hub2": "TRANSITION STYLES",
+    "tagline": "Two clips. One impossible shot.",
+    "pill": "Try 3 free &nbsp;\u2192"
+  },
+  "copies": {
+    "es": {
+      "claim1": "DOS CLIPS.",
+      "claim2": "UNA TOMA <em>IMPOSIBLE</em>.",
+      "claimV": [
+        "DOS CLIPS.",
+        "UNA TOMA",
+        "<em>IMPOSIBLE</em>."
+      ],
+      "claimSub": "TRANSICIONES DE VIDEO CON IA",
+      "clipA": "Clip A",
+      "clipB": "Clip B",
+      "whereStarts": "DONDE EMPIEZA",
+      "whereGoes": "A DONDE VA",
+      "bridge": "Puente IA",
+      "cta1": "PRUEBA 3 GRATIS EN",
+      "cta2": "CLIPMELT",
+      "hub2": "ESTILOS DE TRANSICI\u00d3N",
+      "tagline": "Dos clips. Una toma imposible.",
+      "pill": "Prueba 3 gratis &nbsp;\u2192"
+    }
+  }
+}

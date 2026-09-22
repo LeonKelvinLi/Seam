@@ -1,0 +1,108 @@
+{
+  "id": "clipmelt-versus",
+  "width": 1080,
+  "height": 1920,
+  "fps": 30,
+  "duration": 12.52,
+  "timeline": "versus",
+  "beat": 0.44,
+  "accent": "#d9fc69",
+  "bg": "#0b0b0a",
+  "clips": {
+    "door_xf": {
+      "src": "data/ads-tmp/motion/xf/door-beach.mp4",
+      "width": 1080
+    },
+    "door_ai": {
+      "src": "public/examples/door-beach/after.mp4",
+      "width": 1080
+    },
+    "coffee_xf": {
+      "src": "data/ads-tmp/motion/xf/coffee-ocean.mp4",
+      "width": 1080
+    },
+    "coffee_ai": {
+      "src": "public/examples/coffee-ocean/after.mp4",
+      "width": 1080
+    },
+    "phone_xf": {
+      "src": "data/ads-tmp/motion/xf/phone-city.mp4",
+      "width": 1080
+    },
+    "phone_ai": {
+      "src": "public/examples/phone-city/after.mp4",
+      "width": 1080
+    }
+  },
+  "pairs": [
+    {
+      "name": "DOOR \u2192 BEACH",
+      "xf": "door_xf",
+      "ai": "door_ai",
+      "xfMid": 2.7,
+      "aiMid": 3.7
+    },
+    {
+      "name": "COFFEE \u2192 OCEAN",
+      "xf": "coffee_xf",
+      "ai": "coffee_ai",
+      "xfMid": 2.65,
+      "aiMid": 3.48
+    },
+    {
+      "name": "PHONE \u2192 CITY",
+      "xf": "phone_xf",
+      "ai": "phone_ai",
+      "xfMid": 2.63,
+      "aiMid": 3.53
+    }
+  ],
+  "images": {
+    "mark": "public/brand/seamcut-mark-1024.png"
+  },
+  "music": {
+    "src": "data/ads/music/track_a.wav",
+    "offset": 12.719,
+    "fadeOut": 0.6
+  },
+  "sfx": [
+    {
+      "kind": "whoosh",
+      "at": 3.4,
+      "gainDb": -11
+    },
+    {
+      "kind": "whoosh",
+      "at": 6.92,
+      "gainDb": -11
+    },
+    {
+      "kind": "impact",
+      "at": 10.56,
+      "gainDb": -6
+    },
+    {
+      "kind": "sub",
+      "at": 10.56,
+      "gainDb": -9
+    }
+  ],
+  "loudness": -13,
+  "copy": {
+    "brand": "Clipmelt",
+    "claimV": [
+      "TWO CLIPS.",
+      "ONE <em>IMPOSSIBLE</em>",
+      "SHOT."
+    ],
+    "cta1": "TRY 3 FREE ON",
+    "cta2": "CLIPMELT",
+    "tagline": "Two clips. One impossible shot.",
+    "pill": "Try 3 free &nbsp;\u2192",
+    "labelTop": "CROSSFADE",
+    "labelBot": "CLIPMELT",
+    "head": "SAME TWO CLIPS.",
+    "foot": "WHICH ONE WOULD YOU POST?",
+    "stop": "Stop <em>crossfading.</em>"
+  }
+}

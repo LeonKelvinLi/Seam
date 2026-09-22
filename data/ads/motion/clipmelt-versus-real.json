@@ -1,0 +1,52 @@
+{
+  "id": "clipmelt-versus-real",
+  "timeline": "versus-real",
+  "width": 1080,
+  "height": 1920,
+  "fps": 30,
+  "duration": 11.84,
+  "beat": 0.4555,
+  "clipWidth": 1080,
+  "loudness": -13,
+  "clips": {
+    "cliff": {"src":  "data/ads/real/p1_a_cliff.mp4"},
+    "bridge1": {"src":  "data/ads/real/bridge1_take2.mp4", "fps":  24},
+    "surf": {"src":  "data/ads/real/p1_b_surf.mp4"},
+    "bridge2": {"src":  "data/ads/real/bridge2_take1.mp4", "fps":  24},
+    "skate": {"src":  "data/ads/real/p2_b_skate.mp4"},
+    "xf1": {"src":  "data/ads/real/xf_p1.mp4"},
+    "xf2": {"src":  "data/ads/real/xf_p2.mp4"}
+  },
+  "reel": [
+    {"clip":  "cliff", "from":  0, "to":  4.933},
+    {"clip":  "bridge1", "from":  0, "to":  5.167},
+    {"clip":  "surf", "from":  0, "to":  7.0},
+    {"clip":  "bridge2", "from":  0, "to":  5.167},
+    {"clip":  "skate", "from":  0, "to":  6.5}
+  ],
+  "pairs": [
+    {
+      "xf": "xf1",
+      "xfStart": 1.9,
+      "rate": 1.45,
+      "name": "cliff.mp4 → surf.mp4",
+      "right": [[0, 1.9], [0.48, 2.6], [1.5, 6.3], [2.2, 7.13], [4.555, 9.9]]
+    },
+    {
+      "xf": "xf2",
+      "xfStart": 4.5,
+      "rate": 1.55,
+      "name": "surf.mp4 → skate.mp4",
+      "right": [[0, 14.6], [1.61, 17.1], [2.3, 19.5], [3.0, 20.4], [4.555, 23.3]]
+    }
+  ],
+  "copy": {
+    "title": "same 2 clips.<br>which would you post?",
+    "labelLeft": "crossfade",
+    "labelRight": "clipmelt",
+    "cta": "clipmelt<br>your first 3 are free"
+  },
+  "music": {"src":  "data/ads/music/track_c.wav", "offset":  36.44, "fadeIn":  0.005, "fadeOut":  0.8},
+  "sfx": [{"kind":  "whoosh", "at":  4.315, "gainDb":  -18}, {"kind":  "whoosh", "at":  8.87, "gainDb":  -15}],
+  "ending": [23.3, 25.8]
+}

@@ -1,0 +1,187 @@
+{
+  "id": "clipmelt-bumper-6s",
+  "width": 1080,
+  "height": 1920,
+  "fps": 30,
+  "duration": 6.0,
+  "timeline": "bumper",
+  "beat": 0.44,
+  "accent": "#d9fc69",
+  "bg": "#0b0b0a",
+  "clips": {
+    "tv": {
+      "src": "public/library-ai/portal-tv.mp4",
+      "width": 1440
+    },
+    "cup": {
+      "src": "public/library-ai/portal-cup.mp4",
+      "width": 900
+    },
+    "vinyl": {
+      "src": "public/library-ai/object-match.mp4",
+      "width": 900
+    },
+    "sofa": {
+      "src": "public/library-ai/environment-morph.mp4",
+      "width": 900
+    },
+    "car": {
+      "src": "public/library-ai/portal-car-window.mp4",
+      "width": 900
+    },
+    "plane": {
+      "src": "public/library-ai/object-morph.mp4",
+      "width": 900
+    },
+    "prism": {
+      "src": "public/library-ai/glass-transform.mp4",
+      "width": 900
+    },
+    "eye": {
+      "src": "public/examples/eye-space/after-hd.mp4",
+      "width": 900
+    },
+    "phone": {
+      "src": "public/examples/phone-city/after.mp4",
+      "width": 900
+    },
+    "window": {
+      "src": "public/examples/window-clouds/after-hd.mp4",
+      "width": 900
+    },
+    "coffee": {
+      "src": "public/examples/coffee-ocean/after-4k.mp4",
+      "width": 900
+    },
+    "door": {
+      "src": "public/examples/door-beach/after.mp4",
+      "width": 900
+    },
+    "tile_tv": {
+      "src": "public/library-ai/portal-tv.mp4",
+      "width": 900
+    }
+  },
+  "pool": [
+    {
+      "clip": "cup",
+      "label": "Cup Portal",
+      "from": 0.8,
+      "to": 3.2
+    },
+    {
+      "clip": "vinyl",
+      "label": "Object Match",
+      "from": 0.8,
+      "to": 3.2
+    },
+    {
+      "clip": "sofa",
+      "label": "Environment Morph",
+      "from": 0.8,
+      "to": 3.2
+    },
+    {
+      "clip": "car",
+      "label": "Car Window Portal",
+      "from": 0.8,
+      "to": 3.2
+    },
+    {
+      "clip": "plane",
+      "label": "Object Morph",
+      "from": 1.0,
+      "to": 3.4
+    },
+    {
+      "clip": "prism",
+      "label": "Glass Transformation",
+      "from": 1.0,
+      "to": 3.0
+    },
+    {
+      "clip": "eye",
+      "label": "Eye \u2192 Space",
+      "from": 2.4,
+      "to": 5.4
+    },
+    {
+      "clip": "phone",
+      "label": "Phone \u2192 City",
+      "from": 2.4,
+      "to": 5.4
+    },
+    {
+      "clip": "window",
+      "label": "Window \u2192 Clouds",
+      "from": 2.4,
+      "to": 5.4
+    },
+    {
+      "clip": "coffee",
+      "label": "Coffee \u2192 Ocean",
+      "from": 2.4,
+      "to": 5.4
+    },
+    {
+      "clip": "door",
+      "label": "Door \u2192 Beach",
+      "from": 2.4,
+      "to": 5.4
+    },
+    {
+      "clip": "tile_tv",
+      "label": "Television Portal",
+      "from": 1.0,
+      "to": 3.3
+    }
+  ],
+  "images": {
+    "mark": "public/brand/seamcut-mark-1024.png"
+  },
+  "music": {
+    "src": "data/ads/music/track_a.wav",
+    "offset": 11.839,
+    "fadeOut": 0.45
+  },
+  "sfx": [
+    {
+      "kind": "impact",
+      "at": 0.88,
+      "gainDb": -5
+    },
+    {
+      "kind": "whoosh_long",
+      "at": 1.73,
+      "gainDb": -10
+    },
+    {
+      "kind": "sub",
+      "at": 2.2,
+      "gainDb": -10
+    },
+    {
+      "kind": "impact",
+      "at": 4.84,
+      "gainDb": -7
+    },
+    {
+      "kind": "riser",
+      "at": 3.7399999999999998,
+      "gainDb": -14
+    }
+  ],
+  "loudness": -13,
+  "copy": {
+    "brand": "Clipmelt",
+    "claimV": [
+      "TWO CLIPS.",
+      "ONE <em>IMPOSSIBLE</em>",
+      "SHOT."
+    ],
+    "cta1": "TRY 3 FREE ON",
+    "cta2": "CLIPMELT",
+    "tagline": "Two clips. One impossible shot.",
+    "pill": "Try 3 free &nbsp;\u2192"
+  }
+}

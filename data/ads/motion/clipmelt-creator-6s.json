@@ -1,0 +1,37 @@
+{
+  "id": "clipmelt-creator-6s",
+  "timeline": "creator",
+  "mode": "bumper",
+  "ctaBeat": 10,
+  "width": 1080,
+  "height": 1920,
+  "fps": 30,
+  "duration": 5.92,
+  "beat": 0.4555,
+  "clipWidth": 1080,
+  "loudness": -13,
+  "clips": {
+    "cliff": {"src":  "data/ads/real/p1_a_cliff.mp4"},
+    "bridge1": {"src":  "data/ads/real/bridge1_take2.mp4", "fps":  24},
+    "surf": {"src":  "data/ads/real/p1_b_surf.mp4"}
+  },
+  "reel": [
+    {"clip":  "cliff", "from":  0, "to":  4.933},
+    {"clip":  "bridge1", "from":  0, "to":  5.167},
+    {"clip":  "surf", "from":  0, "to":  7.0}
+  ],
+  "copy": {"hook1":  "3 clips. 3 different people.", "hook2":  "0 cuts.", "cta":  "clipmelt<br>your first 3 are free"},
+  "music": {
+    "src": "data/ads/music/track_c.wav",
+    "segments": [{"from":  35.093, "at":  0, "dur":  5.92, "fadeIn":  0.01, "fadeOut":  0.5}],
+    "muffle": [{"from":  1.55, "to":  3.189, "ramp":  0.15}],
+    "muffleHz": 450,
+    "muffleGainDb": 4
+  },
+  "sfx": [
+    {"kind":  "wind", "at":  0.0, "gainDb":  3},
+    {"kind":  "splash", "at":  1.345, "gainDb":  -5},
+    {"kind":  "underwater", "at":  1.51, "gainDb":  -13},
+    {"kind":  "splash", "at":  3.12, "gainDb":  -13}
+  ]
+}

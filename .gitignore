@@ -5,6 +5,9 @@ data/*
 !data/ads/
 data/ads/*
 !data/ads/*.json
+!data/ads/motion/
+data/ads/motion/*
+!data/ads/motion/*.json
 .env
 .env.local
 *.log

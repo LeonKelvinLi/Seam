@@ -1,0 +1,82 @@
+{
+  "id": "clipmelt-chain-916",
+  "timeline": "chain",
+  "width": 1080,
+  "height": 1920,
+  "fps": 30,
+  "duration": 22.72,
+  "beat": 0.4555,
+  "clipWidth": 1080,
+  "loudness": -13,
+  "clips": {
+    "cliff": {"src":  "data/ads/real/p1_a_cliff.mp4"},
+    "liquid": {"src":  "data/ads/real/v3_liquid.mp4", "fps":  24},
+    "surf": {"src":  "data/ads/real/p1_b_surf.mp4"},
+    "particle": {"src":  "data/ads/real/v3_particle.mp4", "fps":  24},
+    "skate": {"src":  "data/ads/real/p2_b_skate.mp4"},
+    "morph": {"src":  "data/ads/real/v3_morph.mp4", "fps":  24},
+    "bmx": {"src":  "data/ads/real/bmx_sky_39055942.mp4"},
+    "fpv": {"src":  "data/ads/real/v3_fpv.mp4", "fps":  24},
+    "para": {"src":  "data/ads/real/paraglide_pov_12803095.mp4"}
+  },
+  "reel": [
+    {"clip":  "cliff", "from":  0, "to":  4.933},
+    {"clip":  "liquid", "from":  0, "to":  5.167, "ai":  true, "style":  "Liquid Transformation"},
+    {"clip":  "surf", "from":  0, "to":  7.0},
+    {"clip":  "particle", "from":  0, "to":  5.167, "ai":  true, "style":  "Particle Transformation"},
+    {"clip":  "skate", "from":  0, "to":  3.3},
+    {"clip":  "morph", "from":  0, "to":  5.167, "ai":  true, "style":  "Object Morph"},
+    {"clip":  "bmx", "from":  4.4, "to":  7.3},
+    {"clip":  "fpv", "from":  0, "to":  5.167, "ai":  true, "style":  "FPV Fly Through"},
+    {"clip":  "para", "from":  8.0, "to":  10.25}
+  ],
+  "warp": [
+    [0, 1.23], [3, 2.6], [3.6, 2.92], [4.4, 4.93], [5, 5.85], [7.6, 7.2], [9, 8.6], [9.8, 9.15],
+    [10.4, 10.1], [12, 13.0], [15.9, 17.1], [16.9, 18.5], [19.9, 20.6], [21.4, 22.267], [22.4, 23.9],
+    [24.4, 25.567], [25.4, 26.5], [27.4, 27.9], [29.9, 30.734], [31.9, 32.5], [32.9, 33.634],
+    [34.4, 35.2], [35.4, 37.35], [37.4, 38.8], [40.9, 41.0]
+  ],
+  "marks": {"app":  40.9, "rec":  42.9, "outro":  44.9},
+  "captions": [
+    {"text":  "5 clips. 5 different people.", "from":  0, "to":  4.4, "cy":  420},
+    {"text":  "5 real clips. 4 AI transitions.", "from":  37.6, "to":  40.9, "cy":  420},
+    {"text":  "you give it 2 clips", "from":  40.9, "to":  42.9, "cy":  360},
+    {"text":  "it makes the transition", "from":  42.9, "to":  44.9, "cy":  360}
+  ],
+  "images": {
+    "mark": "public/brand/seamcut-mark-1024.png",
+    "uiUpload": "data/ads-tmp/ui/create_uploading_desktop_clean_mobile.png",
+    "uiRec": "data/ads-tmp/ui/create_recommended_desktop_real_mobile.png"
+  },
+  "uiSize": [1290, 2796],
+  "uiScroll": {"upload":  [0, 300], "rec":  [180, 380]},
+  "copy": {"outroLine":  "your first 3 transitions are free"},
+  "music": {
+    "src": "data/ads/music/track_c.wav",
+    "segments": [{"from":  35.093, "at":  0, "dur":  20.45, "fadeIn":  0.01, "fadeOut":  0.12}],
+    "muffle": [{"from":  1.55, "to":  2.3, "ramp":  0.2}],
+    "muffleHz": 450,
+    "muffleGainDb": 4
+  },
+  "sfx": [
+    {"kind":  "wind", "at":  0.0, "gainDb":  3},
+    {"kind":  "splash", "at":  1.345, "gainDb":  -5},
+    {"kind":  "underwater", "at":  1.51, "gainDb":  -13},
+    {"kind":  "swell", "at":  1.95, "gainDb":  -16},
+    {"kind":  "splash", "at":  4.4, "gainDb":  -13},
+    {"kind":  "whoosh", "at":  4.5, "gainDb":  -14},
+    {"kind":  "swell", "at":  7.2, "gainDb":  -16},
+    {"kind":  "whoosh", "at":  9.5, "gainDb":  -14},
+    {"kind":  "swell", "at":  11.1, "gainDb":  -16},
+    {"kind":  "whoosh", "at":  13.38, "gainDb":  -14},
+    {"kind":  "whoosh", "at":  14.1, "gainDb":  -12},
+    {"kind":  "swell", "at":  14.98, "gainDb":  -16},
+    {"kind":  "whoosh", "at":  16.8, "gainDb":  -14},
+    {"kind":  "glitch", "at":  20.452, "gainDb":  -2},
+    {"kind":  "sting", "at":  20.53, "gainDb":  6},
+    {"kind":  "sub", "at":  20.53, "gainDb":  -6},
+    {"kind":  "glitch", "at":  20.95, "gainDb":  -6},
+    {"kind":  "glitch", "at":  21.19, "gainDb":  -8},
+    {"kind":  "glitch", "at":  22.07, "gainDb":  -8}
+  ]
+}
