@@ -16,6 +16,8 @@ export interface User {
   email: string | null;
   passwordHash: string | null;
   emailVerifiedAt: string | null;
+  /** Google account id (OpenID "sub") when the account signs in with Google. */
+  googleSub?: string | null;
   credits: number;
   plan: "free" | "starter" | "pro";
   stripeCustomerId: string | null;

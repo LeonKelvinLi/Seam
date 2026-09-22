@@ -1,5 +1,5 @@
 /**
- * Accounts: email + password (scrypt), opaque session ids in an httpOnly cookie, guests adopted on sign-in.
+ * Accounts: email + password (scrypt) or Google (see ./google), opaque session ids in an httpOnly cookie, guests adopted on sign-in.
  */
 import { randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
@@ -53,5 +53,5 @@ export async function signOut() {
 }
 
 export function publicUser(u: User) {
-  return { id: u.id, email: u.email, credits: u.credits, emailVerified: !!u.emailVerifiedAt, plan: u.plan, createdAt: u.createdAt };
+  return { id: u.id, email: u.email, credits: u.credits, emailVerified: !!u.emailVerifiedAt, google: !!u.googleSub, hasPassword: !!u.passwordHash, plan: u.plan, createdAt: u.createdAt };
 }

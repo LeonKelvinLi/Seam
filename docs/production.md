@@ -73,6 +73,39 @@ Inspect each generation's provider and attempt log to distinguish accepted AI ou
 A custom domain is added in Render → Settings → Custom Domains; then set `SEAM_PUBLIC_URL` and update the Stripe
 webhook URL and payment-link redirects to the new host.
 
+## Sign in with Google, email and live payments (2026-09-22)
+
+**Google sign-in** is built (`src/lib/server/google.ts`, `/api/auth/google`, `/api/auth/google/callback`). It uses the
+OpenID Connect code flow with PKCE, `state` and `nonce`, and only accepts Google-verified emails. A Google identity
+signs into the account already linked to it, otherwise the account with the same email (now linked), otherwise a new
+account with the trial credits. If that same-email account never confirmed its address, its password and sessions are
+removed when it is linked. The "Continue with Google" button appears only when both keys are set. Covered by
+`tests/google-auth.test.ts` and a local run against a stubbed token endpoint.
+
+Owner setup (Google Cloud Console, the owner's account):
+1. OAuth consent screen: External, app name Clipmelt, support email, home page `https://seamcut.onrender.com`,
+   privacy `/privacy`, terms `/terms`. Scopes: `openid`, `email`, `profile` (non-sensitive, so no Google review is
+   needed). Set the publishing status to **In production**; in Testing mode only listed test users can sign in.
+2. Credentials → Create OAuth client ID → Web application. Authorized redirect URIs:
+   `https://seamcut.onrender.com/api/auth/google/callback` and, for local work, `http://localhost:3000/api/auth/google/callback`.
+3. Put `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` in Render → Environment (or in `.env.local`, then
+   `node scripts/push-secrets.mjs --apply` with `RENDER_API_KEY`). The login page shows the button after the next deploy.
+
+**Email sign-in** (password, confirmation and reset mail) is unchanged. Delivery on Render needs `RESEND_API_KEY` and
+`SEAM_MAIL_FROM` there. Both are set locally, but nobody has confirmed they are set on Render. `next` redirects after
+sign-in now accept only same-site paths.
+
+**Payments**, checked in live mode with the Stripe CLI on 2026-09-22:
+- The three Payment Links are active: $9, $29 and $89 USD, quantity fixed at 1, no promotion codes, no automatic tax.
+  Each redirects to `/account?paid=1&pack=…`. Production sells through them (the webhook secret is set).
+- The live webhook endpoint `https://seamcut.onrender.com/api/stripe/webhook` is enabled but only subscribed to
+  `checkout.session.completed`. Add `charge.refunded` (otherwise refunds keep the credits) and
+  `checkout.session.async_payment_succeeded`.
+- `STRIPE_SECRET_KEY` is not on Render, so the app uses the Payment Links. Adding it switches purchases to
+  server-created Checkout Sessions, with no other change needed.
+- Final proof needs one real purchase: buy Starter ($9) with a real card, confirm 30 credits arrive, refund it in
+  Stripe, and confirm the credits are taken back.
+
 ## Known gaps
 
 - Provider balances are external account state. Higgsfield was funded and produced accepted AI output on 2026-09-08 (see verification below); its current balance and auto top-up status require an account check. fal's last documented billing check found an exhausted balance. After a billing failure a provider is parked for 10 minutes (`src/core/providers/cooldown.ts`) and `/api/runtime` lists it under `coolingDown`. An empty cooldown list does not prove a provider has funds.

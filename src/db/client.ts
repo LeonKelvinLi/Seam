@@ -137,8 +137,9 @@ export function db(): Database.Database {
   const cols = new Set((instance.prepare("PRAGMA table_info(users)").all() as { name: string }[]).map((c) => c.name));
   const add = (col: string, ddl: string) => { if (!cols.has(col)) instance.exec(`ALTER TABLE users ADD COLUMN ${col} ${ddl}`); };
   add("email", "TEXT"); add("passwordHash", "TEXT"); add("credits", "INTEGER NOT NULL DEFAULT 6"); add("plan", "TEXT NOT NULL DEFAULT 'free'");
-  add("stripeCustomerId", "TEXT"); add("updatedAt", "TEXT"); add("emailVerifiedAt", "TEXT");
+  add("stripeCustomerId", "TEXT"); add("updatedAt", "TEXT"); add("emailVerifiedAt", "TEXT"); add("googleSub", "TEXT");
   instance.exec("CREATE UNIQUE INDEX IF NOT EXISTS users_email ON users(email)");
+  instance.exec("CREATE UNIQUE INDEX IF NOT EXISTS users_google ON users(googleSub)");
   // Recover jobs left "running" by a previous process (dev restarts, crashes).
   instance.prepare("UPDATE jobs SET status='queued', updatedAt=? WHERE status='running'").run(new Date().toISOString());
   globalThis.__seamDb = instance;

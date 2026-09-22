@@ -102,6 +102,12 @@ export const Users = {
   },
   get: (id: string) => get<User>("users", id),
   byEmail: (email: string) => find<User>("users", "email=?", [email.toLowerCase()], "createdAt ASC", 1)[0],
+  byGoogleSub: (sub: string) => find<User>("users", "googleSub=?", [sub], "createdAt ASC", 1)[0],
+  /** A Google sign-up: the address is already confirmed by Google and there is no password. */
+  createGoogleAccount(email: string, googleSub: string): User {
+    const t = now();
+    return insert<User>("users", { id: newId("usr"), createdAt: t, email: email.toLowerCase(), passwordHash: null, emailVerifiedAt: t, googleSub, credits: FREE_TRIAL_CREDITS, plan: "free", stripeCustomerId: null, updatedAt: t });
+  },
   createAccount(email: string, passwordHash: string): User {
     return insert<User>("users", { id: newId("usr"), createdAt: now(), email: email.toLowerCase(), passwordHash, emailVerifiedAt: null, credits: FREE_TRIAL_CREDITS, plan: "free", stripeCustomerId: null, updatedAt: now() });
   },
