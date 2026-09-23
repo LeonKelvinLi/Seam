@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { GoogleButton } from "@/components/GoogleButton";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "@/lib/api";
 import type { HistoryPage } from "@/lib/server/history";
@@ -31,7 +32,7 @@ export function GenerationHistory() {
         <Link href="/create" className="btn btn-primary">Create transition <span aria-hidden="true">↗</span></Link>
       </div>
     </div>
-    {page?.isGuest && <p className="mb-7 text-sm muted">Showing footage from this browser. <Link href="/signup" className="text-[var(--accent)] underline underline-offset-4">Create an account</Link> to keep it with you.</p>}
+    {page?.isGuest && <div className="mb-7 flex flex-wrap items-center gap-3 text-sm muted"><span>Showing footage from this browser. Sign in to keep it with you:</span><GoogleButton next="/history" size="sm" /><Link href="/signup?next=%2Fhistory" className="text-[var(--accent)] underline underline-offset-4">Create an account</Link></div>}
     {error && <div role="alert" className="mb-6 rounded-lg border border-[var(--hair)] p-4"><p>{error}</p><button className="btn btn-ghost btn-sm mt-3" onClick={() => void load(failedCursor.current)} disabled={loading}>Try again</button></div>}
     {loading && !page && <p role="status" className="py-16 muted">Loading your footage…</p>}
     {page && page.generations.length === 0 && !loading && !error && <div className="history-empty">

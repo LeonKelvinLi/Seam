@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
+import { GoogleButton, useHere } from "@/components/GoogleButton";
 
 interface Pack { id: string; name: string; credits: number; priceUsd: number; blurb: string }
 interface Me { user: { email: string | null; credits: number } | null; packs: Pack[]; billing: { checkout: boolean; links: string[] } }
@@ -15,8 +16,9 @@ export function Paywall({ freeRuns }: { freeRuns: number }) {
   const [error, setError] = useState<string | null>(null);
   useEffect(() => { api<Me>("/api/auth/me").then(setMe).catch(() => {}); }, []);
   const guest = !me?.user?.email;
+  const here = useHere();
   const buy = async (pack: Pack) => {
-    if (guest) { router.push(`/signup?next=${encodeURIComponent("/pricing")}`); return; }
+    if (guest) { router.push(`/signup?next=${encodeURIComponent(here)}`); return; }
     setBusy(pack.id); setError(null);
     try { const r = await api<{ url: string }>("/api/stripe/checkout", { method: "POST", json: { pack: pack.id } }); window.location.href = r.url; }
     catch (e) { setError((e as Error).message); setBusy(null); }
@@ -25,7 +27,13 @@ export function Paywall({ freeRuns }: { freeRuns: number }) {
     <section className="mt-6 rounded-2xl border border-white/10 bg-white/[0.03] p-6" aria-live="polite">
       <p className="mono text-xs muted">Free trial used</p>
       <h2 className="display text-2xl mt-1">Your {freeRuns} free runs are done.</h2>
-      <p className="mt-2 muted text-sm">{guest ? "Create an account to keep this project and buy credits. Two credits per preview transition." : "Add a credit pack to keep generating. Credits never expire."}</p>
+      <p className="mt-2 muted text-sm">{guest ? "Sign in to keep this project and buy credits. Two credits per preview transition." : "Add a credit pack to keep generating. Credits never expire."}</p>
+      {guest && me && (
+        <div className="mt-5 flex flex-wrap items-center gap-3">
+          <GoogleButton next={here} />
+          <Link href={`/signup?next=${encodeURIComponent(here)}`} className="btn btn-ghost btn-sm">Sign up with email</Link>
+        </div>
+      )}
       <div className="mt-5 grid gap-3 sm:grid-cols-3">
         {(me?.packs ?? []).map((p) => (
           <button key={p.id} type="button" disabled={busy !== null} onClick={() => buy(p)} className="rounded-xl border border-white/10 p-4 text-left hover:border-white/30 disabled:opacity-60">
@@ -37,7 +45,7 @@ export function Paywall({ freeRuns }: { freeRuns: number }) {
         ))}
       </div>
       {error && <p className="mt-3 text-sm text-red-300">{error}</p>}
-      <p className="mt-4 text-xs muted"><Link href="/pricing" className="underline">Compare packs</Link>{guest && <> · <Link href="/login" className="underline">Already have an account? Sign in</Link></>}</p>
+      <p className="mt-4 text-xs muted"><Link href="/pricing" className="underline">Compare packs</Link>{guest && <> · <Link href={`/login?next=${encodeURIComponent(here)}`} className="underline">Already have an account? Sign in</Link></>}</p>
     </section>
   );
 }

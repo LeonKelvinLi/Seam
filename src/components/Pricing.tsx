@@ -1,7 +1,9 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { api } from "@/lib/api";
+import { GoogleButton } from "@/components/GoogleButton";
 
 interface Pack { id: string; name: string; credits: number; priceUsd: number; blurb: string }
 interface Me { user: { email: string | null; credits: number } | null; packs: Pack[]; billing: { checkout: boolean; links: string[]; webhook: boolean } }
@@ -23,6 +25,13 @@ export function Pricing() {
     <div className="mx-auto max-w-5xl px-5 pb-20 pt-12">
       <h1 className="display text-4xl">Credits, not subscriptions.</h1>
       <p className="mt-3 muted max-w-xl">A preview transition costs 2 credits and a final-quality render 6. Credits never expire.</p>
+      {me && !me.user && (
+        <div className="mt-6 flex flex-wrap items-center gap-3 text-sm">
+          <span className="muted">Sign in to buy:</span>
+          <GoogleButton next="/pricing" />
+          <Link href="/signup?next=%2Fpricing" className="underline">or use email</Link>
+        </div>
+      )}
       <div className="mt-10 grid gap-4 md:grid-cols-3">
         {(me?.packs ?? []).map((p) => (
           <div key={p.id} className="hair rounded-2xl p-6 flex flex-col">
