@@ -1,0 +1,244 @@
+{
+  "id": "clipmelt-ugc-rails-916",
+  "timeline": "breakdown",
+  "width": 1080,
+  "height": 1920,
+  "fps": 30,
+  "duration": 20.0,
+  "clipWidth": 1080,
+  "loudness": -13,
+  "clips": {
+    "full": {
+      "src": "data/ads/real/ugc_rails_full.mp4"
+    },
+    "slow": {
+      "src": "data/ads/real/ugc_rails_slow100.mp4",
+      "fps": 100
+    }
+  },
+  "marks": {
+    "split": 0,
+    "play": 2.2,
+    "rewind": 6.0,
+    "slow": 6.45,
+    "card": 14.45,
+    "outro": 17.7
+  },
+  "splitA": 4.3,
+  "splitB": 9.3,
+  "play": [
+    5.3,
+    9.1
+  ],
+  "slow": [
+    6.9,
+    9.24
+  ],
+  "ai": [
+    7.35,
+    8.75
+  ],
+  "callouts": [
+    {
+      "text": "real coaster footage",
+      "from": 6.9,
+      "to": 7.35
+    },
+    {
+      "text": "here the AI takes over",
+      "from": 7.35,
+      "to": 7.9
+    },
+    {
+      "text": "it dives down the coaster track",
+      "from": 7.9,
+      "to": 8.4
+    },
+    {
+      "text": "and turns it into subway rails",
+      "from": 8.4,
+      "to": 8.75
+    },
+    {
+      "text": "cartoon starts. zero cuts.",
+      "from": 8.75,
+      "to": 9.3
+    }
+  ],
+  "captions": [
+    {
+      "text": "these 2 clips have<br>nothing in common",
+      "from": 0,
+      "to": 2.2,
+      "cy": 960.0
+    },
+    {
+      "text": "I asked AI to connect them",
+      "from": 2.2,
+      "to": 3.6,
+      "cy": 420
+    },
+    {
+      "text": "watch the rails",
+      "from": 3.6,
+      "to": 6.0,
+      "cy": 420
+    },
+    {
+      "text": "wait. slow it down.",
+      "from": 6.0,
+      "to": 6.5,
+      "cy": 420
+    }
+  ],
+  "card": {
+    "title": "WHAT CLIPMELT FOUND",
+    "rows": [
+      [
+        "CLIP 1",
+        "coaster track"
+      ],
+      [
+        "CLIP 2",
+        "subway rails"
+      ],
+      [
+        "THE LINK",
+        "rails"
+      ],
+      [
+        "THE SHOT",
+        "dive down the rails"
+      ]
+    ],
+    "footer": "2 clips in. 1 impossible shot out. No editing."
+  },
+  "images": {
+    "mark": "public/brand/seamcut-mark-1024.png"
+  },
+  "copy": {
+    "brand": "Clipmelt",
+    "url": "clipmelt.com",
+    "outroLine": "your first transition is free"
+  },
+  "music": {
+    "src": "data/ads/music/track_c.wav",
+    "muffle": [
+      {
+        "from": 6.0,
+        "to": 14.45,
+        "ramp": 0.3
+      }
+    ],
+    "segments": [
+      {
+        "from": 36.2,
+        "at": 0,
+        "dur": 2.2,
+        "fadeIn": 0.01,
+        "fadeOut": 0.05
+      },
+      {
+        "from": 38.4,
+        "at": 2.2,
+        "dur": 3.8,
+        "gainDb": -9,
+        "fadeIn": 0.05,
+        "fadeOut": 0.05
+      },
+      {
+        "src": "data/ads/real/ugc_rails_full.mp4",
+        "from": 5.3,
+        "at": 2.2,
+        "dur": 3.8,
+        "gainDb": 2,
+        "fadeIn": 0.15,
+        "fadeOut": 0.25
+      },
+      {
+        "from": 42.2,
+        "at": 6.0,
+        "dur": 11.7,
+        "fadeIn": 0.05,
+        "fadeOut": 0.12
+      }
+    ]
+  },
+  "sfx": [
+    {
+      "kind": "glitch",
+      "at": 6.0,
+      "gainDb": -6
+    },
+    {
+      "kind": "whoosh",
+      "at": 6.0,
+      "gainDb": -8
+    },
+    {
+      "kind": "swell",
+      "at": 6.5,
+      "gainDb": -12
+    },
+    {
+      "kind": "whoosh_long",
+      "at": 7.8,
+      "gainDb": -10
+    },
+    {
+      "kind": "sub",
+      "at": 12.7,
+      "gainDb": -8
+    },
+    {
+      "kind": "tap",
+      "at": 14.8,
+      "gainDb": -14
+    },
+    {
+      "kind": "tap",
+      "at": 15.22,
+      "gainDb": -14
+    },
+    {
+      "kind": "tap",
+      "at": 15.64,
+      "gainDb": -14
+    },
+    {
+      "kind": "tap",
+      "at": 16.06,
+      "gainDb": -12
+    },
+    {
+      "kind": "glitch",
+      "at": 17.7,
+      "gainDb": -2
+    },
+    {
+      "kind": "sting",
+      "at": 17.778,
+      "gainDb": 6
+    },
+    {
+      "kind": "sub",
+      "at": 17.778,
+      "gainDb": -6
+    },
+    {
+      "kind": "glitch",
+      "at": 18.2,
+      "gainDb": -6
+    },
+    {
+      "kind": "glitch",
+      "at": 18.44,
+      "gainDb": -8
+    },
+    {
+      "kind": "glitch",
+      "at": 19.32,
+      "gainDb": -8
+    }
+  ]
+}
