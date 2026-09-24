@@ -46,6 +46,8 @@ video, img { display: block; max-width: 100%; }
 .site-wordmark-period { color: var(--accent); margin-left: -9px; }
 .site-nav-label { margin-left: auto; margin-right: auto; color: var(--muted); text-transform: uppercase; font-size: 9px; letter-spacing: .14em; }
 .site-nav-actions { display: flex; align-items: center; gap: 30px; }
+.nav-account { gap: 10px; }
+.nav-credit-balance { border-left: 1px solid var(--hair); padding-left: 10px; color: var(--accent); font-variant-numeric: tabular-nums; }
 .site-nav-link { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; min-width: 44px; font-size: 12px; color: #c2c2b7; transition: color 160ms; }
 .site-nav-link:hover { color: var(--accent); }
 .site-footer { display: grid; grid-template-columns: 1fr 1.5fr 1fr auto; align-items: center; gap: 40px; border-top: 1px solid var(--hair); padding: 54px clamp(20px,4.2vw,80px); font-size: 12px; }
@@ -70,6 +72,47 @@ video, img { display: block; max-width: 100%; }
 .btn-ghost { border: 1px solid var(--hair); color: var(--fg); background: rgba(236,236,226,.015); }
 .btn-ghost:hover:not(:disabled) { background: rgba(236,236,226,.065); border-color: rgba(236,236,226,.3); }
 .btn-sm { min-height: 36px; padding: 0 15px; font-size: 12px; }
+
+/* The account entrance uses the same real footage and quiet controls as the studio. */
+.auth-shell { max-width: 1140px; margin: 0 auto; padding: 88px 32px 100px; display: grid; grid-template-columns: minmax(0,1.15fr) minmax(0,1fr); align-items: center; gap: 100px; }
+.auth-story h2 { font-size: clamp(42px,4.5vw,64px); }
+.auth-story > p { max-width: 350px; margin-top: 22px; font-size: 16px; line-height: 1.7; color: var(--muted); }
+.auth-filmstrip { display: grid; grid-template-columns: 1fr 28px 1fr; align-items: center; gap: 8px; margin-top: 38px; }
+.auth-filmstrip figure { min-width: 0; margin: 0; }
+.auth-filmstrip img { width: 100%; aspect-ratio: 1.4; height: auto; object-fit: cover; border-radius: 7px; }
+.auth-filmstrip figcaption { margin-top: 10px; font-size: 12px; color: var(--muted); }
+.auth-bridge { font-size: 24px; color: var(--accent); text-align: center; margin-top: -25px; }
+.auth-example-link { display: inline-flex; align-items: center; gap: 12px; min-height: 44px; margin-top: 16px; font-size: 13px; }
+.auth-panel { min-width: 0; }
+.auth-panel h1 { font-size: clamp(30px,3vw,39px); line-height: 1.1; }
+.auth-intro { margin-top: 14px; max-width: 360px; font-size: 14px; color: var(--muted); line-height: 1.6; }
+.auth-google { margin-top: 30px; min-height: 48px; }
+.auth-divider { display: flex; align-items: center; gap: 14px; margin: 24px 0; color: var(--muted); font-size: 12px; }
+.auth-divider::before,.auth-divider::after { content: ""; flex: 1; height: 1px; background: var(--hair); }
+.auth-form { display: flex; flex-direction: column; gap: 9px; margin-top: 24px; }
+.auth-form label { font-size: 13px; }
+.auth-form input { width: 100%; min-height: 48px; border: 1px solid var(--hair); border-radius: 7px; padding: 12px 14px; background: var(--bg-2); color: var(--fg); font-size: 16px; }
+.auth-form input::placeholder { color: #87877e; }
+.auth-password-label { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 9px; }
+.auth-password-label a { font-size: 12px; color: var(--muted); text-decoration: underline; text-underline-offset: 3px; }
+.auth-form .btn { min-height: 48px; margin-top: 12px; }
+.auth-error { margin-top: 4px; font-size: 13px; color: var(--accent); }
+.auth-switch { margin-top: 24px; font-size: 13px; color: var(--muted); }
+.auth-switch a { color: var(--fg); text-decoration: underline; text-underline-offset: 4px; }
+.auth-guest { display: inline-flex; gap: 12px; align-items: center; min-height: 44px; margin-top: 14px; font-size: 12px; color: var(--muted); }
+.auth-panel a:hover,.auth-example-link:hover { color: var(--accent); }
+@media (max-width: 1100px) {
+  .site-nav-label { display: none; }
+  .site-nav-actions { gap: 20px; }
+  .auth-shell { gap: 55px; }
+}
+@media (max-width: 760px) {
+  .auth-shell { display: flex; flex-direction: column-reverse; align-items: stretch; max-width: 480px; padding: 42px 24px 60px; gap: 48px; }
+  .auth-story { border-top: 1px solid var(--hair); padding-top: 32px; }
+  .auth-story h2 { font-size: 36px; }
+  .auth-story > p { margin-top: 16px; font-size: 14px; }
+  .auth-filmstrip { margin-top: 24px; }
+}
 
 .frame { position: relative; overflow: hidden; border-radius: 10px; background: var(--bg-2); }
 .frame::after { content: ""; position: absolute; inset: 0; pointer-events: none; border-radius: inherit; box-shadow: inset 0 0 0 1px var(--hair); }
@@ -197,6 +240,7 @@ input[type="range"]::-moz-range-thumb { width: 10px; height: 10px; border-radius
   .chip { min-height: 44px; font-size: 13px; }
   .seg button { min-height: 44px; font-size: 13px; }
   .site-nav-label { display: none; }
+  .site-library-link { display: none; }
   .site-footer { grid-template-columns: 1fr 1.5fr 1fr; gap: 30px; }
   .site-footer-note { display: none; }
   .studio-intro { align-items: flex-start; flex-direction: column; gap: 20px; }
@@ -214,10 +258,11 @@ input[type="range"]::-moz-range-thumb { width: 10px; height: 10px; border-radius
   .site-nav { gap: 10px; padding-left: max(16px,env(safe-area-inset-left)); padding-right: max(16px,env(safe-area-inset-right)); }
   .site-wordmark { font-size: 26px; gap: 7px; }
   .site-mark { width: 23px; height: 23px; }
-  .site-nav-actions { gap: 10px; }
+  .site-nav-actions { gap: 8px; }
   .site-nav-link { font-size: 0; }
   .site-nav-link::after { content: attr(data-mobile-label); font-size: 13px; }
-  .site-library-link { display: none; }
+  .site-library-link,.site-history-link { display: none; }
+  .nav-credit-label { display: none; }
   .history-heading { align-items: flex-start; flex-direction: column; }
   .site-nav .btn-sm { min-height: 44px; padding: 0 12px; gap: 8px; font-size: 13px; }
   .site-footer { grid-template-columns: 1fr 1fr; gap: 20px; padding-top: 32px; padding-bottom: calc(32px + env(safe-area-inset-bottom)); }
@@ -263,6 +308,14 @@ input[type="range"]::-moz-range-thumb { width: 10px; height: 10px; border-radius
   .studio-shell .seg button { flex: 1; padding-left: 10px; padding-right: 10px; }
   .recipe-details > div > div:first-child { font-size: 20px; }
   .recipe-details .muted { line-height: 1.6; }
+}
+
+@media (max-width: 380px) {
+  .site-wordmark { font-size: 23px; }
+  .site-mark { display: none; }
+  .site-nav .btn-sm { padding: 0 10px; }
+  .site-nav .nav-account { gap: 7px; }
+  .nav-credit-balance { display: none; }
 }
 
 @keyframes pulse { 0%,100% { opacity: .35; } 50% { opacity: 1; } }

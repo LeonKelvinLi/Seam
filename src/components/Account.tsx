@@ -12,7 +12,7 @@ export function Account() {
   const [me, setMe] = useState<Me | null>(null);
   useEffect(() => { api<Me>("/api/auth/me").then((m) => { if (!m.user) router.replace("/login?next=/account"); else setMe(m); }).catch(() => {}); }, [router]);
   if (!me?.user) return null;
-  const logout = async () => { await api("/api/auth/logout", { method: "POST", json: {} }); router.push("/"); router.refresh(); };
+  const logout = async () => { await api("/api/auth/logout", { method: "POST", json: {} }); window.dispatchEvent(new Event("clipmelt:account-updated")); router.push("/"); router.refresh(); };
   return (
     <div className="mx-auto max-w-3xl px-5 pb-20 pt-12">
       {params.get("paid") && <div className="mb-6 rounded-xl px-4 py-3 text-sm" style={{ background: "rgba(255,106,61,0.12)", border: "1px solid rgba(255,106,61,0.3)" }}>Payment received. Credits land as soon as Stripe confirms, usually within seconds.</div>}

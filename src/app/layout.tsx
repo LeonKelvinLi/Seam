@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import "./globals.css";
 import { publicOrigin } from "@/lib/server/site";
+import { NavUser } from "@/components/NavUser";
 
 const description = "Keep your footage. Generate only the transition between your shots.";
 export const metadata: Metadata = {
@@ -29,7 +30,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <span className="site-nav-label mono">AI transition studio</span>
             <div className="site-nav-actions">
               <Link href="/library" className="site-nav-link site-library-link" data-mobile-label="Library">See what Clipmelt makes</Link>
-              <Link href="/history" className="site-nav-link" data-mobile-label="History">Your footage</Link>
+              <Link href="/history" className="site-nav-link site-history-link" data-mobile-label="History">Your footage</Link>
+              <NavUser />
               <Link href="/create" className="btn btn-primary btn-sm">Open studio <span aria-hidden="true">↗</span></Link>
             </div>
           </nav>
@@ -38,7 +40,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <footer className="site-footer">
           <Link href="/" className="site-footer-brand">Clipmelt</Link>
           <p>Two clips. Infinite possibilities.<br /><span className="muted">Footage stays yours.</span></p>
-          <div className="site-footer-links"><Link href="/library">See what Clipmelt makes ↗</Link><Link href="/create">Open studio ↗</Link><Link href="/pricing">Pricing</Link><Link href="/terms">Terms</Link><Link href="/privacy">Privacy</Link><Link href="/refunds">Refunds</Link></div>
+          <div className="site-footer-links"><Link href="/library">See what Clipmelt makes ↗</Link><Link href="/create">Open studio ↗</Link><Link href="/account">Your account</Link><Link href="/login">Log in</Link><Link href="/pricing">Pricing</Link><Link href="/terms">Terms</Link><Link href="/privacy">Privacy</Link><Link href="/refunds">Refunds</Link></div>
           <span className="site-footer-note mono">FRAME A → FRAME B</span>
         </footer>
       </body>
