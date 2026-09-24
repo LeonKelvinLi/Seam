@@ -29,7 +29,7 @@ test("the campaign funnel counts each visitor once per step and sums purchases",
   Events.track("upload_completed", { userId: ids[1] });
   Events.track("generation_succeeded", { userId: ids[0] });
   Events.track("purchase", { userId: ids[0] });
-  Purchases.record({ userId: ids[0], provider: "stripe", externalId: "cs_attr_1", pack: "starter", amountCents: 900, currency: "usd", credits: 30 });
+  Purchases.record({ userId: ids[0], provider: "stripe", externalId: "cs_attr_1", pack: "starter", amountCents: 900, currency: "usd", credits: 12 });
   const row = (computeMetrics().byCampaign as Record<string, unknown>[]).find((r) => r.content === "creativeC");
   assert.ok(row, "campaign row present");
   assert.equal(row.visitors, 3);

@@ -1,8 +1,8 @@
 /**
  * Production flow test, run against any base URL (local `next start` or the live service):
  *   upload two clips as a fresh guest → boundary frames (last frame of A, first frame of B) → analysis →
- *   a clip over 10 MB uploads → three free transition runs → every run still ready once its fan-out siblings land →
- *   fourth run refused with 402 → balance is zero.
+ *   a clip over 10 MB uploads → the free transition run → the run is still ready once any fan-out sibling lands →
+ *   second run refused with 402 → balance is zero.
  *
  *   E2E_BASE_URL=https://seamcut.onrender.com npx tsx scripts/e2e.ts
  *
@@ -15,7 +15,7 @@ import os from "node:os";
 import path from "node:path";
 
 const BASE = (process.env.E2E_BASE_URL ?? "http://localhost:3000").replace(/\/$/, "");
-const FREE_RUNS = Number(process.env.E2E_FREE_RUNS ?? 3);
+const FREE_RUNS = Number(process.env.E2E_FREE_RUNS ?? 1);
 const RUNS = Number(process.env.E2E_RUNS ?? FREE_RUNS);
 const A = process.env.E2E_CLIP_A ?? path.join(process.cwd(), "public/samples/coffee-ocean-a.mp4");
 const B = process.env.E2E_CLIP_B ?? path.join(process.cwd(), "public/samples/coffee-ocean-b.mp4");

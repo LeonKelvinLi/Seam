@@ -90,8 +90,8 @@ export function remove(table: Table, where: string, params: unknown[] = []): voi
 
 /* ---------- Convenience accessors ---------- */
 
-/** Free trial: every new account or guest can run this many preview transitions before buying credits. */
-export const FREE_TRIAL_RUNS = 3;
+/** Free trial: one preview transition per person. A guest who signs up keeps the same trial rather than a second one. */
+export const FREE_TRIAL_RUNS = 1;
 /** Credits granted at sign-up: the trial runs at the preview price (2 credits, see CREDITS_PER_GENERATION). */
 export const FREE_TRIAL_CREDITS = FREE_TRIAL_RUNS * 2;
 
@@ -123,6 +123,13 @@ export const Users = {
   adopt(guestId: string, userId: string) {
     if (guestId === userId) return;
     for (const t of ["projects", "events"]) db().prepare(`UPDATE ${t} SET userId=? WHERE userId=?`).run(userId, guestId);
+    // One free trial per person: an account that never paid keeps the smaller of its own and the guest's balance, so
+    // signing up after spending the guest trial does not hand out a second one. Bought credits always move across.
+    const guestPaid = Purchases.forUser(guestId).length > 0;
+    const accountPaid = Purchases.forUser(userId).length > 0;
+    if (guestPaid) db().prepare("UPDATE users SET credits=credits+(SELECT credits FROM users WHERE id=?) WHERE id=?").run(guestId, userId);
+    else if (!accountPaid) db().prepare("UPDATE users SET credits=MIN(credits, (SELECT credits FROM users WHERE id=?)) WHERE id=?").run(guestId, userId);
+    db().prepare("UPDATE users SET credits=0 WHERE id=?").run(guestId);
     // Keep the guest's first touch so a signup still credits the campaign or creator that brought them.
     db().prepare("UPDATE users SET firstTouch=(SELECT firstTouch FROM users WHERE id=?) WHERE id=? AND firstTouch IS NULL").run(guestId, userId);
   },

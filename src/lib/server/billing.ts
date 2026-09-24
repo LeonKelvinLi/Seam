@@ -14,12 +14,27 @@ const env = (k: string) => (process.env[k] ?? "").trim();
 
 export interface Pack { id: "starter" | "pro" | "studio"; name: string; credits: number; priceUsd: number; blurb: string }
 export const PACKS: Pack[] = [
-  // Credit maths (2026-09-09): a preview costs 2 credits and one accepted AI preview costs us roughly $0.36-0.42 in
-  // provider and judge fees, so every pack must clear about $0.45 per preview. Starter $0.60, Pro $0.48, Studio $0.45.
-  { id: "starter", name: "Starter", credits: 30, priceUsd: 9, blurb: "15 preview transitions. Enough for a week of Reels." },
-  { id: "pro", name: "Pro", credits: 120, priceUsd: 29, blurb: "60 previews, or 20 final-quality renders." },
-  { id: "studio", name: "Studio", credits: 400, priceUsd: 89, blurb: "200 previews for teams and agencies." },
+  // Credit maths (2026-09-24): a preview costs 2 credits. Measured on production, an accepted preview costs about
+  // $0.40-0.60 in provider and judge fees, and Stripe keeps 2.9% + $0.30. At $1.50 / $1.32 / $1.16 per preview every
+  // pack keeps roughly 50-65% gross margin even when all of its credits are used.
+  { id: "starter", name: "Starter", credits: 12, priceUsd: 9, blurb: "6 AI transitions. Try it on your next Reel." },
+  { id: "pro", name: "Pro", credits: 44, priceUsd: 29, blurb: "22 transitions, or 7 final-quality renders." },
+  { id: "studio", name: "Studio", credits: 170, priceUsd: 99, blurb: "85 transitions for teams and agencies." },
 ];
+/** Packs sold before the 2026-09-24 repricing. A checkout opened on an old link can still complete, and must still be credited. */
+const LEGACY_PACKS: Pack[] = [
+  { id: "starter", name: "Starter", credits: 30, priceUsd: 9, blurb: "" },
+  { id: "pro", name: "Pro", credits: 120, priceUsd: 29, blurb: "" },
+  { id: "studio", name: "Studio", credits: 400, priceUsd: 89, blurb: "" },
+];
+
+/** The pack a completed checkout paid for: pack id, amount and credit count must all agree with one sold pack. */
+export function packForCheckout(amountCents: number | null, metaPack?: string, metaCredits?: string): Pack | undefined {
+  const credits = metaCredits ? Number(metaCredits) : undefined;
+  const matches = (p: Pack) => Math.round(p.priceUsd * 100) === amountCents && (!metaPack || p.id === metaPack) && (credits === undefined || p.credits === credits);
+  // Without a credit count in the metadata only the current packs are trusted; old links always carried one.
+  return PACKS.find(matches) ?? (credits !== undefined ? LEGACY_PACKS.find(matches) : undefined);
+}
 export const CREDITS_PER_GENERATION: Record<"preview" | "final", number> = { preview: 2, final: 6 };
 
 let stripeClient: Stripe | null = null;
@@ -106,13 +121,8 @@ export function handleWebhook(rawBody: string, signature: string | null): { ok: 
   if (session.payment_status !== "paid") return { ok: true, message: "awaiting payment" };
   const userId = session.client_reference_id ?? session.metadata?.userId ?? null;
   if (!userId || !Users.get(userId)) return { ok: true, message: "no matching user" };
-  const pack = session.metadata?.pack
-    ? PACKS.find((p) => p.id === session.metadata?.pack)
-    : PACKS.find((p) => Math.round(p.priceUsd * 100) === session.amount_total);
-  if (!pack || session.currency !== "usd" || session.amount_total !== Math.round(pack.priceUsd * 100)
-    || (session.metadata?.credits && Number(session.metadata.credits) !== pack.credits)) {
-    return { ok: false, message: "unrecognized credit purchase" };
-  }
+  const pack = packForCheckout(session.amount_total, session.metadata?.pack, session.metadata?.credits);
+  if (!pack || session.currency !== "usd") return { ok: false, message: "unrecognized credit purchase" };
   const paymentId = objectId(session.payment_intent);
   if (!paymentId) return { ok: false, message: "missing payment intent" };
   return db().transaction(() => {

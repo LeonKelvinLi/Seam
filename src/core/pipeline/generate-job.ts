@@ -5,7 +5,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { config } from "@/core/config";
 import { logger } from "@/core/log";
-import { Assets, Attempts, Costs, Events, Exports, Frames, Generations, Opportunities, PairAnalyses, Projects, Quality, Users, VisualAnalyses } from "@/db/repo";
+import { Assets, Attempts, Costs, Events, Exports, Frames, Generations, Opportunities, PairAnalyses, Projects, Purchases, Quality, Users, VisualAnalyses } from "@/db/repo";
 import { CREDITS_PER_GENERATION } from "@/lib/server/billing";
 import { normalizeBridge, poster, probe, stitch, trimClip, type FrameSpec } from "@/core/media/ffmpeg";
 import { storage } from "@/core/media/storage";
@@ -247,10 +247,11 @@ export async function runGenerateJob(job: Job, report: Reporter, judge = judgeTr
     };
 
     let attemptNo = 0;
+    const paidCustomer = Purchases.forUser(project.userId).length > 0;
     while (attemptNo < maxAttempts) {
       const learned = learnedModelQuality([recipe.id]);
       const measured = AttemptRows.modelStats();
-      const overBudget = budgetExhausted();
+      const overBudget = budgetExhausted(paidCustomer);
       if (overBudget && !proceduralAllowed()) throw new GenerationStopped(FRIENDLY_BUSY, "daily provider budget reached");
       if (overBudget && attemptNo === 0) log.warn("daily provider budget reached; using the procedural bridge", { gen: gen.id });
       // The last attempt on a pair the cheap models could not bridge goes to the strongest model for the class, whatever

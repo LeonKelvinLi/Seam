@@ -27,7 +27,7 @@ export function Paywall({ freeRuns }: { freeRuns: number }) {
   return (
     <section className="mt-6 rounded-2xl border border-white/10 bg-white/[0.03] p-6" aria-live="polite">
       <p className="mono text-xs muted">Free trial used</p>
-      <h2 className="display text-2xl mt-1">Your {freeRuns} free runs are done.</h2>
+      <h2 className="display text-2xl mt-1">{freeRuns === 1 ? "Your free transition is done." : `Your ${freeRuns} free transitions are done.`}</h2>
       <p className="mt-2 muted text-sm">{guest ? "Sign in to keep this project and buy credits. Two credits per preview transition." : "Add a credit pack to keep generating. Credits never expire."}</p>
       {guest && me && (
         <div className="mt-5 flex flex-wrap items-center gap-3">

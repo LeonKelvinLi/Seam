@@ -1,4 +1,7 @@
-/** Daily provider spend guard: once the day's generation fees pass the budget, the router stays on ffmpeg until midnight UTC. */
+/**
+ * Daily provider spend guard: once the day's generation fees pass the budget, the router stays on ffmpeg until
+ * midnight UTC. Free-trial runs stop at the free budget; customers who have paid run on until the higher paid one.
+ */
 import { config } from "@/core/config";
 import { db } from "@/db/client";
 
@@ -8,10 +11,12 @@ export function providerSpendTodayUsd(now = new Date()): number {
   return row.usd;
 }
 
-export function budgetStatus(now = new Date()): { todayUsd: number; limitUsd: number; exhausted: boolean } {
-  const limitUsd = config.generation.dailyBudgetUsd;
+export function budgetStatus(now = new Date(), paid = false): { todayUsd: number; limitUsd: number; paidLimitUsd: number; exhausted: boolean } {
+  const freeLimit = config.generation.dailyBudgetUsd;
+  const paidLimitUsd = Math.max(freeLimit, config.generation.dailyPaidBudgetUsd);
+  const limitUsd = paid ? paidLimitUsd : freeLimit;
   const todayUsd = providerSpendTodayUsd(now);
-  return { todayUsd: Math.round(todayUsd * 100) / 100, limitUsd, exhausted: limitUsd > 0 && todayUsd >= limitUsd };
+  return { todayUsd: Math.round(todayUsd * 100) / 100, limitUsd: freeLimit, paidLimitUsd, exhausted: limitUsd > 0 && todayUsd >= limitUsd };
 }
 
-export const budgetExhausted = () => budgetStatus().exhausted;
+export const budgetExhausted = (paid = false) => budgetStatus(new Date(), paid).exhausted;

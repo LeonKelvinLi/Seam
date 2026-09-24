@@ -28,9 +28,13 @@ services:
       - key: SEAM_QUALITY_THRESHOLD
         value: "82"
       - key: SEAM_PARALLEL_ATTEMPTS
-        value: "2"
+        value: "1"
       - key: SEAM_DAILY_PROVIDER_BUDGET_USD
         value: "25"
+      - key: SEAM_DAILY_PAID_BUDGET_USD
+        value: "150"
+      - key: SEAM_FAL_LOW_BALANCE_USD
+        value: "15"
       - key: SEAM_VISION_MODEL
         value: gpt-5.4-mini
       - key: SEAM_JUDGE_MODEL
@@ -52,13 +56,13 @@ services:
       - key: STRIPE_PRICE_PRO
         value: price_1UClYRLnwdL8dIyOVdoCCNTH
       - key: STRIPE_PRICE_STUDIO
-        value: price_1UClYTLnwdL8dIyOHJQfG3tx
+        value: price_1UJIdKLnwdL8dIyOopsmq0V1
       - key: STRIPE_LINK_STARTER
         value: https://buy.stripe.com/cNiaEYbeSbuscvvcWe9Zm00
       - key: STRIPE_LINK_PRO
         value: https://buy.stripe.com/3cIfZigzcbus0MNg8q9Zm01
       - key: STRIPE_LINK_STUDIO
-        value: https://buy.stripe.com/6oUeVe1Ei0PO0MN8FY9Zm02
+        value: https://buy.stripe.com/14A4gAgzc1TS7bbaO69Zm03
 # RESEND_API_KEY (+ non-secret SEAM_MAIL_FROM) enables password reset and email confirmation mail.
 # Provider keys (FAL_KEY, RUNWAYML_API_SECRET, HIGGSFIELD_API_KEY_ID + HIGGSFIELD_API_KEY_SECRET, OPENAI_API_KEY) are secrets: add them privately in Render's
 # Environment settings to turn on AI bridges and vision analysis; without them the router stays on local ffmpeg.

@@ -357,7 +357,7 @@ export function CreateFlow({ styles }: { styles: { id: string; name: string; nee
       )}
 
       {error && !needCredits && <Notice>{error}</Notice>}
-      {needCredits && <Paywall freeRuns={3} />}
+      {needCredits && <Paywall freeRuns={1} />}
     </div>
   );
 }
