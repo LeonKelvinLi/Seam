@@ -92,7 +92,10 @@ export function CreateFlow({ styles }: { styles: { id: string; name: string; nee
         try { new Notification("Your transition is ready", { body: r.generation.title ?? "Open Clipmelt to watch it." }); } catch { /* notifications unavailable */ }
       }
       setGen(r.generation);
-      if (r.generation.status === "ready" || r.generation.status === "failed") api<ProjectView>(`/api/projects/${r.generation.projectId}`).then(setView).catch(() => {});
+      if (r.generation.status === "ready" || r.generation.status === "failed") {
+        window.dispatchEvent(new Event("clipmelt:account-updated"));
+        api<ProjectView>(`/api/projects/${r.generation.projectId}`).then(setView).catch(() => {});
+      }
     }).catch(() => {}), 1500);
     return () => clearInterval(t);
   }, [phase, gen]);
@@ -114,6 +117,7 @@ export function CreateFlow({ styles }: { styles: { id: string; name: string; nee
     setBusy(true); setError(null); setShowFineTune(false); setVideoMode("full");
     try {
       const r = await api<{ generation: GenerationView }>(`/api/projects/${projectId}/generate`, { method: "POST", json: body });
+      window.dispatchEvent(new Event("clipmelt:account-updated"));
       setGen(r.generation);
       setFineTune(r.generation.fineTune);
       setUrl(projectId, r.generation.id);
