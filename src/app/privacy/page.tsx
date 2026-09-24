@@ -6,7 +6,7 @@ export default function PrivacyPage() {
       <Section heading="What we collect">
         <p><strong>Account data:</strong> your email address and a salted hash of your password. Guests get a random identifier stored in a cookie.</p>
         <p><strong>Content:</strong> the clips and images you upload, frames extracted from them, generated bridges and exports.</p>
-        <p><strong>Usage and billing:</strong> which features you use, generation outcomes and quality scores, credit balance, and purchase records. Card details are handled by Stripe and never reach our servers.</p>
+        <p><strong>Usage and billing:</strong> which link or site first brought you here (campaign tags, referring site, landing page), which features you use, generation outcomes and quality scores, credit balance, and purchase records. Card details are handled by Stripe and never reach our servers.</p>
         <p><strong>Technical:</strong> IP address and browser type in request logs, kept briefly for security and abuse prevention.</p>
       </Section>
       <Section heading="Why we process it">

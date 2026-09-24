@@ -45,7 +45,7 @@ window.timeline = function (t, R) {
     media("mark", "img:mark", 0, { x: cx - 140, y: cy - 200 - 140, w: 280, h: 280 }, { fit: "contain", s: k(0.1), opacity: clamp(k(0.1)), dropShadow: `drop-shadow(0 0 28px ${LIME}88)`, z: 8 });
     text("word", copy.brand || "Clipmelt", { x: 0, w: W, cy: cy + 60, size: 170, weight: 800, ls: -0.045, s: k(0.16), opacity: clamp(k(0.16)), z: 8 });
     text("tag", copy.tagline || "Two clips. One impossible shot.", { x: 0, w: W, cy: cy + 200, size: 54, weight: 600, ls: -0.02, color: "rgba(244,243,236,0.8)", s: k(0.22), opacity: clamp(k(0.22)), z: 8 });
-    box("pill", { x: cx - 290, y: cy + 320, w: 580, h: 124 }, { bg: LIME, radius: 70, color: "#10140a", font: `800 50px ${R.FONT}`, ls: -0.02, html: copy.pill || "Try 3 free &nbsp;→",
+    box("pill", { x: cx - 290, y: cy + 320, w: 580, h: 124 }, { bg: LIME, radius: 70, color: "#10140a", font: `800 50px ${R.FONT}`, ls: -0.02, html: copy.pill || "Try it free &nbsp;→",
       s: k(0.3), opacity: clamp(k(0.3)), boxShadow: `0 20px 60px ${LIME}40`, z: 8 });
   }
 };

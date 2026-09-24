@@ -225,3 +225,22 @@
   .sourceA { left: 0; }
   .sourceB { right: 0; }
 }
+.heroIntro .sampleLink { display: inline-flex; align-items: center; min-height: 44px; font-size: 12px; color: var(--cream); text-decoration: underline; text-decoration-color: #ecece266; text-underline-offset: 4px; }
+.heroIntro .sampleLink:hover { text-decoration-color: var(--lime); }
+.faq { padding: 80px 6%; background: var(--ink); color: var(--cream); }
+.faqInner { max-width: 1380px; margin-inline: auto; display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1.4fr); gap: 60px; }
+.faq h2 { font-size: clamp(36px,4vw,60px); font-weight: 500; line-height: 1.02; letter-spacing: -.05em; }
+.faq h2 em { font-family: Georgia,serif; font-weight: 400; color: var(--lime); }
+.faqList details { border-top: 1px solid #ffffff22; }
+.faqList details:last-child { border-bottom: 1px solid #ffffff22; }
+.faqList summary { cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center; gap: 16px; min-height: 64px; font-size: 18px; letter-spacing: -.01em; }
+.faqList summary::-webkit-details-marker { display: none; }
+.faqList summary::after { content: "+"; color: var(--lime); font-size: 24px; font-weight: 300; transition: transform .2s; }
+.faqList details[open] summary::after { transform: rotate(45deg); }
+.faqList p { color: #b9bba9; font-size: 15px; line-height: 1.6; padding: 0 40px 22px 0; max-width: 620px; }
+@media (max-width: 760px) {
+  .faq { padding: 56px max(20px,6%); }
+  .faqInner { grid-template-columns: 1fr; gap: 28px; }
+  .faqList summary { font-size: 16px; }
+  .faqList p { padding-right: 0; }
+}

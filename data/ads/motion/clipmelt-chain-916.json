@@ -164,7 +164,7 @@
   "copy": {
     "brand": "Clipmelt",
     "url": "clipmelt.com",
-    "outroLine": "your first 3 transitions are free"
+    "outroLine": "your first transition is free"
   },
   "music": {
     "src": "data/ads/music/track_c.wav",

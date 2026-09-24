@@ -44,7 +44,7 @@
     "title": "same 2 clips.<br>which would you post?",
     "labelLeft": "crossfade",
     "labelRight": "clipmelt",
-    "cta": "clipmelt<br>your first 3 are free"
+    "cta": "clipmelt<br>your first one is free"
   },
   "music": {"src":  "data/ads/music/track_c.wav", "offset":  36.44, "fadeIn":  0.005, "fadeOut":  0.8},
   "sfx": [{"kind":  "whoosh", "at":  4.315, "gainDb":  -18}, {"kind":  "whoosh", "at":  8.87, "gainDb":  -15}],

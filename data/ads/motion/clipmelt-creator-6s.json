@@ -20,7 +20,7 @@
     {"clip":  "bridge1", "from":  0, "to":  5.167},
     {"clip":  "surf", "from":  0, "to":  7.0}
   ],
-  "copy": {"hook1":  "3 clips. 3 different people.", "hook2":  "0 cuts.", "cta":  "clipmelt<br>your first 3 are free"},
+  "copy": {"hook1":  "3 clips. 3 different people.", "hook2":  "0 cuts.", "cta":  "clipmelt<br>your first one is free"},
   "music": {
     "src": "data/ads/music/track_c.wav",
     "segments": [{"from":  35.093, "at":  0, "dur":  5.92, "fadeIn":  0.01, "fadeOut":  0.5}],

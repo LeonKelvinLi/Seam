@@ -47,6 +47,13 @@ function AmbientVideo({ src, poster, enabled }: { src: string; poster: string; e
   return <video ref={ref} poster={poster} muted loop playsInline preload="none" aria-hidden="true"><VideoSources src={src} /></video>;
 }
 
+const FAQ: [string, string][] = [
+  ["How long does it take?", "Usually one to four minutes for a preview. Every transition is checked for quality before you see it."],
+  ["Is my footage mine?", "Yes. Your clips stay real and stay yours. Only the frames needed for your transition go to the AI model that makes it, and guest projects are deleted after 30 days."],
+  ["What does it cost?", "Your first transition is free, no signup. After that, packs start at $9 for 6 transitions, and credits never expire."],
+  ["What if it doesn't work?", "You pay nothing for it. If no transition passes our quality check, the credits go straight back to your balance."],
+];
+
 export function CinematicHome() {
   const root = useRef<HTMLDivElement>(null);
   const hero = useRef<HTMLElement>(null);
@@ -254,13 +261,13 @@ export function CinematicHome() {
   return <div className={styles.home} ref={root} data-motion={motion}>
     <section className={styles.hero} ref={hero}>
       <div className={styles.heroTop}><span className={styles.eyebrow}><i /> YOUR AI TRANSITION DIRECTOR</span><button className={styles.motionToggle} onClick={() => setMotion((value) => !value)} aria-pressed={motion} aria-label={motion ? "Pause page animations" : "Enable page animations"}><span className={styles.motionBars} aria-hidden="true"><i /><i /><i /></span>Motion {motion ? "on" : "off"}</button></div>
-      <div className={styles.heroHeading}><h1>Make the cut.<br /><span>Break reality.</span><sup>↗</sup></h1><div className={styles.heroIntro}><p>Drop two clips. <br />AI makes the shot in between.</p><p className={styles.heroDescription}>Your footage stays real. Clipmelt generates only the transition, checks it, and hands back one clip.</p><Link href="/create" data-cta="hero" className={styles.primaryLink}>Try it free <Arrow /></Link><p className={styles.heroOffer}>1 free transition · no signup · then $9 for 6</p></div></div>
+      <div className={styles.heroHeading}><h1>Make the cut.<br /><span>Break reality.</span><sup>↗</sup></h1><div className={styles.heroIntro}><p>Drop two clips. <br />AI makes the shot in between.</p><p className={styles.heroDescription}>Your footage stays real. Clipmelt generates only the transition, checks it, and hands back one clip.</p><Link href="/create" data-cta="hero" className={styles.primaryLink}>Try it free <Arrow /></Link><p className={styles.heroOffer}>1 free transition · no signup · then $9 for 6</p><Link href="/create?sample=coffee-ocean" data-cta="hero_sample" className={styles.sampleLink}>No clips on hand? Try it with ours</Link></div></div>
       <div className={styles.heroStage}>
         <div className={styles.stageGrid} aria-hidden="true" />
-        <div className={`${styles.sourceCard} ${styles.sourceA}`}><img src="/examples/coffee-ocean/frame_a.jpg" alt="A warm cup of coffee, the opening shot" /><div className={styles.sourceCaption}><span>01 / IN</span><span>The everyday.</span></div></div>
-        <div className={`${styles.sourceCard} ${styles.sourceB}`}><img src="/examples/coffee-ocean/frame_b.jpg" alt="Ocean waves, the destination shot" /><div className={styles.sourceCaption}><span>02 / OUT</span><span>The unexpected.</span></div></div>
-        <div className={styles.mainFilm}><AmbientVideo src="/examples/coffee-ocean/after.mp4" poster="/examples/coffee-ocean/poster.jpg" enabled={motion} /><div className={styles.filmTopline}><span><i /> THE IN-BETWEEN</span><span>BRIDGE — 001</span></div><div className={styles.filmBottomline}><span>Coffee, meet ocean.</span><button onClick={() => { setPlayingFilm("coffee-ocean"); setComparison("after"); track("example_switched", { id: "coffee-ocean" }); }} aria-label="Watch Coffee to Ocean before and after"><Arrow diagonal /></button></div></div>
-        <span className={styles.orbitLabel}><span>✳</span> One seamless connection.</span><div className={styles.timelineTag} aria-hidden="true"><span>CLIP A</span><i /><b>BRIDGE</b><i /><span>CLIP B</span></div>
+        <div className={`${styles.sourceCard} ${styles.sourceA}`}><img src="/examples/coffee-ocean/frame_a.jpg" alt="A warm cup of coffee, the opening shot" /><div className={styles.sourceCaption}><span>CLIP A · REAL</span><span>Your first shot.</span></div></div>
+        <div className={`${styles.sourceCard} ${styles.sourceB}`}><img src="/examples/coffee-ocean/frame_b.jpg" alt="Ocean waves, the destination shot" /><div className={styles.sourceCaption}><span>CLIP B · REAL</span><span>Your next shot.</span></div></div>
+        <div className={styles.mainFilm}><AmbientVideo src="/examples/coffee-ocean/after.mp4" poster="/examples/coffee-ocean/poster.jpg" enabled={motion} /><div className={styles.filmTopline}><span><i /> REAL · AI IN-BETWEEN · REAL</span><span>ONE FINISHED CLIP</span></div><div className={styles.filmBottomline}><span>Coffee, meet ocean.</span><button onClick={() => { setPlayingFilm("coffee-ocean"); setComparison("after"); track("example_switched", { id: "coffee-ocean" }); }} aria-label="Watch Coffee to Ocean before and after"><Arrow diagonal /></button></div></div>
+        <span className={styles.orbitLabel}><span>✳</span> One seamless connection.</span><div className={styles.timelineTag} aria-hidden="true"><span>CLIP A</span><i /><b>AI</b><i /><span>CLIP B</span></div>
       </div>
       <div className={styles.heroBottom}><a href="#explore"><span className={styles.scrollArrow}>↓</span> SCROLL TO CHANGE THE SCENE</a><span>YOUR FOOTAGE. A NEW POINT OF VIEW.</span><span className={styles.coordinates}>ALWAYS IN MOTION ↗</span></div>
     </section>
@@ -280,6 +287,14 @@ export function CinematicHome() {
         <li><span className={styles.stepNumber}>03</span><div><h3>Make the cut.</h3><p>Preview, fine-tune, and export.</p></div></li>
       </ol>
       <div className={styles.processActions}><Link href="/create" className={styles.darkLink}>Open studio <Arrow /></Link><Link href="/library" className={styles.libraryLink}>Explore all transitions <Arrow diagonal /></Link></div>
+    </section>
+    <section id="faq" className={styles.faq} aria-labelledby="faq-heading">
+      <div className={styles.faqInner}>
+        <h2 id="faq-heading">Questions, <em>answered.</em></h2>
+        <div className={styles.faqList}>
+          {FAQ.map(([q, a]) => <details key={q}><summary>{q}</summary><p>{a}</p></details>)}
+        </div>
+      </div>
     </section>
     {playingFilm && <FilmDialog id={playingFilm} mode={comparison} motion={motion} onMode={setComparison} onClose={() => setPlayingFilm(null)} />}
   </div>;

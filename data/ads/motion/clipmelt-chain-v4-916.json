@@ -1,0 +1,290 @@
+{
+  "id": "clipmelt-chain-v4-916",
+  "timeline": "chain",
+  "width": 1080,
+  "height": 1920,
+  "fps": 30,
+  "duration": 14.08,
+  "beat": 0.4555,
+  "clipWidth": 1080,
+  "loudness": -13,
+  "clips": {
+    "cliff": {
+      "src": "data/ads/real/p1_a_cliff.mp4"
+    },
+    "dive": {
+      "src": "data/ads/real/v5_dive.mp4",
+      "fps": 24
+    },
+    "surf": {
+      "src": "data/ads/real/p1_b_surf.mp4"
+    },
+    "envmorph": {
+      "src": "data/ads/real/v4_envmorph_b.mp4",
+      "fps": 24
+    },
+    "skate": {
+      "src": "data/ads/real/p2_b_skate.mp4"
+    },
+    "morph": {
+      "src": "data/ads/real/v3_morph.mp4",
+      "fps": 24
+    },
+    "bmx": {
+      "src": "data/ads/real/bmx_sky_39055942.mp4"
+    }
+  },
+  "reel": [
+    {
+      "clip": "cliff",
+      "from": 0,
+      "to": 2.4
+    },
+    {
+      "clip": "dive",
+      "from": 0,
+      "to": 5.167,
+      "ai": true,
+      "style": "Drone Dive"
+    },
+    {
+      "clip": "surf",
+      "from": 0,
+      "to": 7.0
+    },
+    {
+      "clip": "envmorph",
+      "from": 0,
+      "to": 5.167,
+      "ai": true,
+      "style": "Environment Morph"
+    },
+    {
+      "clip": "skate",
+      "from": 0,
+      "to": 3.3
+    },
+    {
+      "clip": "morph",
+      "from": 0,
+      "to": 5.167,
+      "ai": true,
+      "style": "Object Morph"
+    },
+    {
+      "clip": "bmx",
+      "from": 4.4,
+      "to": 7.3
+    }
+  ],
+  "warp": [
+    [
+      0,
+      1.75
+    ],
+    [
+      1.6,
+      2.4
+    ],
+    [
+      2.4,
+      3.2
+    ],
+    [
+      3.4,
+      3.95
+    ],
+    [
+      4.4,
+      4.8
+    ],
+    [
+      6.4,
+      7.567
+    ],
+    [
+      7.8,
+      9.2
+    ],
+    [
+      8.6,
+      13.4
+    ],
+    [
+      9.8,
+      14.567
+    ],
+    [
+      11.2,
+      16.567
+    ],
+    [
+      13.5,
+      17.867
+    ],
+    [
+      15.3,
+      19.734
+    ],
+    [
+      16.1,
+      21.367
+    ],
+    [
+      17.9,
+      23.034
+    ],
+    [
+      18.9,
+      23.967
+    ],
+    [
+      20.9,
+      25.367
+    ],
+    [
+      23.4,
+      28.201
+    ],
+    [
+      25.0,
+      29.967
+    ],
+    [
+      25.9,
+      31.101
+    ]
+  ],
+  "marks": {
+    "app": 25.9,
+    "rec": 25.9,
+    "outro": 25.9
+  },
+  "captions": [
+    {
+      "text": "the clips are real.<br>the in-between is AI.",
+      "from": 0,
+      "to": 4.6,
+      "cy": 470
+    },
+    {
+      "text": "try it on your clips.<br>first one is free.",
+      "from": 17.4,
+      "to": 21.4,
+      "cy": 1210
+    }
+  ],
+  "images": {
+    "mark": "public/brand/seamcut-mark-1024.png",
+    "uiUpload": "data/ads-tmp/ui/create_uploading_desktop_clean_mobile.png",
+    "uiRec": "data/ads-tmp/ui/create_recommended_desktop_real_mobile.png"
+  },
+  "uiSize": [
+    1290,
+    2796
+  ],
+  "uiScroll": {
+    "upload": [
+      0,
+      300
+    ],
+    "rec": [
+      180,
+      380
+    ]
+  },
+  "copy": {
+    "brand": "Clipmelt",
+    "url": "clipmelt.com",
+    "outroLine": "your first transition is free"
+  },
+  "music": {
+    "src": "data/ads/music/track_c.wav",
+    "segments": [
+      {
+        "from": 35.9,
+        "at": 0,
+        "dur": 11.797,
+        "fadeIn": 0.01,
+        "fadeOut": 0.12
+      }
+    ]
+  },
+  "sfx": [
+    {
+      "kind": "wind",
+      "at": 0.0,
+      "gainDb": 3
+    },
+    {
+      "kind": "whoosh_long",
+      "at": 0.82,
+      "gainDb": -9
+    },
+    {
+      "kind": "splash",
+      "at": 1.07,
+      "gainDb": -11
+    },
+    {
+      "kind": "whoosh",
+      "at": 3.55,
+      "gainDb": -14
+    },
+    {
+      "kind": "swell",
+      "at": 4.5,
+      "gainDb": -16
+    },
+    {
+      "kind": "whoosh",
+      "at": 6.9,
+      "gainDb": -14
+    },
+    {
+      "kind": "swell",
+      "at": 8.1,
+      "gainDb": -16
+    },
+    {
+      "kind": "whoosh",
+      "at": 8.9,
+      "gainDb": -12
+    },
+    {
+      "kind": "whoosh",
+      "at": 10.6,
+      "gainDb": -14
+    },
+    {
+      "kind": "glitch",
+      "at": 11.797,
+      "gainDb": -2
+    },
+    {
+      "kind": "sting",
+      "at": 11.875,
+      "gainDb": 6
+    },
+    {
+      "kind": "sub",
+      "at": 11.875,
+      "gainDb": -6
+    },
+    {
+      "kind": "glitch",
+      "at": 12.297,
+      "gainDb": -6
+    },
+    {
+      "kind": "glitch",
+      "at": 12.537,
+      "gainDb": -8
+    },
+    {
+      "kind": "glitch",
+      "at": 13.417,
+      "gainDb": -8
+    }
+  ]
+}

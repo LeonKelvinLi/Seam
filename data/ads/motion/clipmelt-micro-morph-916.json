@@ -1,0 +1,168 @@
+{
+  "id": "clipmelt-micro-morph-916",
+  "timeline": "chain",
+  "width": 1080,
+  "height": 1920,
+  "fps": 30,
+  "duration": 7.52,
+  "beat": 0.4555,
+  "clipWidth": 1080,
+  "loudness": -13,
+  "clips": {
+    "skate": {
+      "src": "data/ads/real/p2_b_skate.mp4"
+    },
+    "morph": {
+      "src": "data/ads/real/v3_morph.mp4",
+      "fps": 24
+    },
+    "bmx": {
+      "src": "data/ads/real/bmx_sky_39055942.mp4"
+    }
+  },
+  "reel": [
+    {
+      "clip": "skate",
+      "from": 0,
+      "to": 3.3
+    },
+    {
+      "clip": "morph",
+      "from": 0,
+      "to": 5.167,
+      "ai": true,
+      "style": "Object Morph"
+    },
+    {
+      "clip": "bmx",
+      "from": 4.4,
+      "to": 7.3
+    }
+  ],
+  "warp": [
+    [
+      0,
+      1.6
+    ],
+    [
+      3.0,
+      3.3
+    ],
+    [
+      4.0,
+      4.233
+    ],
+    [
+      6.0,
+      5.633
+    ],
+    [
+      8.5,
+      8.467
+    ],
+    [
+      10.5,
+      10.233
+    ],
+    [
+      11.5,
+      11.367
+    ]
+  ],
+  "marks": {
+    "app": 11.5,
+    "rec": 11.5,
+    "outro": 11.5
+  },
+  "captions": [
+    {
+      "text": "the clips are real.<br>the in-between is AI.",
+      "from": 0,
+      "to": 3.0,
+      "cy": 470
+    }
+  ],
+  "images": {
+    "mark": "public/brand/seamcut-mark-1024.png",
+    "uiUpload": "data/ads-tmp/ui/create_uploading_desktop_clean_mobile.png",
+    "uiRec": "data/ads-tmp/ui/create_recommended_desktop_real_mobile.png"
+  },
+  "uiSize": [
+    1290,
+    2796
+  ],
+  "uiScroll": {
+    "upload": [
+      0,
+      300
+    ],
+    "rec": [
+      180,
+      380
+    ]
+  },
+  "copy": {
+    "brand": "Clipmelt",
+    "url": "clipmelt.com",
+    "outroLine": "your first transition is free"
+  },
+  "music": {
+    "src": "data/ads/music/track_c.wav",
+    "segments": [
+      {
+        "from": 36.2,
+        "at": 0,
+        "dur": 5.238,
+        "fadeIn": 0.01,
+        "fadeOut": 0.12
+      }
+    ]
+  },
+  "sfx": [
+    {
+      "kind": "whoosh",
+      "at": 1.3,
+      "gainDb": -12
+    },
+    {
+      "kind": "swell",
+      "at": 1.5,
+      "gainDb": -16
+    },
+    {
+      "kind": "whoosh",
+      "at": 3.9,
+      "gainDb": -14
+    },
+    {
+      "kind": "glitch",
+      "at": 5.238,
+      "gainDb": -2
+    },
+    {
+      "kind": "sting",
+      "at": 5.316,
+      "gainDb": 6
+    },
+    {
+      "kind": "sub",
+      "at": 5.316,
+      "gainDb": -6
+    },
+    {
+      "kind": "glitch",
+      "at": 5.738,
+      "gainDb": -6
+    },
+    {
+      "kind": "glitch",
+      "at": 5.978,
+      "gainDb": -8
+    },
+    {
+      "kind": "glitch",
+      "at": 6.858,
+      "gainDb": -8
+    }
+  ]
+}

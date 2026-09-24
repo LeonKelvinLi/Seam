@@ -61,7 +61,7 @@ window.timeline = function (t, R) {
       box("lockGlow", { x: cx - 520, y: cy - 330 - 520, w: 1040, h: 1040 }, { bg: `radial-gradient(circle, ${LIME}33 0%, ${LIME}10 38%, transparent 66%)`, radius: 520, opacity: clamp(k(0)), z: 10 });
       media("mark", "img:mark", 0, { x: cx - 150, y: cy - 330 - 150, w: 300, h: 300 }, { fit: "contain", s: k(0), opacity: clamp(k(0)), dropShadow: `drop-shadow(0 0 28px ${LIME}88)`, z: 11 });
       text("word", copy.brand || "Clipmelt", { x: 0, w: W, cy: cy - 60, size: 170, weight: 800, ls: -0.045, s: k(0.07), opacity: clamp(k(0.07)), z: 11 });
-      box("pill", { x: cx - 290, y: cy + 90, w: 580, h: 124 }, { bg: LIME, radius: 70, color: "#10140a", font: `800 50px ${R.FONT}`, ls: -0.02, html: copy.pill || "Try 3 free &nbsp;→",
+      box("pill", { x: cx - 290, y: cy + 90, w: 580, h: 124 }, { bg: LIME, radius: 70, color: "#10140a", font: `800 50px ${R.FONT}`, ls: -0.02, html: copy.pill || "Try it free &nbsp;→",
         s: k(0.16), opacity: clamp(k(0.16)), boxShadow: `0 20px 60px ${LIME}40`, z: 11 });
     }
   }

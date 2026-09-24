@@ -62,7 +62,12 @@ export function CreateFlow({ styles }: { styles: { id: string; name: string; nee
   useEffect(() => {
     const p = params.get("p"), g = params.get("g");
     if (p) api<ProjectView>(`/api/projects/${p}`).then((v) => { setView(v); if (g) setGen(v.generations.find((x) => x.id === g) ?? null); }).catch(() => {});
-    api<{ samples: Sample[] }>("/api/samples").then((r) => setSamples(r.samples)).catch(() => {});
+    api<{ samples: Sample[] }>("/api/samples").then((r) => {
+      setSamples(r.samples);
+      // "Try it with ours" from the landing page: start straight on a sample pair.
+      const want = params.get("sample");
+      if (want && !p && r.samples.length) void startSample((r.samples.find((x) => x.id === want) ?? r.samples[0]).id);
+    }).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -155,7 +160,7 @@ export function CreateFlow({ styles }: { styles: { id: string; name: string; nee
     finally { if (queue === uploadQueue.current) setUp((u) => ({ ...u, [role]: { uploading: false, progress: 0 } })); }
   };
 
-  const useSample = async (id: string) => {
+  const startSample = async (id: string) => {
     if (uploadQueue.current.pending || loadingSample.current) return;
     loadingSample.current = true;
     setError(null); setBusy(true);
@@ -222,7 +227,7 @@ export function CreateFlow({ styles }: { styles: { id: string; name: string; nee
                 <div className="studio-samples">
                   <div className="studio-samples-heading"><span className="mono muted">A LITTLE INSPIRATION</span><span className="muted text-xs">Try a sample pair</span></div>
                   <div className="studio-samples-grid">
-                    {samples.map((s, i) => <button key={s.id} className="studio-sample" onClick={() => useSample(s.id)} disabled={busy || up.start.uploading || up.end.uploading}>
+                    {samples.map((s, i) => <button key={s.id} className="studio-sample" onClick={() => startSample(s.id)} disabled={busy || up.start.uploading || up.end.uploading}>
                       <span className="studio-sample-images"><img src={s.aPoster} alt="" /><img src={s.bPoster} alt="" /><span aria-hidden="true">↗</span></span>
                       <span className="studio-sample-caption"><span className="mono muted">0{i + 1}</span><span>{s.title}</span><span aria-hidden="true">→</span></span>
                     </button>)}

@@ -181,7 +181,7 @@ window.timeline = function (t, R) {
     text("tag", copy.tagline || "Two clips. One impossible shot.", { x: 0, w: W, cy: V ? cy + 170 : cy + 70, size: V ? 56 : 50, weight: 600, ls: -0.02, color: "rgba(244,243,236,0.8)",
       s: k(0.18) * drift, opacity: clamp(k(0.18)), z: 6 });
     box("pill", { x: cx - (V ? 290 : 240), y: (V ? cy + 310 : cy + 170), w: V ? 580 : 480, h: V ? 124 : 104 }, { bg: LIME, radius: 70, color: "#10140a",
-      font: `800 ${V ? 50 : 42}px ${R.FONT}`, ls: -0.02, html: copy.pill || "Try 3 free &nbsp;→", s: k(0.3) * drift, opacity: clamp(k(0.3)),
+      font: `800 ${V ? 50 : 42}px ${R.FONT}`, ls: -0.02, html: copy.pill || "Try it free &nbsp;→", s: k(0.3) * drift, opacity: clamp(k(0.3)),
       boxShadow: `0 20px 60px ${LIME}40`, z: 7 });
     if (copy.url) text("url", copy.url, { x: 0, w: W, cy: V ? cy + 530 : cy + 330, size: V ? 34 : 30, font: "mono", weight: 600, ls: 0.12, color: "rgba(244,243,236,0.6)", opacity: prog(t, T.end + 0.45, T.end + 0.7), z: 6 });
   }
