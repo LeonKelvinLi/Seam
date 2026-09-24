@@ -4,7 +4,7 @@
   "width": 1080,
   "height": 1920,
   "fps": 30,
-  "duration": 7.52,
+  "duration": 7.2,
   "beat": 0.4555,
   "clipWidth": 1080,
   "loudness": -13,
@@ -36,7 +36,7 @@
     {
       "clip": "bmx",
       "from": 4.4,
-      "to": 7.3
+      "to": 6.3
     }
   ],
   "warp": [
@@ -65,14 +65,14 @@
       10.233
     ],
     [
-      11.5,
-      11.367
+      10.8,
+      10.367
     ]
   ],
   "marks": {
-    "app": 11.5,
-    "rec": 11.5,
-    "outro": 11.5
+    "app": 10.8,
+    "rec": 10.8,
+    "outro": 10.8
   },
   "captions": [
     {
@@ -112,7 +112,7 @@
       {
         "from": 36.2,
         "at": 0,
-        "dur": 5.238,
+        "dur": 4.919,
         "fadeIn": 0.01,
         "fadeOut": 0.12
       }
@@ -136,32 +136,32 @@
     },
     {
       "kind": "glitch",
-      "at": 5.238,
+      "at": 4.919,
       "gainDb": -2
     },
     {
       "kind": "sting",
-      "at": 5.316,
+      "at": 4.997,
       "gainDb": 6
     },
     {
       "kind": "sub",
-      "at": 5.316,
+      "at": 4.997,
       "gainDb": -6
     },
     {
       "kind": "glitch",
-      "at": 5.738,
+      "at": 5.419,
       "gainDb": -6
     },
     {
       "kind": "glitch",
-      "at": 5.978,
+      "at": 5.659,
       "gainDb": -8
     },
     {
       "kind": "glitch",
-      "at": 6.858,
+      "at": 6.539,
       "gainDb": -8
     }
   ]
