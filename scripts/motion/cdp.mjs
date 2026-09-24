@@ -1,23 +1,56 @@
 /**
  * Minimal Chrome DevTools Protocol client (Node 22+ has a global WebSocket, so no dependencies).
- * Launches the locally installed Chrome headless on an isolated throwaway profile, never the user's own.
+ * Launches Chrome headless on an isolated throwaway profile, never the user's own.
+ *
+ * It prefers Chrome for Testing, which has its own bundle id. Headless runs of the installed Chrome register
+ * with macOS as the user's "Google Chrome", so the Dock icon and `open -a "Google Chrome"` activate the
+ * invisible instance and no window opens for as long as it runs (15 hours once, when a run left it behind).
  */
 import { spawn } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-const CHROME = process.env.CHROME_PATH || "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
+const SYSTEM_CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
+
+// Newest Chrome for Testing in the puppeteer or Playwright cache (`npx @puppeteer/browsers install chrome@stable --path ~/.cache/puppeteer`).
+function chromeForTesting() {
+  const arch = process.arch === "arm64" ? "chrome-mac-arm64" : "chrome-mac-x64";
+  const apps = [];
+  for (const root of [path.join(os.homedir(), ".cache/puppeteer/chrome"), path.join(os.homedir(), "Library/Caches/ms-playwright")]) {
+    let entries = [];
+    try { entries = fs.readdirSync(root); } catch { continue; }
+    for (const e of entries) {
+      const app = path.join(root, e, arch, "Google Chrome for Testing.app");
+      const m = fs.existsSync(app) && fs.readFileSync(path.join(app, "Contents/Info.plist"), "utf8").match(/CFBundleShortVersionString<\/key>\s*<string>([\d.]+)</);
+      if (m) apps.push({ app, v: m[1].split(".").map(Number) });
+    }
+  }
+  apps.sort((a, b) => { for (let i = 0; i < 4; i++) if ((a.v[i] ?? 0) !== (b.v[i] ?? 0)) return (b.v[i] ?? 0) - (a.v[i] ?? 0); return 0; });
+  return apps[0] && path.join(apps[0].app, "Contents/MacOS/Google Chrome for Testing");
+}
+
+const CHROME = process.env.CHROME_PATH || chromeForTesting() || SYSTEM_CHROME;
+const EXIT_CODES = { SIGINT: 130, SIGTERM: 143, SIGHUP: 129 };
 
 export async function launch({ width = 1080, height = 1920, scale = 1 } = {}) {
+  if (CHROME === SYSTEM_CHROME) console.warn("cdp: Chrome for Testing not found, using the installed Chrome; it cannot be opened from the Dock while this runs. Install: npx @puppeteer/browsers install chrome@stable --path ~/.cache/puppeteer");
   const profile = fs.mkdtempSync(path.join(os.tmpdir(), "seamcut-chrome-"));
   const port = 9300 + Math.floor(Math.random() * 400);
   const proc = spawn(CHROME, [
     "--headless=new", `--remote-debugging-port=${port}`, `--user-data-dir=${profile}`,
+    "--use-mock-keychain", "--password-store=basic", // never pop a macOS keychain prompt
     "--no-first-run", "--no-default-browser-check", "--disable-gpu-sandbox", "--hide-scrollbars", "--mute-audio",
     "--allow-file-access-from-files", "--autoplay-policy=no-user-gesture-required", "--force-color-profile=srgb",
     `--window-size=${width},${height}`, "about:blank",
   ], { stdio: "ignore" });
+  // A run that ends without close() (process.exit, a crash, Ctrl-C) must not leave Chrome running.
+  const reap = () => {
+    try { proc.kill("SIGKILL"); } catch { /* already gone */ }
+    try { fs.rmSync(profile, { recursive: true, force: true }); } catch { /* best effort */ }
+  };
+  process.once("exit", reap);
+  for (const [sig, code] of Object.entries(EXIT_CODES)) if (!process.listenerCount(sig)) process.once(sig, () => process.exit(code));
   let target;
   for (let i = 0; i < 60 && !target; i++) {
     await new Promise((r) => setTimeout(r, 250));
@@ -84,6 +117,8 @@ export async function launch({ width = 1080, height = 1920, scale = 1 } = {}) {
     async close() {
       try { ws.close(); } catch { /* closed */ }
       await new Promise((r) => { proc.once("exit", r); proc.kill(); setTimeout(r, 3000); });
+      if (proc.exitCode === null && proc.signalCode === null) proc.kill("SIGKILL"); // headless Chrome can sit on SIGTERM for seconds
+      process.removeListener("exit", reap);
       try { fs.rmSync(profile, { recursive: true, force: true }); } catch { /* Chrome may still hold a file briefly */ }
     },
   };

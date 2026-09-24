@@ -4,44 +4,152 @@
   "width": 1080,
   "height": 1920,
   "fps": 30,
-  "duration": 22.72,
+  "duration": 21.64,
   "beat": 0.4555,
   "clipWidth": 1080,
   "loudness": -13,
   "clips": {
-    "cliff": {"src":  "data/ads/real/p1_a_cliff.mp4"},
-    "liquid": {"src":  "data/ads/real/v3_liquid.mp4", "fps":  24},
-    "surf": {"src":  "data/ads/real/p1_b_surf.mp4"},
-    "particle": {"src":  "data/ads/real/v3_particle.mp4", "fps":  24},
-    "skate": {"src":  "data/ads/real/p2_b_skate.mp4"},
-    "morph": {"src":  "data/ads/real/v3_morph.mp4", "fps":  24},
-    "bmx": {"src":  "data/ads/real/bmx_sky_39055942.mp4"},
-    "fpv": {"src":  "data/ads/real/v3_fpv.mp4", "fps":  24},
-    "para": {"src":  "data/ads/real/paraglide_pov_12803095.mp4"}
+    "cliff": {
+      "src": "data/ads/real/p1_a_cliff.mp4"
+    },
+    "dive": {
+      "src": "data/ads/real/v5_dive.mp4",
+      "fps": 24
+    },
+    "surf": {
+      "src": "data/ads/real/p1_b_surf.mp4"
+    },
+    "envmorph": {
+      "src": "data/ads/real/v4_envmorph_b.mp4",
+      "fps": 24
+    },
+    "skate": {
+      "src": "data/ads/real/p2_b_skate.mp4"
+    },
+    "morph": {
+      "src": "data/ads/real/v3_morph.mp4",
+      "fps": 24
+    },
+    "bmx": {
+      "src": "data/ads/real/bmx_sky_39055942.mp4"
+    },
+    "fpv": {
+      "src": "data/ads/real/v3_fpv.mp4",
+      "fps": 24
+    },
+    "para": {
+      "src": "data/ads/real/paraglide_pov_12803095.mp4"
+    }
   },
   "reel": [
-    {"clip":  "cliff", "from":  0, "to":  4.933},
-    {"clip":  "liquid", "from":  0, "to":  5.167, "ai":  true, "style":  "Liquid Transformation"},
-    {"clip":  "surf", "from":  0, "to":  7.0},
-    {"clip":  "particle", "from":  0, "to":  5.167, "ai":  true, "style":  "Particle Transformation"},
-    {"clip":  "skate", "from":  0, "to":  3.3},
-    {"clip":  "morph", "from":  0, "to":  5.167, "ai":  true, "style":  "Object Morph"},
-    {"clip":  "bmx", "from":  4.4, "to":  7.3},
-    {"clip":  "fpv", "from":  0, "to":  5.167, "ai":  true, "style":  "FPV Fly Through"},
-    {"clip":  "para", "from":  8.0, "to":  10.25}
+    {
+      "clip": "cliff",
+      "from": 0,
+      "to": 2.4
+    },
+    {
+      "clip": "dive",
+      "from": 0,
+      "to": 5.167,
+      "ai": true,
+      "style": "Drone Dive"
+    },
+    {
+      "clip": "surf",
+      "from": 0,
+      "to": 7.0
+    },
+    {
+      "clip": "envmorph",
+      "from": 0,
+      "to": 5.167,
+      "ai": true,
+      "style": "Environment Morph"
+    },
+    {
+      "clip": "skate",
+      "from": 0,
+      "to": 3.3
+    },
+    {
+      "clip": "morph",
+      "from": 0,
+      "to": 5.167,
+      "ai": true,
+      "style": "Object Morph"
+    },
+    {
+      "clip": "bmx",
+      "from": 4.4,
+      "to": 7.3
+    },
+    {
+      "clip": "fpv",
+      "from": 0,
+      "to": 5.167,
+      "ai": true,
+      "style": "FPV Fly Through"
+    },
+    {
+      "clip": "para",
+      "from": 8.0,
+      "to": 10.25
+    }
   ],
   "warp": [
-    [0, 1.23], [3, 2.6], [3.6, 2.92], [4.4, 4.93], [5, 5.85], [7.6, 7.2], [9, 8.6], [9.8, 9.15],
-    [10.4, 10.1], [12, 13.0], [15.9, 17.1], [16.9, 18.5], [19.9, 20.6], [21.4, 22.267], [22.4, 23.9],
-    [24.4, 25.567], [25.4, 26.5], [27.4, 27.9], [29.9, 30.734], [31.9, 32.5], [32.9, 33.634],
-    [34.4, 35.2], [35.4, 37.35], [37.4, 38.8], [40.9, 41.0]
+    [0, 0.95],
+    [3.2, 2.4],
+    [4.0, 3.2],
+    [5.0, 3.95],
+    [6.0, 4.8],
+    [8.0, 7.567],
+    [9.6, 10.467],
+    [13.5, 14.567],
+    [14.9, 16.567],
+    [17.2, 17.867],
+    [19.0, 19.734],
+    [20.0, 21.367],
+    [22.0, 23.034],
+    [23.0, 23.967],
+    [25.0, 25.367],
+    [27.5, 28.201],
+    [29.5, 29.967],
+    [30.5, 31.101],
+    [32.0, 32.667],
+    [33.0, 34.817],
+    [35.0, 36.267],
+    [38.5, 38.467]
   ],
-  "marks": {"app":  40.9, "rec":  42.9, "outro":  44.9},
+  "marks": {
+    "app": 38.5,
+    "rec": 40.5,
+    "outro": 42.5
+  },
   "captions": [
-    {"text":  "5 clips. 5 different people.", "from":  0, "to":  4.4, "cy":  420},
-    {"text":  "5 real clips. 4 AI transitions.", "from":  37.6, "to":  40.9, "cy":  420},
-    {"text":  "you give it 2 clips", "from":  40.9, "to":  42.9, "cy":  360},
-    {"text":  "it makes the transition", "from":  42.9, "to":  44.9, "cy":  360}
+    {
+      "text": "5 clips. 5 different people.",
+      "from": 0,
+      "to": 3.2,
+      "cy": 420
+    },
+    {
+      "text": "5 real clips. 4 AI transitions.",
+      "from": 35.2,
+      "to": 38.5,
+      "cy": 420
+    },
+    {
+      "text": "you give it 2 clips",
+      "from": 38.5,
+      "to": 40.5,
+      "cy": 1230
+    },
+    {
+      "text": "clipmelt makes the transition",
+      "from": 40.5,
+      "to": 42.5,
+      "cy": 1230
+    }
   ],
   "images": {
     "mark": "public/brand/seamcut-mark-1024.png",
@@ -49,34 +157,112 @@
     "uiRec": "data/ads-tmp/ui/create_recommended_desktop_real_mobile.png"
   },
   "uiSize": [1290, 2796],
-  "uiScroll": {"upload":  [0, 300], "rec":  [180, 380]},
-  "copy": {"outroLine":  "your first 3 transitions are free"},
+  "uiScroll": {
+    "upload": [0, 300],
+    "rec": [180, 380]
+  },
+  "copy": {
+    "brand": "Clipmelt",
+    "url": "clipmelt.com",
+    "outroLine": "your first 3 transitions are free"
+  },
   "music": {
     "src": "data/ads/music/track_c.wav",
-    "segments": [{"from":  35.093, "at":  0, "dur":  20.45, "fadeIn":  0.01, "fadeOut":  0.12}],
-    "muffle": [{"from":  1.55, "to":  2.3, "ramp":  0.2}],
-    "muffleHz": 450,
-    "muffleGainDb": 4
+    "segments": [
+      {
+        "from": 34.638,
+        "at": 0,
+        "dur": 19.359,
+        "fadeIn": 0.01,
+        "fadeOut": 0.12
+      }
+    ]
   },
   "sfx": [
-    {"kind":  "wind", "at":  0.0, "gainDb":  3},
-    {"kind":  "splash", "at":  1.345, "gainDb":  -5},
-    {"kind":  "underwater", "at":  1.51, "gainDb":  -13},
-    {"kind":  "swell", "at":  1.95, "gainDb":  -16},
-    {"kind":  "splash", "at":  4.4, "gainDb":  -13},
-    {"kind":  "whoosh", "at":  4.5, "gainDb":  -14},
-    {"kind":  "swell", "at":  7.2, "gainDb":  -16},
-    {"kind":  "whoosh", "at":  9.5, "gainDb":  -14},
-    {"kind":  "swell", "at":  11.1, "gainDb":  -16},
-    {"kind":  "whoosh", "at":  13.38, "gainDb":  -14},
-    {"kind":  "whoosh", "at":  14.1, "gainDb":  -12},
-    {"kind":  "swell", "at":  14.98, "gainDb":  -16},
-    {"kind":  "whoosh", "at":  16.8, "gainDb":  -14},
-    {"kind":  "glitch", "at":  20.452, "gainDb":  -2},
-    {"kind":  "sting", "at":  20.53, "gainDb":  6},
-    {"kind":  "sub", "at":  20.53, "gainDb":  -6},
-    {"kind":  "glitch", "at":  20.95, "gainDb":  -6},
-    {"kind":  "glitch", "at":  21.19, "gainDb":  -8},
-    {"kind":  "glitch", "at":  22.07, "gainDb":  -8}
+    {
+      "kind": "wind",
+      "at": 0.0,
+      "gainDb": 3
+    },
+    {
+      "kind": "whoosh_long",
+      "at": 1.55,
+      "gainDb": -9
+    },
+    {
+      "kind": "splash",
+      "at": 1.8,
+      "gainDb": -11
+    },
+    {
+      "kind": "whoosh",
+      "at": 3.404,
+      "gainDb": -14
+    },
+    {
+      "kind": "swell",
+      "at": 6.107,
+      "gainDb": -16
+    },
+    {
+      "kind": "whoosh",
+      "at": 8.407,
+      "gainDb": -14
+    },
+    {
+      "kind": "swell",
+      "at": 10.007,
+      "gainDb": -16
+    },
+    {
+      "kind": "whoosh",
+      "at": 12.287,
+      "gainDb": -14
+    },
+    {
+      "kind": "whoosh",
+      "at": 13.007,
+      "gainDb": -12
+    },
+    {
+      "kind": "swell",
+      "at": 13.887,
+      "gainDb": -16
+    },
+    {
+      "kind": "whoosh",
+      "at": 15.707,
+      "gainDb": -14
+    },
+    {
+      "kind": "glitch",
+      "at": 19.359,
+      "gainDb": -2
+    },
+    {
+      "kind": "sting",
+      "at": 19.437,
+      "gainDb": 6
+    },
+    {
+      "kind": "sub",
+      "at": 19.437,
+      "gainDb": -6
+    },
+    {
+      "kind": "glitch",
+      "at": 19.859,
+      "gainDb": -6
+    },
+    {
+      "kind": "glitch",
+      "at": 20.099,
+      "gainDb": -8
+    },
+    {
+      "kind": "glitch",
+      "at": 20.979,
+      "gainDb": -8
+    }
   ]
 }

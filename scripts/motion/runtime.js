@@ -226,7 +226,7 @@
   /**
    * End sting in the manner of TikTok's outro: black frame, the mark pops in with two coloured split copies (lime and
    * magenta, offset in opposite directions) that jitter and settle, with short glitch ticks; the wordmark follows with
-   * the same split, then an offer line. u = seconds since the sting started. Uses S.images.mark.
+   * the same split, then the URL (o.url) and an offer line. u = seconds since the sting started. Uses S.images.mark.
    */
   function outro(u, o = {}) {
     const cx = W / 2, cy = o.cy ?? H * 0.47, MAG = o.split2 || "#ff2e88";
@@ -248,7 +248,11 @@
         tx: tick ? -12 * n(4) : 0, shadow: `${(-dt).toFixed(1)}px ${(-dt * 0.6).toFixed(1)}px 0 ${LIME}, ${dt.toFixed(1)}px ${(dt * 0.6).toFixed(1)}px 0 ${MAG}`, z: 92 });
     }
     const l = E.outCubic(prog(u, 0.9, 1.2));
-    if (u >= 0.9 && o.line) text("outLine", o.line, { x: 0, w: W, cy: cy + 190, size: 46, weight: 600, ls: -0.01, color: "rgba(244,243,236,0.8)", opacity: l, ty: (1 - l) * 16, z: 92 });
+    if (u >= 0.9 && o.url) {
+      box("outUrl", { x: cx - 360, y: cy + 150, w: 720, h: 96 }, { bg: LIME, radius: 48, color: "#10140a", font: `800 44px ${MONO}`, ls: -0.01, html: o.url,
+        opacity: l, ty: (1 - l) * 16, z: 92 });
+    }
+    if (u >= 0.9 && o.line) text("outLine", o.line, { x: 0, w: W, cy: cy + (o.url ? 300 : 190), size: 42, weight: 600, ls: -0.01, color: "rgba(244,243,236,0.8)", opacity: l, ty: (1 - l) * 16, z: 92 });
   }
 
   /** Monotone cubic interpolation (Fritsch-Carlson) through [x, y] keys: smooth speed ramps that never run backwards. */

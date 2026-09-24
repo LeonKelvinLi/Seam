@@ -2,9 +2,10 @@
  * Clipmelt v3 "chain" (vertical): a real-footage one-take through several clips where every join is an AI transition
  * that is meant to be noticed. Filmed footage carries a dark "REAL CLIP n/N" chip; while a generated transition plays,
  * a lime chip names it ("AI TRANSITION n/M" and the Clipmelt recipe) and lime viewfinder corners frame the shot.
- * Then the real app as a screen recording, and a TikTok-style end sting (R.outro).
+ * Then the real app as a screen recording, and a TikTok-style end sting (R.outro). copy.url stays on screen as a
+ * bottom pill (clear of the platform buttons) until the sting, which repeats it.
  * Spec: reel [{ clip, from, to, ai?, style? }], warp [[beat, reelPos], ...], marks { app, rec, outro } in beats,
- * captions [{ text, from, to, cy }] in beats, uiScroll, uiSize, copy.outroLine.
+ * captions [{ text, from, to, cy }] in beats, uiScroll, uiSize, uiZoom, copy.{brand,url,outroLine}.
  */
 (function () {
   const R = window.R, S = R.S, B = R.beat;
@@ -42,7 +43,7 @@
       return;
     }
     R.text("chipAi", `<div style="display:inline-block;background:${LIME};color:#10140a;border-radius:16px;padding:12px 22px 15px;text-align:left">` +
-      `<div style="font:700 28px ${R.MONO};letter-spacing:0.04em">AI TRANSITION ${g.n}/${na}</div>` +
+      `<div style="font:700 28px ${R.MONO};letter-spacing:0.04em">${R.copy.brand ? `${R.copy.brand.toUpperCase()} · ` : ""}AI TRANSITION ${g.n}/${na}</div>` +
       `<div style="font:800 56px ${R.FONT};letter-spacing:-0.025em;margin-top:6px">${g.style}</div></div>`,
       { x: 44, w: W - 88, y: 230, size: 28, align: "left", lh: 1.1, tx: (1 - k) * -60, s: lerp(0.9, 1, E.outBack(prog(t, enterT[i], enterT[i] + 0.28))),
         origin: "0% 0%", opacity: op, z: 45 });
@@ -57,20 +58,25 @@
 
   window.timeline = function (t) {
     const c = R.copy;
-    if (t >= T.outro) { R.outro(t - T.outro, { line: c.outroLine }); return; }
+    if (t >= T.outro) { R.outro(t - T.outro, { brand: c.brand, url: c.url, line: c.outroLine }); return; }
     if (t >= T.app) {
       // The app as a screen recording: upload screen, then the recommendations for the first pair.
       const rec = t >= T.rec;
-      const sc = W / S.uiSize[0], hImg = S.uiSize[1] * sc;
+      const z = S.uiZoom || 1, sc = (W * z) / S.uiSize[0], hImg = S.uiSize[1] * sc;
       const [a, b] = rec ? S.uiScroll.rec : S.uiScroll.upload;
       const off = lerp(a, b, E.inOutCubic(rec ? prog(t, T.rec + 0.1, T.outro - 0.1) : prog(t, T.app + 0.15, T.rec - 0.02)));
-      R.media("ui", rec ? "img:uiRec" : "img:uiUpload", 0, { x: 0, y: -off, w: W, h: hImg }, { z: 10 });
+      R.media("ui", rec ? "img:uiRec" : "img:uiUpload", 0, { x: (W - W * z) / 2, y: -off, w: W * z, h: hImg }, { z: 10 });
     } else {
       const V = warp(Math.min(t, ONE_END));
       const i = segAt(V), r = reel[i];
       const speed = Math.abs(warp(t + 1 / 60) - warp(t - 1 / 60)) * 30;
       R.media("reel", r.clip, Math.min(r.to, r.from + (V - starts[i])), { x: 0, y: 0, w: W, h: H }, { vblur: clamp((speed - 2.6) * 4, 0, 14), z: 1 });
       chips(t, i);
+    }
+    if (c.url) {
+      const w = c.url.length * 18.2 + 110;
+      R.box("urlPill", { x: (W - w) / 2, y: 1392, w, h: 78 }, { bg: "rgba(12,12,11,0.74)", radius: 39, border: "1px solid rgba(244,243,236,0.24)", color: "#f4f3ec",
+        font: `700 31px ${R.MONO}`, ls: 0, html: `<span style="display:inline-block;width:14px;height:14px;border-radius:7px;background:${LIME};margin-right:16px"></span>${c.url}`, z: 46 });
     }
     (S.captions || []).forEach((k, j) => cap(`cap${j}`, k.text, t, k.from * B, k.to * B, k.cy ?? 420));
   };

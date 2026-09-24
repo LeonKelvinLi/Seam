@@ -83,6 +83,7 @@ if (browser) try {
       await browser.screenshot(out, { format: "png" });
       console.log(out);
     }
+    await browser.close(); // process.exit skips the finally below
     process.exit(0);
   }
 
