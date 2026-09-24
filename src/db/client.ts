@@ -116,6 +116,8 @@ CREATE TABLE IF NOT EXISTS events (
   props TEXT NOT NULL, createdAt TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS events_name ON events(name, createdAt);
+CREATE TABLE IF NOT EXISTS freeRuns (generationId TEXT PRIMARY KEY, networkKey TEXT NOT NULL, createdAt TEXT NOT NULL);
+CREATE INDEX IF NOT EXISTS freeRuns_network ON freeRuns(networkKey, createdAt);
 `;
 
 declare global {

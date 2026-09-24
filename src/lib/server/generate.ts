@@ -6,13 +6,16 @@ import { scoreOpportunities, type OpportunityDraft } from "@/core/opportunities/
 import { Events, Frames, Generations, Learning, Opportunities, PairAnalyses, Recommendations, VisualAnalyses, insert } from "@/db/repo";
 import { enqueue } from "@/core/pipeline/runner";
 import { newId, now } from "@/core/ids";
-import { Users } from "@/db/repo";
+import { FreeRuns, Users } from "@/db/repo";
+import { freeRunKey, networkLimitReached } from "./free-runs";
 import { CREDITS_PER_GENERATION } from "@/lib/server/billing";
 import { ownedProject } from "./access";
 
 export interface CreateGenerationInput {
   projectId: string;
   userId: string;
+  /** The visitor's address (ratelimit.clientIp); free trial runs are capped per network per day. */
+  clientIp?: string;
   intent?: Intent;
   opportunityId?: string;
   recipeId?: string;
@@ -110,10 +113,18 @@ export function createGeneration(input: CreateGenerationInput): Generation {
     err.code = "NO_CREDITS";
     throw err;
   }
+  const freeKey = freeRunKey(input.userId, input.clientIp);
+  if (freeKey && networkLimitReached(freeKey)) {
+    Users.grant(input.userId, cost);
+    const err = new Error("Free transitions on this network are used up for today. Sign in with Google to use yours, or add a pack.") as Error & { code?: string };
+    err.code = "FREE_NETWORK_LIMIT";
+    throw err;
+  }
   const gen = Generations.create({
     projectId: input.projectId, opportunityId: opp.id, recipeId: opp.recipeId, intent, fineTune, mode,
     status: "queued", stage: "queued", stageLabel: "Getting ready", progress: 0, friendlyError: null, result: null, jobId: null, parentGenerationId: parentId,
   });
+  if (freeKey) FreeRuns.record(gen.id, freeKey);
   const job = enqueue("generate", { generationId: gen.id });
   Generations.update(gen.id, { jobId: job.id });
   Events.track("transition_selected", { userId: input.userId, projectId: input.projectId, generationId: gen.id, props: { intent, recipe: opp.recipeId, via: input.from?.action ?? (input.recipeId ? "library" : input.opportunityId ? "pick" : "lane") } });

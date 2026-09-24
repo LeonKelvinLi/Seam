@@ -9,7 +9,7 @@ interface Pack { id: string; name: string; credits: number; priceUsd: number; bl
 interface Me { user: { email: string | null; credits: number } | null; packs: Pack[]; billing: { checkout: boolean; links: string[] } }
 
 /** Shown in the studio when the free runs are used up: buy inline, or create an account first as a guest. */
-export function Paywall({ freeRuns }: { freeRuns: number }) {
+export function Paywall({ freeRuns, networkLimited = false }: { freeRuns: number; networkLimited?: boolean }) {
   const router = useRouter();
   const [me, setMe] = useState<Me | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
@@ -26,9 +26,9 @@ export function Paywall({ freeRuns }: { freeRuns: number }) {
   };
   return (
     <section className="mt-6 rounded-2xl border border-white/10 bg-white/[0.03] p-6" aria-live="polite">
-      <p className="mono text-xs muted">Free trial used</p>
-      <h2 className="display text-2xl mt-1">{freeRuns === 1 ? "Your free transition is done." : `Your ${freeRuns} free transitions are done.`}</h2>
-      <p className="mt-2 muted text-sm">{guest ? "Sign in to keep this project and buy credits. Two credits per preview transition." : "Add a credit pack to keep generating. Credits never expire."}</p>
+      <p className="mono text-xs muted">{networkLimited ? "Free limit for this network" : "Free trial used"}</p>
+      <h2 className="display text-2xl mt-1">{networkLimited ? "Today's free transitions on this network are used up." : freeRuns === 1 ? "Your free transition is done." : `Your ${freeRuns} free transitions are done.`}</h2>
+      <p className="mt-2 muted text-sm">{networkLimited ? "Sign in with Google to use your own free transition, or add a pack." : guest ? "Sign in to keep this project and buy credits. Two credits per preview transition." : "Add a credit pack to keep generating. Credits never expire."}</p>
       {guest && me && (
         <div className="mt-5 flex flex-wrap items-center gap-3">
           <GoogleButton next={here} />

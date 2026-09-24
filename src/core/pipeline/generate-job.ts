@@ -5,7 +5,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { config } from "@/core/config";
 import { logger } from "@/core/log";
-import { Assets, Attempts, Costs, Events, Exports, Frames, Generations, Opportunities, PairAnalyses, Projects, Purchases, Quality, Users, VisualAnalyses } from "@/db/repo";
+import { Assets, Attempts, Costs, Events, Exports, Frames, Generations, Opportunities, PairAnalyses, Projects, Purchases, FreeRuns, Quality, Users, VisualAnalyses } from "@/db/repo";
 import { CREDITS_PER_GENERATION } from "@/lib/server/billing";
 import { normalizeBridge, poster, probe, stitch, trimClip, type FrameSpec } from "@/core/media/ffmpeg";
 import { storage } from "@/core/media/storage";
@@ -365,6 +365,7 @@ export async function runGenerateJob(job: Job, report: Reporter, judge = judgeTr
   } catch (e) {
     const msg = (e as Error).message;
     Users.grant(project.userId, CREDITS_PER_GENERATION[gen.mode]); // never charge for a failure
+    FreeRuns.release(gen.id); // nor count it against the network's free runs
     Generations.update(gen.id, { status: "failed", stage: "failed", stageLabel: labelFor("failed"), friendlyError: e instanceof GenerationStopped ? e.friendly : FRIENDLY_FAIL });
     Events.track("generation_failed", { userId: project.userId, projectId: gen.projectId, generationId: gen.id, props: { error: msg } });
     throw e;

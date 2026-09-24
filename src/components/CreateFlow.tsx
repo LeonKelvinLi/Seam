@@ -33,6 +33,7 @@ export function CreateFlow({ styles }: { styles: { id: string; name: string; nee
   const [videoMode, setVideoMode] = useState<"full" | "bridge">("full");
   const [copied, setCopied] = useState(false);
   const [needCredits, setNeedCredits] = useState(false);
+  const [networkLimited, setNetworkLimited] = useState(false);
   const autoRecipe = useRef<string | null>(params.get("recipe"));
   const [selectedRecipeId, setSelectedRecipeId] = useState(params.get("recipe"));
   const selectedStyle = styles.find((r) => r.id === selectedRecipeId);
@@ -129,7 +130,8 @@ export function CreateFlow({ styles }: { styles: { id: string; name: string; nee
     } catch (e) {
       const msg = (e as Error).message;
       setError(/out of credits/i.test(msg) ? "You're out of credits." : msg);
-      if (/out of credits/i.test(msg)) setNeedCredits(true);
+      const limited = /used up for today/i.test(msg);
+      if (limited || /out of credits/i.test(msg)) { setNeedCredits(true); setNetworkLimited(limited); }
     } finally { setBusy(false); }
   }, [projectId, setUrl]);
 
@@ -362,7 +364,7 @@ export function CreateFlow({ styles }: { styles: { id: string; name: string; nee
       )}
 
       {error && !needCredits && <Notice>{error}</Notice>}
-      {needCredits && <Paywall freeRuns={1} />}
+      {needCredits && <Paywall freeRuns={1} networkLimited={networkLimited} />}
     </div>
   );
 }

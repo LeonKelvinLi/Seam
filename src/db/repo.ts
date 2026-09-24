@@ -174,6 +174,16 @@ export const AuthTokens = {
   },
 };
 
+/** Free trial runs per network per day (hashed, see src/lib/server/free-runs.ts); a failed run gives its slot back. */
+export const FreeRuns = {
+  count: (networkKey: string) => (db().prepare("SELECT COUNT(*) n FROM freeRuns WHERE networkKey=?").get(networkKey) as { n: number }).n,
+  record(generationId: string, networkKey: string) {
+    db().prepare("INSERT OR IGNORE INTO freeRuns (generationId, networkKey, createdAt) VALUES (?,?,?)").run(generationId, networkKey, now());
+  },
+  release(generationId: string) { db().prepare("DELETE FROM freeRuns WHERE generationId=?").run(generationId); },
+  sweep(before: string) { return db().prepare("DELETE FROM freeRuns WHERE createdAt < ?").run(before).changes; },
+};
+
 export const Purchases = {
   record(p: Omit<Purchase, "id" | "createdAt">): Purchase | null {
     if (p.externalId && find<Purchase>("purchases", "externalId=?", [p.externalId]).length) return null; // idempotent

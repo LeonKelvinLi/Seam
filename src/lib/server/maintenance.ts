@@ -4,6 +4,7 @@
  *  - temp files older than a day are removed
  *  - the SQLite database is backed up daily, keeping the newest copies
  */
+import { FreeRuns } from "@/db/repo";
 import fs from "node:fs";
 import path from "node:path";
 import { config } from "@/core/config";
@@ -88,6 +89,7 @@ export async function runMaintenance(): Promise<void> {
   try {
     const projects = sweepGuestProjects();
     const tmp = sweepTmp();
+    FreeRuns.sweep(new Date(Date.now() - 2 * 86_400_000).toISOString()); // hashed network keys live two days
     const backup = await backupDatabase();
     const offsite = await backupOffsite();
     log.info("maintenance", { guestProjectsDeleted: projects, tmpFilesDeleted: tmp, backup, offsite });

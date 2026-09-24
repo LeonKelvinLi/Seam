@@ -28,9 +28,15 @@ export function rateLimit(key: string, limit: Limit, now = Date.now()): { ok: bo
   return { ok: true, retryAfterSec: 0, remaining: limit.max - hits.length };
 }
 
+/**
+ * The visitor's address. Render's edge (Cloudflare) sets True-Client-IP and replaces any value a client sends. The
+ * first X-Forwarded-For entry is whatever the client claimed (a forged one walked straight past every per-IP limit),
+ * so it is only a fallback for local runs without a proxy.
+ */
 export function clientIp(req: Request): string {
   const h = req.headers;
-  return (h.get("x-forwarded-for") ?? "").split(",")[0].trim() || h.get("x-real-ip") || "local";
+  return h.get("true-client-ip")?.trim() || h.get("cf-connecting-ip")?.trim()
+    || (h.get("x-forwarded-for") ?? "").split(",")[0].trim() || h.get("x-real-ip") || "local";
 }
 
 export function tooMany(retryAfterSec: number): Response {
