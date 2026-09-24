@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Attribution } from "@/components/Attribution";
 import "./globals.css";
 import { publicOrigin } from "@/lib/server/site";
 import { NavUser } from "@/components/NavUser";
@@ -21,6 +22,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <body>
         <a className="skip-link" href="#main-content">Skip to content</a>
+        <Attribution />
         <header className="site-header">
           <nav className="site-nav" aria-label="Main navigation">
             <Link href="/" className="site-wordmark" aria-label="Clipmelt home">
@@ -32,7 +34,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <Link href="/library" className="site-nav-link site-library-link" data-mobile-label="Library">See what Clipmelt makes</Link>
               <Link href="/history" className="site-nav-link site-history-link" data-mobile-label="History">Your footage</Link>
               <NavUser />
-              <Link href="/create" className="btn btn-primary btn-sm">Open studio <span aria-hidden="true">↗</span></Link>
+              <Link href="/create" data-cta="header_studio" className="btn btn-primary btn-sm">Open studio <span aria-hidden="true">↗</span></Link>
             </div>
           </nav>
         </header>

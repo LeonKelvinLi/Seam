@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { api } from "@/lib/api";
+import { api, track } from "@/lib/api";
 import { GoogleButton, useHere } from "@/components/GoogleButton";
 
 interface Pack { id: string; name: string; credits: number; priceUsd: number; blurb: string }
@@ -15,6 +15,7 @@ export function Paywall({ freeRuns }: { freeRuns: number }) {
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   useEffect(() => { api<Me>("/api/auth/me").then(setMe).catch(() => {}); }, []);
+  useEffect(() => { track("paywall_shown", { free_runs: freeRuns }); }, [freeRuns]);
   const guest = !me?.user?.email;
   const here = useHere();
   const buy = async (pack: Pack) => {

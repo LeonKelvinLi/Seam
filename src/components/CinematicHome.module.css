@@ -21,6 +21,7 @@
 .primaryLink { color: var(--ink); background: var(--lime); }.primaryLink:hover { background: #e6ff9a; transform: translateY(-3px); }
 .primaryLink svg,.darkLink svg,.lightLink svg { transition: transform .25s; }.primaryLink:hover svg,.darkLink:hover svg,.lightLink:hover svg { transform: translateX(4px); }
 .heroIntro .primaryLink { margin-top: 24px; gap: 13px; white-space: nowrap; }
+.heroIntro .heroOffer { color: #b9bba9; font-size: 12px; line-height: 1.5; margin-top: 12px; letter-spacing: 0.01em; }
 .heroStage { position: relative; height: clamp(370px,36vw,540px); perspective: 1400px; margin-top: 32px; transform-style: preserve-3d; }
 .stageGrid { position: absolute; inset: 22% -20% -40%; background-image: linear-gradient(#ffffff07 1px,transparent 1px),linear-gradient(90deg,#ffffff07 1px,transparent 1px); background-size: 62px 62px; transform: rotateX(72deg); mask-image: radial-gradient(ellipse,#0008,transparent 67%); pointer-events: none; }
 .sourceCard { position: absolute; overflow: hidden; width: 31%; aspect-ratio: 1.4; border: 1px solid #ffffff26; border-radius: 7px; box-shadow: 0 30px 70px #0009; }.sourceCard img { width: 100%; height: 100%; object-fit: cover; }

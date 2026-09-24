@@ -1,6 +1,7 @@
 import { bad, json } from "@/lib/server/session";
 import { currentUser } from "@/lib/server/auth";
 import { checkoutUrl } from "@/lib/server/billing";
+import { Events } from "@/db/repo";
 
 export async function POST(req: Request) {
   const user = await currentUser();
@@ -9,6 +10,7 @@ export async function POST(req: Request) {
   try {
     const url = await checkoutUrl(user.id, user.email, pack ?? "starter", req);
     if (!url) return bad("Payments aren't set up yet. Add STRIPE_SECRET_KEY and a price id, or a payment link, to .env.local.", 503);
+    Events.track("checkout_started", { userId: user.id, props: { pack: pack ?? "starter" } });
     return json({ url });
   } catch (e) {
     return bad((e as Error).message, 422);

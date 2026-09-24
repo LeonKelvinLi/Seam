@@ -5,9 +5,38 @@
 import { db } from "@/db/client";
 
 const FUNNEL = [
-  "landing_view", "upload_completed", "analysis_completed", "transition_selected", "generation_started",
-  "generation_succeeded", "downloaded", "second_project_created",
+  "visit", "landing_view", "cta_click", "upload_completed", "analysis_completed", "transition_selected", "generation_started",
+  "generation_succeeded", "downloaded", "second_project_created", "signup", "paywall_shown", "checkout_started", "purchase",
 ] as const;
+
+/**
+ * Funnel per first-touch source: "creative B on TikTok -> 3,800 visitors -> 410 uploads -> 173 generations -> 24 purchases".
+ * A visitor counts once per step; revenue is gross purchases. Visitors are guests or accounts with a recorded first touch.
+ */
+function byCampaign() {
+  return db().prepare(`
+    WITH v AS (
+      SELECT id,
+        COALESCE(json_extract(firstTouch, '$.source'), 'direct') source,
+        COALESCE(json_extract(firstTouch, '$.utm_medium'), '') medium,
+        COALESCE(json_extract(firstTouch, '$.utm_campaign'), '') campaign,
+        COALESCE(json_extract(firstTouch, '$.utm_content'), '') content,
+        COALESCE(json_extract(firstTouch, '$.ref'), '') ref
+      FROM users WHERE firstTouch IS NOT NULL
+    )
+    SELECT source, medium, campaign, content, ref,
+      COUNT(DISTINCT v.id) visitors,
+      COUNT(DISTINCT CASE WHEN e.name='upload_completed' THEN v.id END) uploads,
+      COUNT(DISTINCT CASE WHEN e.name='generation_succeeded' THEN v.id END) generated,
+      COUNT(DISTINCT CASE WHEN e.name='downloaded' THEN v.id END) downloaded,
+      COUNT(DISTINCT CASE WHEN e.name='signup' THEN v.id END) signups,
+      COUNT(DISTINCT CASE WHEN e.name='checkout_started' THEN v.id END) checkouts,
+      COUNT(DISTINCT CASE WHEN e.name='purchase' THEN v.id END) buyers,
+      (SELECT COALESCE(SUM(p.amountCents), 0) FROM purchases p WHERE p.userId IN (SELECT id FROM v v2 WHERE v2.source=v.source AND v2.campaign=v.campaign AND v2.content=v.content AND v2.ref=v.ref AND v2.medium=v.medium)) revenueCents
+    FROM v LEFT JOIN events e ON e.userId = v.id
+    GROUP BY source, medium, campaign, content, ref
+    ORDER BY visitors DESC LIMIT 100`).all();
+}
 
 export function computeMetrics() {
   const d = db();
@@ -65,5 +94,6 @@ export function computeMetrics() {
     },
     byModel,
     byRecipe,
+    byCampaign: byCampaign(),
   };
 }

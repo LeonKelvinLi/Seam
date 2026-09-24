@@ -10,5 +10,5 @@ export function legalContact() {
 }
 
 export function publicOrigin(): string {
-  return (process.env.NEXT_PUBLIC_APP_URL || process.env.SEAM_PUBLIC_URL || "https://seamcut.onrender.com").replace(/\/$/, "");
+  return (process.env.NEXT_PUBLIC_APP_URL || process.env.SEAM_PUBLIC_URL || "https://clipmelt.com").replace(/\/$/, "");
 }

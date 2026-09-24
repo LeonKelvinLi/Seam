@@ -18,6 +18,8 @@ export interface User {
   emailVerifiedAt: string | null;
   /** Google account id (OpenID "sub") when the account signs in with Google. */
   googleSub?: string | null;
+  /** Where this visitor first came from (utm/ref/referrer/landing/device), set once. */
+  firstTouch?: Record<string, string> | null;
   credits: number;
   plan: "free" | "starter" | "pro";
   stripeCustomerId: string | null;

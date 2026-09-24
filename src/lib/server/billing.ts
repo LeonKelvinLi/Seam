@@ -6,7 +6,7 @@
  */
 import Stripe from "stripe";
 import { db } from "@/db/client";
-import { Purchases, Users } from "@/db/repo";
+import { Events, Purchases, Users } from "@/db/repo";
 import { logger } from "@/core/log";
 
 const log = logger("billing");
@@ -125,6 +125,7 @@ export function handleWebhook(rawBody: string, signature: string | null): { ok: 
     if (recorded) {
       Users.grant(userId, pack.credits);
       Users.update(userId, { plan: pack.id === "studio" ? "pro" : pack.id, stripeCustomerId: objectId(session.customer) });
+      Events.track("purchase", { userId, props: { pack: pack.id, amountCents: session.amount_total!, currency: session.currency!, credits: pack.credits } });
       log.info("credits granted", { userId, credits: pack.credits, pack: pack.id });
     }
     // Also handles a refund delivered before checkout completion.

@@ -27,6 +27,7 @@ const JSON_COLS: Partial<Record<Table, string[]>> = {
   jobs: ["payload"],
   learningRecords: ["sourceTraits", "destinationTraits", "params"],
   events: ["props"],
+  users: ["firstTouch"],
 };
 
 const BOOL_COLS: Partial<Record<Table, string[]>> = {
@@ -122,6 +123,12 @@ export const Users = {
   adopt(guestId: string, userId: string) {
     if (guestId === userId) return;
     for (const t of ["projects", "events"]) db().prepare(`UPDATE ${t} SET userId=? WHERE userId=?`).run(userId, guestId);
+    // Keep the guest's first touch so a signup still credits the campaign or creator that brought them.
+    db().prepare("UPDATE users SET firstTouch=(SELECT firstTouch FROM users WHERE id=?) WHERE id=? AND firstTouch IS NULL").run(guestId, userId);
+  },
+  /** Records where a visitor first came from; later touches never overwrite it. */
+  setFirstTouch(id: string, touch: Record<string, string>) {
+    db().prepare("UPDATE users SET firstTouch=? WHERE id=? AND firstTouch IS NULL").run(JSON.stringify(touch), id);
   },
 };
 
