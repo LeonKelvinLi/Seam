@@ -46,7 +46,7 @@ services:
       - key: NEXT_TELEMETRY_DISABLED
         value: "1"
       - key: SEAM_PUBLIC_URL
-        value: https://seamcut.onrender.com
+        value: https://clipmelt.com
       - key: STRIPE_PRICE_STARTER
         value: price_1UClYNLnwdL8dIyODfVjfTo7
       - key: STRIPE_PRICE_PRO
