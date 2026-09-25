@@ -5,7 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
 import type { TransitionRequest, TransitionResult } from "@/core/providers/types";
-import { ProviderOutcomeUnknownError } from "@/core/providers/types";
+import { ProviderOutcomeUnknownError, ProviderQueueSkip } from "@/core/providers/types";
 import { DEFAULT_FINE_TUNE, type QualityScores, type PromptIR } from "@/core/types";
 
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), "seam-fanout-"));
@@ -214,3 +214,24 @@ for (const state of ["submitting", "submitted"] as const) {
     assert.equal(Users.get(user.id)!.credits, user.credits);
   });
 }
+
+test("leaving a backed-up queue does not use up an attempt", async (t) => {
+  let calls = 0;
+  useProviders(t, true, async (req) => {
+    calls++;
+    if (calls === 1) throw new ProviderQueueSkip("fal Wan 3.0 Prime queue too long (1263 ahead); trying another model", "fal");
+    return rendered(req, "after-skip");
+  });
+  config.generation.parallelAttempts = 1;
+  const previousAttempts = config.generation.maxAttempts;
+  config.generation.maxAttempts = 1;
+  t.after(() => { config.generation.maxAttempts = previousAttempts; });
+  const { user, gen, job } = await queuedGeneration("queue_skip");
+  assert.ok(Users.spend(user.id, 2));
+  await runGenerateJob(job, () => {}, passingJudge);
+  assert.equal(calls, 2, "the next model ran even though only one attempt was allowed");
+  assert.equal(Generations.get(gen.id)?.status, "ready");
+  const rows = Attempts.forGeneration(gen.id);
+  assert.deepEqual(rows.map((a) => a.n), [1, 2], "attempt rows keep their own numbering");
+  assert.equal(rows[0].status, "failed");
+});

@@ -13,7 +13,7 @@ import { config } from "@/core/config";
 import { logger } from "@/core/log";
 import { download } from "@/core/media/ffmpeg";
 import { jpegDataUri } from "@/core/media/image";
-import { ProviderError, pollUntil, type ModelSpec, type TransitionProvider, type TransitionRequest, type TransitionResult } from "./types";
+import { ProviderError, ProviderQueueSkip, pollUntil, type ModelSpec, type TransitionProvider, type TransitionRequest, type TransitionResult } from "./types";
 
 const log = logger("fal");
 
@@ -126,7 +126,7 @@ export const falProvider: TransitionProvider = {
       if (s.status === "COMPLETED") return true;
       if (s.status === "IN_QUEUE" && shouldLeaveQueue(s.queue_position, Date.now() - queuedAt) && await cancelQueued(submit)) {
         log.warn("left a long queue", { model: model.id, ahead: s.queue_position, waitedSec: Math.round((Date.now() - queuedAt) / 1000) });
-        throw new ProviderError(`fal ${model.label} queue too long (${s.queue_position ?? "?"} ahead); trying another model`, false, "fal");
+        throw new ProviderQueueSkip(`fal ${model.label} queue too long (${s.queue_position ?? "?"} ahead); trying another model`, "fal");
       }
       req.onProgress?.(s.status === "IN_QUEUE" ? `Waiting in line (${s.queue_position ?? "?"} ahead)` : "Generating the camera move");
       return null;

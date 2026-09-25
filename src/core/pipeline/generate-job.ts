@@ -14,7 +14,7 @@ import { compileIR, renderPrompt } from "@/core/prompt/compiler";
 import { expectedProfile, proceduralAllowed, routeModels } from "@/core/providers/router";
 import { writeShot } from "@/core/prompt/director";
 import { openaiErrorSummary } from "@/core/openai";
-import { ProviderError, ProviderOutcomeUnknownError } from "@/core/providers/types";
+import { ProviderQueueSkip, ProviderError, ProviderOutcomeUnknownError } from "@/core/providers/types";
 import { isBillingError, markProviderUnavailable } from "@/core/providers/cooldown";
 import { styleStaging } from "@/core/recipes/style-contract";
 import { budgetExhausted } from "./budget";
@@ -166,7 +166,7 @@ export async function runGenerateJob(job: Job, report: Reporter, judge = judgeTr
       return shot;
     };
 
-    type RunOutcome = { attempt: GenerationAttempt; model: ModelSpec; ok: boolean; scores: QualityScores | null; bridgePath: string | null; error: string | null; recipeId: string; durationSec: number; unjudged?: boolean; outcomeUnknown?: boolean };
+    type RunOutcome = { attempt: GenerationAttempt; model: ModelSpec; ok: boolean; scores: QualityScores | null; bridgePath: string | null; error: string | null; recipeId: string; durationSec: number; unjudged?: boolean; outcomeUnknown?: boolean; skipped?: boolean };
     // One provider attempt: create the row, generate, normalise, judge, book costs. Safe to run several concurrently.
     // `live` turns false when the attempt's round is over. A fan-out sibling still rendering after that must not write
     // the generation's stage: the generation has moved on to stitching, ready or failed, and setStage would put it
@@ -242,11 +242,12 @@ export async function runGenerateJob(job: Job, report: Reporter, judge = judgeTr
         }
         Attempts.update(attempt.id, { status: "failed", error: msg, durationMs: Date.now() - ta, params: attempt.params, providerJobId: attempt.providerJobId });
         attempt.status = "failed"; attempt.durationMs = Date.now() - ta;
-        return { attempt, model, ok: false, scores: null, bridgePath: null, error: msg, recipeId: rec.id, durationSec, outcomeUnknown };
+        return { attempt, model, ok: false, scores: null, bridgePath: null, error: msg, recipeId: rec.id, durationSec, outcomeUnknown, skipped: e instanceof ProviderQueueSkip };
       }
     };
 
     let attemptNo = 0;
+    let attemptSeq = 0; // attempt row numbers; a skipped queue does not use up one of maxAttempts
     let switchedRecipe = false;
     const paidCustomer = Purchases.forUser(project.userId).length > 0;
     while (attemptNo < maxAttempts) {
@@ -267,10 +268,11 @@ export async function runGenerateJob(job: Job, report: Reporter, judge = judgeTr
       if (!round.length) throw new GenerationStopped(FRIENDLY_NO_MODEL, "no bridge model available for this recipe");
       // The round ends as soon as one model passes; a slower sibling keeps rendering and is logged when it lands.
       const live = { current: true };
-      const { done: results, pending } = await firstPassing(round.map((m, i) => runOne(m, attemptNo + i + 1, recipe, fineTune, live)));
+      const { done: results, pending } = await firstPassing(round.map((m, i) => runOne(m, attemptSeq + i + 1, recipe, fineTune, live)));
       live.current = false;
       for (const late of pending) void late.then((r) => log.info("late attempt finished", { gen: gen.id, n: r.attempt.n, model: r.model.id, status: r.attempt.status }));
-      attemptNo += round.length;
+      attemptSeq += round.length;
+      attemptNo += round.length - results.filter((r) => r.skipped).length;
       let passed = false;
       for (const r of results) {
         if (r.scores && r.bridgePath) best = selectPassingCandidate(best, { attempt: r.attempt, bridgePath: r.bridgePath, scores: r.scores, model: r.model, recipe: getRecipe(r.recipeId), durationSec: r.durationSec }, gen.mode);
@@ -278,6 +280,7 @@ export async function runGenerateJob(job: Job, report: Reporter, judge = judgeTr
         if (r.ok) { passed = true; continue; }
         // A rejected or failed model gets one shot per generation; later rounds go to the next-best bridge model.
         exclude = [...new Set([...exclude, r.model.id])];
+        if (r.skipped) continue; // never rendered: not a verdict on the recipe
         if (r.scores) {
           log.warn("quality rejected", { gen: gen.id, n: r.attempt.n, overall: r.scores.overall, issues: r.scores.issues });
           outcomes.push({ kind: "quality", message: r.scores.issues.join("; "), scores: r.scores, modelId: r.model.id });
@@ -290,6 +293,7 @@ export async function runGenerateJob(job: Job, report: Reporter, judge = judgeTr
       if (results.some((r) => r.outcomeUnknown)) throw new GenerationStopped(FRIENDLY_UNKNOWN, "provider outcome unknown; automatic generation fallback stopped");
       // Another model would be judged by the same missing judge: stop and refund instead of paying for renders nobody can check.
       if (results.some((r) => r.unjudged)) throw new GenerationStopped(FRIENDLY_NO_JUDGE, "no vision judge answered");
+      if (results.length && results.every((r) => r.skipped)) continue; // same plan, next model
       const next = planNextAttempt({ attempt: attemptNo, maxAttempts, recipe, fineTune, outcomes, opportunities: opps });
       if (!next) break;
       setStage("retry", 0.2 + attemptNo * 0.15, next.userMessage);

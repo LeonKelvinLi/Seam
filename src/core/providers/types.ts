@@ -67,6 +67,14 @@ export class ProviderError extends Error {
   }
 }
 
+/** The model's queue was too long, so the request was cancelled before it started: no render, no cost, no attempt used. */
+export class ProviderQueueSkip extends ProviderError {
+  constructor(message: string, providerId: ProviderId) {
+    super(message, false, providerId);
+    this.name = "ProviderQueueSkip";
+  }
+}
+
 /** Work may already be paid for or running. Neither transport retries nor model fallback may resubmit it. */
 export class ProviderOutcomeUnknownError extends ProviderError {
   constructor(message: string, providerId: ProviderId, public readonly requestId: string | null = null, public readonly correlationId: string | null = null) {

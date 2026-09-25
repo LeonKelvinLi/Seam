@@ -57,6 +57,10 @@ try {
     if (state) break;
   }
   mark(state || "timeout");
+  // Keep the generation's own record (attempts, scores, errors) from inside the guest session, pass or fail.
+  const gen = await b.eval(`(async () => { const g = new URLSearchParams(location.search).get("g"); if (!g) return null; const r = await fetch("/api/generations/" + g); return r.ok ? r.json() : { status: r.status }; })()`).catch((e) => ({ error: String(e) }));
+  fs.writeFileSync(path.join(OUT, "generation.json"), JSON.stringify(gen, null, 1));
+  for (const a of gen?.generation?.attemptLog ?? []) console.log(`attempt ${a.n} ${a.modelId} ${a.status} q=${a.quality ?? "-"} ${Math.round((a.durationMs ?? 0) / 1000)}s ${a.error ?? ""}`);
   if (state !== "ready") throw new Error(`generation ${state || "timed out"}`);
   await b.eval(`(() => { const v = [...document.querySelectorAll("video")].pop(); if (v) { v.scrollIntoView({ block: "center" }); v.muted = true; v.currentTime = 0; v.play(); } })()`);
   await sleep(9000);
