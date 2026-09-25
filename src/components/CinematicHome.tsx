@@ -25,7 +25,7 @@ const FILMS = [
     title: "Beyond the window seat",
     kind: "Fly through",
     start: "Window",
-    end: "Clouds",
+    end: "Mountains",
   },
   {
     id: "wheel-tunnel",
@@ -288,6 +288,7 @@ export function CinematicHome() {
       className={styles.home}
       ref={root}
       data-motion={motionReady ? motion : undefined}
+      data-film-open={Boolean(film)}
     >
       <section className={styles.hero} data-scene="hero">
         <div className={styles.heroToolbar}>
@@ -448,9 +449,11 @@ export function CinematicHome() {
             <video
               ref={scrub}
               src={
-                loadScrub ? "/examples/eye-space/after-mobile.mp4" : undefined
+                loadScrub
+                  ? "/examples/window-clouds/after-mobile.mp4"
+                  : undefined
               }
-              poster="/examples/eye-space/poster.jpg"
+              poster="/examples/window-clouds/poster.jpg"
               muted
               playsInline
               preload={loadScrub ? "auto" : "none"}
@@ -469,7 +472,7 @@ export function CinematicHome() {
               }}
               onSeeked={() => setScrubLoaded(true)}
               onError={() => setScrubError(true)}
-              aria-label="Scroll-controlled example from an eye to outer space"
+              aria-label="Scroll-controlled AI transition from an airplane window to a mountain landscape"
             />
           </div>
           <div className={styles.scrubShade} />
@@ -488,18 +491,18 @@ export function CinematicHome() {
           </div>
           <div className={styles.scrubCopy}>
             <h2 id="scrub-title">
-              The cut is where
+              Fly beyond
               <br />
-              the magic happens.
+              the window seat.
             </h2>
             <p>
-              A close-up becomes a cosmos.
+              An airplane window. A whole new view.
               <br />
-              Two shots become one continuous move.
+              AI makes the move between them.
             </p>
             <button
               className={styles.lightButton}
-              onClick={() => openFilm("eye-space")}
+              onClick={() => openFilm("window-clouds")}
             >
               <Icon name="play" /> Watch the full example
             </button>
@@ -519,7 +522,7 @@ export function CinematicHome() {
                   ? "Scroll preview unavailable. Use the full example above."
                   : loadScrub && !scrubLoaded
                     ? "Loading the requested frame…"
-                    : "Example: Eye → Space"}
+                    : "Example: Airplane window → Mountains"}
               </span>
               <a href="#how-it-works">
                 How it works <span aria-hidden="true">↓</span>

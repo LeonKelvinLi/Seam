@@ -656,13 +656,15 @@
 .processPlaneA {
   top: 0;
   left: 1%;
-  transform: rotateX(12deg) rotateY(18deg) rotateZ(-9deg)
+  transform: rotateX(calc(24deg - var(--progress) * 28deg))
+    rotateY(calc(35deg - var(--progress) * 48deg)) rotateZ(-9deg)
     translateY(calc(var(--progress) * -32px));
 }
 .processPlaneB {
   bottom: 0;
   right: -3%;
-  transform: rotateX(12deg) rotateY(-18deg) rotateZ(8deg)
+  transform: rotateX(calc(24deg - var(--progress) * 28deg))
+    rotateY(calc(-35deg + var(--progress) * 48deg)) rotateZ(8deg)
     translateY(calc(var(--progress) * 28px));
 }
 .processVisual img {
@@ -687,8 +689,9 @@
   z-index: 2;
   border-radius: 12px;
   padding: 20px;
-  transform: rotateX(calc(22deg - var(--progress) * 25deg)) rotateY(-12deg)
-    rotateZ(-4deg) translateZ(90px);
+  transform: rotateX(calc(32deg - var(--progress) * 42deg))
+    rotateY(calc(-24deg + var(--progress) * 32deg)) rotateZ(-4deg)
+    translateZ(calc(75px + var(--progress) * 45px));
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -771,14 +774,20 @@
   transition: transform 0.45s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 .galleryCard:nth-child(1) {
-  transform: rotateY(calc((0.5 - var(--progress)) * 12deg))
-    translateY(calc((0.5 - var(--progress)) * 30px));
+  transform: rotateY(calc((0.5 - var(--progress)) * 28deg))
+    rotateZ(calc((0.5 - var(--progress)) * -6deg))
+    translateY(calc((0.5 - var(--progress)) * 65px));
+}
+.galleryCard:nth-child(2) {
+  transform: rotateX(calc((0.5 - var(--progress)) * 18deg))
+    translateY(calc((0.5 - var(--progress)) * -45px));
 }
 .galleryCard:nth-child(3) {
-  transform: rotateY(calc((var(--progress) - 0.5) * 12deg))
-    translateY(calc((0.5 - var(--progress)) * -30px));
+  transform: rotateY(calc((var(--progress) - 0.5) * 28deg))
+    rotateZ(calc((0.5 - var(--progress)) * 6deg))
+    translateY(calc((0.5 - var(--progress)) * 65px));
 }
-.galleryCard:hover {
+.galleryCard:is(:hover, :focus-visible) {
   transform: translateY(-9px) rotateX(3deg);
 }
 .galleryImage {
@@ -1509,22 +1518,23 @@
 
 .depthTunnel {
   position: absolute;
-  right: 8%;
-  top: 23%;
-  width: 42%;
-  height: 54%;
-  perspective: 800px;
+  right: 16%;
+  top: 12%;
+  width: 31%;
+  height: 76%;
+  perspective: 1000px;
   pointer-events: none;
   overflow: visible;
-  opacity: 0.35;
+  opacity: calc(0.42 - var(--scrub) * 0.22);
 }
 .depthTunnel i {
   position: absolute;
   inset: 0;
-  border: 1px solid #e1d6ff44;
-  border-radius: 25%;
-  transform: rotateY(-18deg) rotateZ(calc(var(--layer) * -3deg))
-    translateZ(calc(var(--scrub) * 420px - var(--layer) * 100px));
+  border: 1px solid #e1eaff66;
+  border-radius: 44% 44% 42% 42%;
+  transform: rotateY(calc(-12deg + var(--scrub) * 18deg))
+    rotateZ(calc(var(--layer) * -1.2deg + var(--scrub) * 6deg))
+    translateZ(calc(var(--scrub) * 720px - var(--layer) * 125px));
   opacity: calc(0.7 - var(--layer) * 0.08);
 }
 @keyframes orbital-drift {
@@ -1546,21 +1556,90 @@
     translate: 0 0;
   }
 }
-.home[data-motion="true"] .orbit {
-  animation: orbital-drift 16s ease-in-out infinite;
+@keyframes footage-float {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  50% {
+    translate: 0 -14px;
+  }
 }
-.home[data-motion="true"] .source,
-.home[data-motion="true"] .output {
-  animation: scene-arrive 1.2s cubic-bezier(0.16, 1, 0.3, 1) both;
+@keyframes output-float {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  50% {
+    translate: 0 -8px;
+  }
+}
+@keyframes layers-breathe {
+  0%,
+  100% {
+    translate: 0 0 0;
+  }
+  50% {
+    translate: -12px -18px 25px;
+  }
+}
+@keyframes timeline-travel {
+  0% {
+    translate: clamp(-210px, -15vw, -48px) 0;
+    opacity: 0;
+  }
+  8%,
+  92% {
+    opacity: 1;
+  }
+  100% {
+    translate: clamp(48px, 15vw, 210px) 0;
+    opacity: 0;
+  }
+}
+@keyframes connection-turn {
+  to {
+    rotate: 1turn;
+  }
+}
+.home[data-motion="true"] .orbit {
+  animation: orbital-drift 12s ease-in-out infinite;
+}
+.home[data-motion="true"] .sourceA {
+  animation:
+    scene-arrive 1.2s cubic-bezier(0.16, 1, 0.3, 1) both,
+    footage-float 6.5s ease-in-out 1.2s infinite;
 }
 .home[data-motion="true"] .sourceB {
-  animation-delay: 0.12s;
+  animation:
+    scene-arrive 1.2s cubic-bezier(0.16, 1, 0.3, 1) 0.12s both,
+    footage-float 8s ease-in-out 1.32s infinite;
 }
 .home[data-motion="true"] .output {
-  animation-delay: 0.25s;
+  animation:
+    scene-arrive 1.2s cubic-bezier(0.16, 1, 0.3, 1) 0.25s both,
+    output-float 7s ease-in-out 1.45s infinite;
 }
-.hero[data-visible="false"] .orbit,
-.home[data-document-hidden="true"] .orbit {
+.home[data-motion="true"] :is(.bridgeLayer, .bridgeLayerTwo) {
+  animation: layers-breathe 9s ease-in-out infinite;
+}
+.home[data-motion="true"] .bridgeLayerTwo {
+  animation-direction: reverse;
+  animation-delay: -4.5s;
+}
+.home[data-motion="true"] :is(.floatingTag, .processPlaneAi) {
+  animation: output-float 6s ease-in-out infinite;
+}
+.home[data-motion="true"] .playhead {
+  animation: timeline-travel 7.8s linear infinite;
+}
+.home[data-motion="true"] :is(.spark, .processPlaneAi > span) {
+  animation: connection-turn 22s linear infinite;
+}
+.home [data-scene][data-visible="false"] *,
+.home[data-document-hidden="true"] *,
+.home[data-film-open="true"] *,
+.home .output:is(:hover, :focus-within) {
   animation-play-state: paused !important;
 }
 .home[data-motion="false"] .depthTunnel {
@@ -1568,8 +1647,8 @@
 }
 @media (max-width: 700px) {
   .depthTunnel {
-    right: -15%;
-    width: 85%;
+    right: 10%;
+    width: 80%;
     opacity: 0.22;
   }
 }
