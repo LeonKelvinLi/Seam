@@ -74,8 +74,26 @@ function klingBody(req: TransitionRequest, first: string, last: string, duration
   };
 }
 
-interface QueueSubmit { request_id: string; status_url: string; response_url: string }
+interface QueueSubmit { request_id: string; status_url: string; response_url: string; cancel_url?: string }
 interface QueueStatus { status: "IN_QUEUE" | "IN_PROGRESS" | "COMPLETED"; queue_position?: number; error?: string }
+
+/**
+ * fal runs a public queue per model. When one is backed up (hundreds ahead), waiting out its turn left a visitor on
+ * "Waiting in line" for up to 15 minutes. Leave the queue instead and let the router try the next model: a queued
+ * request has not started, so cancelling it costs nothing.
+ */
+export const MAX_QUEUE_AHEAD = 30;
+export const MAX_QUEUE_WAIT_MS = 90_000;
+export function shouldLeaveQueue(ahead: number | undefined, waitedMs: number): boolean {
+  return ((ahead ?? 0) > MAX_QUEUE_AHEAD && waitedMs > 15_000) || waitedMs > MAX_QUEUE_WAIT_MS;
+}
+
+/** True when fal accepted the cancel; a request that already started keeps running and is waited for as usual. */
+async function cancelQueued(submit: QueueSubmit): Promise<boolean> {
+  const url = submit.cancel_url ?? submit.status_url.replace(/\/status$/, "/cancel");
+  const res = await fetch(url, { method: "PUT", headers: { Authorization: `Key ${config.providers.falKey}` } }).catch(() => null);
+  return !!res && (res.ok || res.status === 202);
+}
 
 async function falFetch<T>(url: string, init: RequestInit): Promise<T> {
   const res = await fetch(url, { ...init, headers: { Authorization: `Key ${config.providers.falKey}`, "Content-Type": "application/json", ...(init.headers ?? {}) } });
@@ -102,12 +120,17 @@ export const falProvider: TransitionProvider = {
     const submit = await falFetch<QueueSubmit>(`https://queue.fal.run/${model.endpoint}`, { method: "POST", body: JSON.stringify(input) });
     log.info("submitted", { model: model.id, requestId: submit.request_id });
 
+    const queuedAt = Date.now();
     await pollUntil(async () => {
       const s = await falFetch<QueueStatus>(submit.status_url, { method: "GET" });
       if (s.status === "COMPLETED") return true;
+      if (s.status === "IN_QUEUE" && shouldLeaveQueue(s.queue_position, Date.now() - queuedAt) && await cancelQueued(submit)) {
+        log.warn("left a long queue", { model: model.id, ahead: s.queue_position, waitedSec: Math.round((Date.now() - queuedAt) / 1000) });
+        throw new ProviderError(`fal ${model.label} queue too long (${s.queue_position ?? "?"} ahead); trying another model`, false, "fal");
+      }
       req.onProgress?.(s.status === "IN_QUEUE" ? `Waiting in line (${s.queue_position ?? "?"} ahead)` : "Generating the camera move");
       return null;
-    }, 3000, 15 * 60_000, `fal ${model.label}`);
+    }, 3000, 8 * 60_000, `fal ${model.label}`);
 
     const result = await falFetch<{ video?: { url?: string } }>(submit.response_url, { method: "GET" });
     const url = result.video?.url;

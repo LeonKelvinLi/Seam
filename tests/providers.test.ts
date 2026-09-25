@@ -5,7 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import sharp from "sharp";
 import { config } from "@/core/config";
-import { FAL_MODELS, falProvider } from "@/core/providers/fal";
+import { FAL_MODELS, falProvider, shouldLeaveQueue } from "@/core/providers/fal";
 import { RUNWAY_MODELS, runwayProvider } from "@/core/providers/runway";
 import { LOCAL_MODEL } from "@/core/providers/local";
 import { PROVIDERS } from "@/core/providers/registry";
@@ -175,4 +175,13 @@ test("provider billing and invalid-request failures are not marked retryable", a
   assert.equal(calls, 2);
   status = 429;
   await assert.rejects(runwayProvider.generateTransition(req, RUNWAY_MODELS[0]), (error: unknown) => error instanceof ProviderError && error.retryable);
+});
+
+test("a backed-up fal queue is left quickly instead of waited out", () => {
+  // fal's queues are shared by every fal customer; position 531 is other people's work, not ours.
+  assert.equal(shouldLeaveQueue(531, 5_000), false, "give a long queue a few seconds to move");
+  assert.equal(shouldLeaveQueue(531, 16_000), true);
+  assert.equal(shouldLeaveQueue(4, 60_000), false, "a short queue is worth waiting for");
+  assert.equal(shouldLeaveQueue(4, 91_000), true, "but not forever");
+  assert.equal(shouldLeaveQueue(undefined, 91_000), true);
 });

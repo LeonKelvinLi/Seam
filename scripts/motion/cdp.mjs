@@ -88,6 +88,11 @@ export async function launch({ width = 1080, height = 1920, scale = 1 } = {}) {
 
   const api = {
     send,
+    /** Subscribe to a CDP event (e.g. Page.screencastFrame). */
+    on(method, fn) {
+      if (!listeners.has(method)) listeners.set(method, new Set());
+      listeners.get(method).add(fn);
+    },
     async goto(url, waitMs = 0) {
       const loaded = once("Page.loadEventFired");
       await send("Page.navigate", { url });
