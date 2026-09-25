@@ -35,14 +35,15 @@ export function AuthForm({ mode, google }: { mode: "login" | "signup"; google: b
   return (
     <div className="auth-shell">
       <aside className="auth-story" aria-label="Your Clipmelt workspace">
-        <h2 className="display">Your next cut<br />starts here.</h2>
-        <p>Pick up your footage, find your transitions, and keep track of your credits.</p>
+        <span className="page-kicker">Your creative workspace</span>
+        <h2 className="display">Your footage.<br />A new dimension.</h2>
+        <p>Keep your clips, AI transitions, and credits together. Pick up where your imagination left off.</p>
         <div className="auth-filmstrip">
           <figure><img src="/examples/coffee-ocean/frame_a.jpg" alt="Coffee swirling in a cup" width={640} height={360} /><figcaption>Your first shot</figcaption></figure>
-          <span className="auth-bridge" aria-label="Connected by an AI transition">↗</span>
+          <span className="auth-bridge" aria-label="Connected by an AI transition">✳</span>
           <figure><img src="/examples/coffee-ocean/frame_b.jpg" alt="Ocean waves seen from above" width={640} height={360} /><figcaption>Your next shot</figcaption></figure>
         </div>
-        <Link href="/library" className="auth-example-link">See what Clipmelt makes <span aria-hidden="true">↗</span></Link>
+        <Link href="/library" className="auth-example-link">Explore AI transitions <span aria-hidden="true">↗</span></Link>
       </aside>
       <section className="auth-panel" aria-labelledby="auth-title">
       <h1 id="auth-title" className="display">{mode === "login" ? "Log in to Clipmelt." : "Create your account."}</h1>
