@@ -195,18 +195,18 @@ export function CreateFlow({ styles }: { styles: { id: string; name: string; nee
   return (
     <div className="studio-shell mx-auto max-w-6xl px-5 pb-20">
       <StudioTabs active="create" />
-      <div className="studio-topline mono"><Link href="/">CLIPMELT / STUDIO</Link><span><span className="studio-status-dot" /> YOUR NEXT GREAT CUT</span></div>
+      <div className="studio-topline mono"><Link href="/">Your transition studio</Link><span><span className="studio-status-dot" /> AI connects your shots</span></div>
       <ol className="studio-phase-rail" aria-label="Creation progress">
-        <li data-active={phase === "upload" || phase === "analyzing"} aria-current={phase === "upload" || phase === "analyzing" ? "step" : undefined}><span className="mono">01</span> Bring your clips</li>
-        <li data-active={phase === "choose"} aria-current={phase === "choose" ? "step" : undefined}><span className="mono">02</span> Find your transition</li>
-        <li data-active={phase === "generating" || phase === "ready" || phase === "failed"} aria-current={phase === "generating" || phase === "ready" || phase === "failed" ? "step" : undefined}><span className="mono">03</span> Make the cut</li>
+        <li data-active={phase === "upload" || phase === "analyzing"} aria-current={phase === "upload" || phase === "analyzing" ? "step" : undefined}><span className="mono">01</span> Upload two clips</li>
+        <li data-active={phase === "choose"} aria-current={phase === "choose" ? "step" : undefined}><span className="mono">02</span> Choose a transition</li>
+        <li data-active={phase === "generating" || phase === "ready" || phase === "failed"} aria-current={phase === "generating" || phase === "ready" || phase === "failed" ? "step" : undefined}><span className="mono">03</span> Generate & download</li>
       </ol>
       {/* ---------------------------------------------------------------- upload / analyzing */}
       {(phase === "upload" || phase === "analyzing") && (
         <div className="rise">
           <div className="studio-intro">
-            <h1 className="display">Two clips.<br /><span>One impossible shot.</span></h1>
-            <p>Bring the beginning and the end.<br />We’ll find a way through.</p>
+            <h1 className="display">Your clips.<br /><span>Connected by AI.</span></h1>
+            <p>Upload a beginning and an ending.<br />AI generates the transition in between.</p>
           </div>
           {selectedStyle && <div className="mb-6 rounded-xl border border-[var(--hair)] p-5" role="status">
             <p className="text-[var(--accent)]">Selected style: <strong>{selectedStyle.name}</strong></p>
@@ -227,7 +227,7 @@ export function CreateFlow({ styles }: { styles: { id: string; name: string; nee
               <span className="muted text-sm">{view?.assets.start || view?.assets.end ? "Add the other clip to continue." : "Start with any two clips or images. Your transition begins here."}</span>
               {samples.length > 0 && !view?.assets.start && (
                 <div className="studio-samples">
-                  <div className="studio-samples-heading"><span className="mono muted">A LITTLE INSPIRATION</span><span className="muted text-xs">Try a sample pair</span></div>
+                  <div className="studio-samples-heading"><span className="mono muted">Start with a sample</span><span className="muted text-xs">Try a sample pair</span></div>
                   <div className="studio-samples-grid">
                     {samples.map((s, i) => <button key={s.id} className="studio-sample" onClick={() => startSample(s.id)} disabled={busy || up.start.uploading || up.end.uploading}>
                       <span className="studio-sample-images"><img src={s.aPoster} alt="" /><img src={s.bPoster} alt="" /><span aria-hidden="true">↗</span></span>
@@ -292,7 +292,7 @@ export function CreateFlow({ styles }: { styles: { id: string; name: string; nee
               </span>
               <span aria-live="polite">on this step {Math.round(Math.max(0, nowMs - stageSince.current.at) / 1000)}s</span>
             </div>
-            <p className="mt-5 muted text-sm">{gen.stage === "retry" ? gen.stageLabel : "An AI bridge usually takes 3 to 5 minutes. The model keeps its own pace, so a step can sit still for a while; the clock above keeps counting while it works. You can leave this page: it keeps rendering, appears in your account, and this browser gets a notification when it's ready."}</p>
+            <p className="mt-5 muted text-sm">{gen.stage === "retry" ? gen.stageLabel : "An AI transition usually takes a few minutes. Some steps take longer than others. You can return to it in My transitions; browser notifications are available if you have enabled them."}</p>
           </div>
         </div>
       )}
@@ -320,7 +320,8 @@ export function CreateFlow({ styles }: { styles: { id: string; name: string; nee
 
           <DownloadOptions generationId={gen.id} result={gen.result} trackDownloads />
 
-          <div className="mt-6 flex flex-wrap gap-2">
+          <p className="mt-6 text-xs muted">Make a new version · 2 credits per preview</p>
+          <div className="mt-3 flex flex-wrap gap-2">
             <button className="btn btn-ghost" onClick={() => generate({ from: { generationId: gen.id, action: "another" } })} disabled={busy}>Try another</button>
             <button className="btn btn-ghost" onClick={() => generate({ from: { generationId: gen.id, action: "wilder" } })} disabled={busy}>Make wilder</button>
             <button className="btn btn-ghost" onClick={() => generate({ from: { generationId: gen.id, action: "smoother" } })} disabled={busy}>Make smoother</button>
@@ -355,7 +356,8 @@ export function CreateFlow({ styles }: { styles: { id: string; name: string; nee
         <div className="rise max-w-xl">
           <h1 className="display text-3xl">That one didn't come together</h1>
           <p className="mt-3 muted">{gen.friendlyError ?? "We couldn't build that transition."}</p>
-          <div className="mt-6 flex flex-wrap gap-2">
+          <p className="mt-6 text-xs muted">Make a new version · 2 credits per preview</p>
+          <div className="mt-3 flex flex-wrap gap-2">
             <button className="btn btn-primary" onClick={() => generate({ intent: "smooth" })} disabled={busy}>Try a safer transition</button>
             <button className="btn btn-ghost" onClick={() => generate({ from: { generationId: gen.id, action: "another" } })} disabled={busy}>Try another idea</button>
             <button className="btn btn-ghost" onClick={reset}>Change clips</button>

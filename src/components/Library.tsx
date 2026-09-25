@@ -57,8 +57,8 @@ export function Library() {
       {examples.length > 0 && (
         <section className="mt-10">
           <div className="flex flex-wrap items-end justify-between gap-3">
-            <h2 className="text-xl">What a seamless bridge looks like</h2>
-            <span className="muted text-sm">Real AI bridges between two unrelated shots.</span>
+            <h2 className="text-xl">See the in-between.</h2>
+            <span className="muted text-sm">Example AI transitions connecting two different shots.</span>
           </div>
           <div className="mt-4 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {examples.map((ex) => <ExampleCard key={ex.id} example={ex} />)}
@@ -68,7 +68,7 @@ export function Library() {
 
       <section className="mt-14">
         <div className="flex flex-wrap items-end justify-between gap-3">
-          <h2 className="text-xl">Styles the director can choose</h2>
+          <h2 className="text-xl">Find your next move.</h2>
           <span className="muted text-sm">{projectId ? "Sorted by how well your clips suit each one." : "Each one says what footage it needs."}</span>
         </div>
         <div className="library-filters mt-4 flex gap-2 overflow-x-auto pb-2" role="group" aria-label="Transition categories">
