@@ -1,12 +1,12 @@
 @import "tailwindcss";
 
 :root {
-  --bg: #090b13;
-  --bg-2: #141827;
-  --fg: #f3f4f8;
-  --muted: #a6adbf;
+  --bg: #050608;
+  --bg-2: #11151b;
+  --fg: #d4d8df;
+  --muted: #949dab;
   --hair: rgba(214, 218, 238, 0.14);
-  --accent: #bbadff;
+  --accent: #ab9af2;
   --ease-out: cubic-bezier(0.2, 0.75, 0.2, 1);
   color-scheme: dark;
 }
@@ -103,7 +103,7 @@ img {
   z-index: 40;
   height: 72px;
   border-bottom: 1px solid #ffffff12;
-  background: #090b13df;
+  background: #050608ed;
   backdrop-filter: blur(24px);
 }
 .site-nav {
@@ -175,7 +175,7 @@ img {
   border-top: 1px solid var(--hair);
   padding: 65px clamp(24px, 7vw, 110px) 25px;
   font-size: 12px;
-  background: #080a10;
+  background: #050608;
 }
 .site-footer-brand {
   display: inline-block;

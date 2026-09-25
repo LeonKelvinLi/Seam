@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { type CSSProperties, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { track } from "@/lib/api";
 import styles from "./CinematicHome.module.css";
 
@@ -91,8 +91,17 @@ function Icon({
   );
 }
 
-function FilmLoop({ enabled }: { enabled: boolean }) {
+function FilmLoop({
+  id,
+  enabled,
+  timeline = false,
+}: {
+  id: string;
+  enabled: boolean;
+  timeline?: boolean;
+}) {
   const video = useRef<HTMLVideoElement>(null);
+  const [nearby, setNearby] = useState(false);
   useEffect(() => {
     const node = video.current;
     if (!node) return;
@@ -105,6 +114,7 @@ function FilmLoop({ enabled }: { enabled: boolean }) {
     const observer = new IntersectionObserver(
       ([entry]) => {
         visible = entry.isIntersecting;
+        if (visible) setNearby(true);
         sync();
       },
       { threshold: 0.1 },
@@ -116,17 +126,27 @@ function FilmLoop({ enabled }: { enabled: boolean }) {
       document.removeEventListener("visibilitychange", sync);
       node.pause();
     };
-  }, [enabled]);
+  }, [enabled, nearby]);
   return (
     <video
       ref={video}
-      src={enabled ? "/examples/coffee-ocean/after-mobile.mp4" : undefined}
-      poster="/examples/coffee-ocean/poster.jpg"
+      src={enabled && nearby ? `/examples/${id}/preview.mp4` : undefined}
+      poster={`/examples/${id}/poster.webp`}
       muted
       loop
       playsInline
       preload="none"
-      aria-label="Example: coffee connected to ocean with an AI transition"
+      onTimeUpdate={(event) => {
+        if (!timeline) return;
+        const node = event.currentTarget;
+        const scene = node.closest<HTMLElement>("[data-scene]");
+        if (Number.isFinite(node.duration) && node.duration > 0)
+          scene?.style.setProperty(
+            "--playback",
+            String(node.currentTime / node.duration),
+          );
+      }}
+      aria-label={`AI transition example: ${FILMS.find((item) => item.id === id)?.title}`}
     />
   );
 }
@@ -175,6 +195,17 @@ function useSceneMotion(
             ? clamp((height - rect.top) / (height + rect.height))
             : 0.5;
           section.style.setProperty("--progress", progress.toFixed(4));
+          section.style.setProperty(
+            "--enter",
+            (enabled
+              ? clamp((height - rect.top) / Math.max(1, height - 72))
+              : 1
+            ).toFixed(4),
+          );
+          section.style.setProperty(
+            "--leave",
+            (enabled ? clamp(-rect.top / height) : 0).toFixed(4),
+          );
           section.dataset.visible = String(
             rect.top < height && rect.bottom > 0,
           );
@@ -253,6 +284,10 @@ export function CinematicHome() {
   const [scrubError, setScrubError] = useState(false);
   const [loadScrub, setLoadScrub] = useState(false);
   const [film, setFilm] = useState<string | null>(null);
+  const [heroId, setHeroId] = useState("window-clouds");
+  const [previewId, setPreviewId] = useState<string | null>(null);
+  const heroFilm = FILMS.find((item) => item.id === heroId)!;
+  const featuredFilms = FILMS.filter((item) => item.id !== "eye-space");
   useEffect(() => {
     const preference = window.matchMedia("(prefers-reduced-motion: reduce)");
     const sync = () => {
@@ -293,7 +328,7 @@ export function CinematicHome() {
       <section className={styles.hero} data-scene="hero">
         <div className={styles.heroToolbar}>
           <span className={styles.productLabel}>
-            <span /> Made for the moment between
+            <span /> Your footage. A new connection.
           </span>
           <button
             type="button"
@@ -308,124 +343,151 @@ export function CinematicHome() {
             {motion ? "on" : "off"}
           </button>
         </div>
-        <div className={styles.heroCopy}>
-          <h1>
-            AI transitions
-            <br />
-            between your clips.
-          </h1>
-          <p>
-            You shoot the moments. Clipmelt creates the impossible
-            <br className={styles.desktopBreak} /> move that connects them. Your
-            footage stays yours.
-          </p>
-          <div className={styles.heroActions}>
-            <Link className={styles.primary} data-cta="hero" href="/create">
-              Create a transition <Icon />
-            </Link>
-            <button
-              className={styles.secondary}
-              onClick={() => openFilm("coffee-ocean")}
-            >
-              <Icon name="play" /> See it in action
-            </button>
-          </div>
-          <span className={styles.offer}>
-            Your first preview is free. No signup required.
-          </span>
-        </div>
-        <div
-          className={styles.assemblyWrap}
-          onPointerMove={(event) => {
-            if (!motion || event.pointerType !== "mouse" || !assembly.current)
-              return;
-            const rect = event.currentTarget.getBoundingClientRect();
-            assembly.current.style.setProperty(
-              "--pointer-x",
-              ((event.clientX - rect.left) / rect.width - 0.5).toFixed(3),
-            );
-            assembly.current.style.setProperty(
-              "--pointer-y",
-              ((event.clientY - rect.top) / rect.height - 0.5).toFixed(3),
-            );
-          }}
-          onPointerLeave={() => {
-            assembly.current?.style.setProperty("--pointer-x", "0");
-            assembly.current?.style.setProperty("--pointer-y", "0");
-          }}
-        >
-          <div className={styles.assembly} ref={assembly}>
-            <div className={styles.orbit} aria-hidden="true">
-              <i />
-              <i />
-              <i />
-            </div>
-            <figure className={`${styles.source} ${styles.sourceA}`}>
-              <div className={styles.sourceLabel}>
-                <span className={styles.sourceDot} /> Your first clip{" "}
-                <span>A</span>
-              </div>
-              <img
-                src="/examples/coffee-ocean/frame_a.jpg"
-                alt="Coffee swirling inside a cup"
-                width="640"
-                height="360"
-              />
-              <figcaption>Starts in your world.</figcaption>
-            </figure>
-            <figure className={`${styles.source} ${styles.sourceB}`}>
-              <div className={styles.sourceLabel}>
-                <span className={styles.sourceDot} /> Your next clip{" "}
-                <span>B</span>
-              </div>
-              <img
-                src="/examples/coffee-ocean/frame_b.jpg"
-                alt="An aerial view of ocean waves"
-                width="640"
-                height="360"
-              />
-              <figcaption>Ends somewhere new.</figcaption>
-            </figure>
-            <div className={styles.bridgeLayer} aria-hidden="true" />
-            <div className={styles.bridgeLayerTwo} aria-hidden="true" />
-            <div className={styles.output}>
-              <div className={styles.outputBar}>
-                <span className={styles.aiDot} /> Connected with AI{" "}
-                <span>Coffee → Ocean</span>
-              </div>
-              <FilmLoop enabled={motion && !film} />
+        <div className={styles.heroStage}>
+          <div className={styles.heroCopy}>
+            <h1>
+              AI transitions.
+              <br />
+              Your footage.
+              <br />A new dimension.
+            </h1>
+            <p>
+              You bring two shots. Clipmelt creates the AI transition that
+              connects them.
+            </p>
+            <div className={styles.heroActions}>
+              <Link className={styles.primary} data-cta="hero" href="/create">
+                Create a transition <Icon />
+              </Link>
               <button
-                className={styles.playButton}
-                onClick={() => openFilm("coffee-ocean")}
-                aria-label="Watch coffee to ocean before and after"
+                className={styles.secondary}
+                onClick={() => openFilm(heroId)}
               >
-                <Icon name="play" />
+                <Icon name="play" /> Watch the film
               </button>
-              <div className={styles.outputCaption}>
-                <span>Your clips. A new connection.</span>
-                <span>Watch the result</span>
-              </div>
             </div>
-            <div className={styles.floatingTag}>
-              <span className={styles.spark}>✳</span>
-              <div>
-                Only the in-between.<small>That’s the part AI makes.</small>
+            <span className={styles.offer}>
+              Your first preview is free. Start with your clips or a sample
+              pair.
+            </span>
+          </div>
+          <div
+            className={styles.assemblyWrap}
+            onPointerMove={(event) => {
+              if (!motion || event.pointerType !== "mouse" || !assembly.current)
+                return;
+              const rect = event.currentTarget.getBoundingClientRect();
+              assembly.current.style.setProperty(
+                "--pointer-x",
+                ((event.clientX - rect.left) / rect.width - 0.5).toFixed(3),
+              );
+              assembly.current.style.setProperty(
+                "--pointer-y",
+                ((event.clientY - rect.top) / rect.height - 0.5).toFixed(3),
+              );
+            }}
+            onPointerLeave={() => {
+              assembly.current?.style.setProperty("--pointer-x", "0");
+              assembly.current?.style.setProperty("--pointer-y", "0");
+            }}
+          >
+            <div className={styles.assembly} ref={assembly}>
+              <figure className={`${styles.source} ${styles.sourceA}`}>
+                <div className={styles.sourceLabel}>
+                  <span className={styles.sourceDot} /> Your first clip{" "}
+                  <span>A</span>
+                </div>
+                <img
+                  src={`/examples/${heroId}/frame_a.webp`}
+                  alt={`${heroFilm.start} original shot`}
+                  width="640"
+                  height="360"
+                />
+                <figcaption>Starts in your world.</figcaption>
+              </figure>
+              <figure className={`${styles.source} ${styles.sourceB}`}>
+                <div className={styles.sourceLabel}>
+                  <span className={styles.sourceDot} /> Your next clip{" "}
+                  <span>B</span>
+                </div>
+                <img
+                  src={`/examples/${heroId}/frame_b.webp`}
+                  alt={`${heroFilm.end} destination shot`}
+                  width="640"
+                  height="360"
+                />
+                <figcaption>Ends somewhere new.</figcaption>
+              </figure>
+              <div className={styles.output}>
+                <div className={styles.outputBar}>
+                  <span className={styles.aiDot} /> Connected with AI{" "}
+                  <span>
+                    {heroFilm.start} → {heroFilm.end}
+                  </span>
+                </div>
+                <FilmLoop
+                  key={heroId}
+                  id={heroId}
+                  enabled={motion && !film}
+                  timeline
+                />
+                <button
+                  className={styles.playButton}
+                  onClick={() => openFilm(heroId)}
+                  aria-label={`Watch ${heroFilm.title} before and after`}
+                >
+                  <Icon name="play" />
+                </button>
+                <div className={styles.outputCaption}>
+                  <span>{heroFilm.title}</span>
+                  <span>Original footage + AI transition</span>
+                </div>
               </div>
             </div>
           </div>
         </div>
         <div
           className={styles.editTimeline}
-          aria-label="Your first clip, AI-generated transition, your second clip"
+          aria-label="Example playback position"
         >
-          <span>Your clip A</span>
-          <div className={styles.timelineA} />
-          <div className={styles.timelineAi}>
-            <i /> AI transition <i />
+          <span>{heroFilm.start}</span>
+          <div className={styles.timelineTrack} aria-hidden="true">
+            <img src={`/examples/${heroId}/frame_a.webp`} alt="" />
+            <img src={`/examples/${heroId}/bridge-frame.webp`} alt="" />
+            <img src={`/examples/${heroId}/frame_b.webp`} alt="" />
+            <b className={styles.playhead} />
           </div>
-          <div className={styles.timelineB} />
-          <span>Your clip B</span>
-          <b className={styles.playhead} aria-hidden="true" />
+          <span>{heroFilm.end}</span>
+        </div>
+        <div
+          className={styles.scenePicker}
+          role="group"
+          aria-label="Choose the featured film"
+        >
+          {featuredFilms.map((item) => (
+            <button
+              key={item.id}
+              aria-pressed={heroId === item.id}
+              onClick={() => {
+                setHeroId(item.id);
+                root.current
+                  ?.querySelector<HTMLElement>('[data-scene="hero"]')
+                  ?.style.setProperty("--playback", "0");
+              }}
+            >
+              <img
+                src={`/examples/${item.id}/frame_b.webp`}
+                alt=""
+                width="160"
+                height="90"
+              />
+              <span>
+                {item.start} → {item.end}
+                <small>{item.kind}</small>
+              </span>
+              <Icon name="play" />
+            </button>
+          ))}
         </div>
         <div className={styles.heroFoot}>
           <a href="#the-transition">
@@ -476,16 +538,11 @@ export function CinematicHome() {
             />
           </div>
           <div className={styles.scrubShade} />
-          <div className={styles.depthTunnel} aria-hidden="true">
-            {Array.from({ length: 6 }, (_, layer) => (
-              <i key={layer} style={{ "--layer": layer } as CSSProperties} />
-            ))}
-          </div>
           <div className={styles.scrubTop}>
             <span className={styles.glassLabel}>Inside an AI transition</span>
             <span>
               {motion
-                ? "Your scroll moves the playhead"
+                ? "Scroll to move through the film"
                 : "Explore at your own pace"}
             </span>
           </div>
@@ -517,7 +574,7 @@ export function CinematicHome() {
               <span>Next shot</span>
             </div>
             <div className={styles.scrubLinks}>
-              <span>
+              <span role="status">
                 {scrubError
                   ? "Scroll preview unavailable. Use the full example above."
                   : loadScrub && !scrubLoaded
@@ -532,6 +589,72 @@ export function CinematicHome() {
         </div>
       </section>
 
+      <section className={styles.gallery} id="examples" data-scene="gallery">
+        <div className={styles.sectionHeading}>
+          <div>
+            <span className={styles.sectionLabel}>The screening room</span>
+            <h2>
+              Every cut has
+              <br />a way through.
+            </h2>
+          </div>
+          <Link href="/library" className={styles.textLink}>
+            Explore transition styles <Icon />
+          </Link>
+        </div>
+        <div className={styles.galleryGrid}>
+          {featuredFilms.map((item) => (
+            <button
+              key={item.id}
+              className={styles.galleryCard}
+              onClick={() => openFilm(item.id)}
+              onPointerEnter={(event) => {
+                if (event.pointerType === "mouse") setPreviewId(item.id);
+              }}
+              onPointerLeave={() => setPreviewId(null)}
+              onFocus={() => setPreviewId(item.id)}
+              onBlur={() => setPreviewId(null)}
+              aria-label={`Watch ${item.title} before and after`}
+            >
+              <div className={styles.galleryImage}>
+                <img
+                  src={`/examples/${item.id}/frame_b.webp`}
+                  alt={`${item.end} destination frame`}
+                  width="640"
+                  height="360"
+                  loading="lazy"
+                />
+                {previewId === item.id && motion && !film && (
+                  <div className={styles.galleryClip}>
+                    <FilmLoop id={item.id} enabled />
+                  </div>
+                )}
+                <span className={styles.galleryIndex}>{item.kind}</span>
+                <span className={styles.galleryPlay}>
+                  <Icon name="play" />
+                </span>
+                <div className={styles.galleryInset}>
+                  <img
+                    src={`/examples/${item.id}/frame_a.webp`}
+                    alt={`${item.start} starting frame`}
+                    width="320"
+                    height="180"
+                    loading="lazy"
+                  />
+                </div>
+              </div>
+              <div className={styles.galleryCaption}>
+                <span>{item.title}</span>
+                <span>Watch before & after</span>
+              </div>
+            </button>
+          ))}
+        </div>
+        <p className={styles.galleryNote}>
+          Real example renders. Compare the original cut with the AI transition.
+        </p>
+      </section>
+
       <section
         className={styles.process}
         id="how-it-works"
@@ -539,17 +662,17 @@ export function CinematicHome() {
       >
         <div className={styles.processHeading}>
           <span className={styles.sectionLabel}>
-            A little input. A whole new connection.
+            The making of a transition
           </span>
           <h2>
-            Two clips in.
+            Your shots.
             <br />
-            An impossible move out.
+            Connected by AI.
           </h2>
           <p>
-            No timeline gymnastics. No frame-by-frame masking.
+            Keep the moments you captured.
             <br />
-            Just a beginning, an ending, and a little imagination.
+            Create the movement between them.
           </p>
         </div>
         <div className={styles.processGrid}>
@@ -591,7 +714,7 @@ export function CinematicHome() {
           >
             <div className={styles.processPlaneA}>
               <img
-                src="/examples/window-clouds/frame_a.jpg"
+                src="/examples/window-clouds/frame_a.webp"
                 alt="View through an airplane window"
                 loading="lazy"
                 width="640"
@@ -599,18 +722,25 @@ export function CinematicHome() {
               />
               <span>Your starting frame</span>
             </div>
-            <div className={styles.processPlaneAi}>
-              <span>✳</span>
-              <strong>
-                AI fills
-                <br />
-                the space.
-              </strong>
-              <small>A transition made for your shots</small>
-            </div>
+            <button
+              className={styles.processPlaneAi}
+              onClick={() => openFilm("window-clouds")}
+              aria-label="Watch the airplane AI transition"
+            >
+              <img
+                src="/examples/window-clouds/bridge-frame.webp"
+                alt="Frame from the AI-generated connection"
+                width="640"
+                height="360"
+                loading="lazy"
+              />
+              <span>
+                <Icon name="play" /> The AI-generated transition
+              </span>
+            </button>
             <div className={styles.processPlaneB}>
               <img
-                src="/examples/window-clouds/frame_b.jpg"
+                src="/examples/window-clouds/frame_b.webp"
                 alt="A mountain landscape above a layer of mist"
                 loading="lazy"
                 width="640"
@@ -626,63 +756,6 @@ export function CinematicHome() {
           </Link>
           <span>First preview free. Yours to try.</span>
         </div>
-      </section>
-
-      <section className={styles.gallery} id="examples" data-scene="gallery">
-        <div className={styles.sectionHeading}>
-          <div>
-            <span className={styles.sectionLabel}>A few ways to get there</span>
-            <h2>
-              Different worlds.
-              <br />
-              One smooth move.
-            </h2>
-          </div>
-          <Link href="/library" className={styles.textLink}>
-            Explore transition styles <Icon />
-          </Link>
-        </div>
-        <div className={styles.galleryGrid}>
-          {FILMS.slice(1).map((item, index) => (
-            <button
-              key={item.id}
-              className={styles.galleryCard}
-              onClick={() => openFilm(item.id)}
-              aria-label={`Watch ${item.title} before and after`}
-            >
-              <div className={styles.galleryImage}>
-                <img
-                  src={`/examples/${item.id}/frame_b.jpg`}
-                  alt={`${item.end} destination frame`}
-                  width="640"
-                  height="360"
-                  loading="lazy"
-                />
-                <span className={styles.galleryIndex}>{item.kind}</span>
-                <span className={styles.galleryPlay}>
-                  <Icon name="play" />
-                </span>
-                <div className={styles.galleryInset}>
-                  <img
-                    src={`/examples/${item.id}/frame_a.jpg`}
-                    alt={`${item.start} starting frame`}
-                    width="320"
-                    height="180"
-                    loading="lazy"
-                  />
-                </div>
-              </div>
-              <div className={styles.galleryCaption}>
-                <span>{item.title}</span>
-                <span>{String(index + 1).padStart(2, "0")}</span>
-              </div>
-            </button>
-          ))}
-        </div>
-        <p className={styles.galleryNote}>
-          Example renders. The starting shot, the AI-generated bridge, and the
-          destination—all in one place.
-        </p>
       </section>
 
       <section className={styles.faq} aria-labelledby="faq-title">
@@ -714,8 +787,16 @@ export function CinematicHome() {
 
       <section className={styles.finalCta} data-scene="outro">
         <div className={styles.outroFrames} aria-hidden="true">
-          <img src="/examples/coffee-ocean/frame_a.jpg" alt="" loading="lazy" />
-          <img src="/examples/coffee-ocean/frame_b.jpg" alt="" loading="lazy" />
+          <img
+            src="/examples/coffee-ocean/frame_a.webp"
+            alt=""
+            loading="lazy"
+          />
+          <img
+            src="/examples/coffee-ocean/frame_b.webp"
+            alt=""
+            loading="lazy"
+          />
         </div>
         <span className={styles.sectionLabel}>
           Your footage has somewhere to go.

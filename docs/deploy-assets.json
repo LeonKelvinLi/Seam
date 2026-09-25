@@ -1,5 +1,5 @@
 {
-  "version": "2026-09-05-preview-v1",
+  "version": "2026-09-25-dark-media-v1",
   "description": "App homepage, before/after examples, sample pairs, and recipe previews only. Excludes user uploads, marketing ads and source/review material.",
   "files": [
     {
@@ -971,6 +971,81 @@
       "path": "public/library-ai/silhouette-match.jpg",
       "bytes": 44880,
       "sha256": "d5cd7d580dbbe5053c8a27ef82b81c295a8480edddd1d719a481978d1d5bc278"
+    },
+    {
+      "path": "public/examples/coffee-ocean/bridge-frame.webp",
+      "bytes": 15020,
+      "sha256": "68392f7045e0d16c5c97331fb992ddc5a14b5e4a1f727c03ee542ed72819a72b"
+    },
+    {
+      "path": "public/examples/coffee-ocean/frame_a.webp",
+      "bytes": 16696,
+      "sha256": "721f1873ee4efedad9a7fc3797610f8a07f3d7587ad5a149caec180cb12b1f7d"
+    },
+    {
+      "path": "public/examples/coffee-ocean/frame_b.webp",
+      "bytes": 60020,
+      "sha256": "8121c2b0416ab69f43c1dbb2e6da59e02c9b72372983081cf976671753212191"
+    },
+    {
+      "path": "public/examples/coffee-ocean/poster.webp",
+      "bytes": 16066,
+      "sha256": "b6880cbd1562184c429649c1c184b9e3664a833d553d40245030711cc4f12a39"
+    },
+    {
+      "path": "public/examples/coffee-ocean/preview.mp4",
+      "bytes": 1097179,
+      "sha256": "f19ec5bc6aab94bf3c482178ca4c347350071fdcbee39e777d0b058f5334834f"
+    },
+    {
+      "path": "public/examples/wheel-tunnel/bridge-frame.webp",
+      "bytes": 6454,
+      "sha256": "3dc1bb281078323dbf4c6ac76868a6747cafee33cb4fba138c3595bd83213fa9"
+    },
+    {
+      "path": "public/examples/wheel-tunnel/frame_a.webp",
+      "bytes": 22970,
+      "sha256": "6037031d282345ba8a9ca0b1f5984f392b646ec01e64b2bf0614e29ddae537a5"
+    },
+    {
+      "path": "public/examples/wheel-tunnel/frame_b.webp",
+      "bytes": 15630,
+      "sha256": "91c112857131d40675ddbc23f88a4091d5aa72d77d6dd3bff94d535d56bb1c54"
+    },
+    {
+      "path": "public/examples/wheel-tunnel/poster.webp",
+      "bytes": 20972,
+      "sha256": "be95ebd6ee32a69c95e997e32e1bfa16153e1138cef605116252e7bff56d01f2"
+    },
+    {
+      "path": "public/examples/wheel-tunnel/preview.mp4",
+      "bytes": 947400,
+      "sha256": "47d4b1511af44357392eb718c18400e8de3061dc775ffed57511db03e1b5c72b"
+    },
+    {
+      "path": "public/examples/window-clouds/bridge-frame.webp",
+      "bytes": 9914,
+      "sha256": "7f71840fb91cd87d1ff569428d627be9188a53e5b57077b4832e950cef47734e"
+    },
+    {
+      "path": "public/examples/window-clouds/frame_a.webp",
+      "bytes": 14734,
+      "sha256": "b52ee1eae3ea7106bdfe96d8992c90f0b314aecd900083ed75538de4b40a4e37"
+    },
+    {
+      "path": "public/examples/window-clouds/frame_b.webp",
+      "bytes": 31010,
+      "sha256": "bf064f4a703e59835cf4b823a7387e0b4949aa94aa9f636562f7ab70b444b589"
+    },
+    {
+      "path": "public/examples/window-clouds/poster.webp",
+      "bytes": 14300,
+      "sha256": "a2cc58c31144d7aff255f71a42c6d138b832f90663b3eca6815c299aae5c0110"
+    },
+    {
+      "path": "public/examples/window-clouds/preview.mp4",
+      "bytes": 609604,
+      "sha256": "a0948bad3daea3c3ce8a3ed1f12467545bba503722c39c8709836d75138fd365"
     }
   ]
 }
