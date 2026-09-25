@@ -25,6 +25,7 @@ import { LOCAL_MODEL } from "@/core/providers/local";
 import type { ModelSpec, TransitionRequest } from "@/core/providers/types";
 import { judgeTransition, passes } from "@/core/quality/judge";
 import { passesStyle } from "@/core/quality/style";
+import { transitionSmoothness } from "@/core/quality/smoothness";
 import { selectPassingCandidate } from "@/core/quality/selection";
 import { planNextAttempt, type AttemptOutcome } from "@/core/quality/retry-policy";
 import { recordGeneration, learnedModelQuality } from "@/core/learning/records";
@@ -349,6 +350,15 @@ export async function runGenerateJob(job: Job, report: Reporter, judge = judgeTr
     const fullPath = path.join(dir, "full.mp4");
     await stitch(partA, best.bridgePath, partB, fullPath, spec, config.output.seamCrossfadeSec);
     timings.stitchMs = Date.now() - stitchStart;
+    // How noticeable the joins are (1 = invisible, 3+ reads as a cut), logged for every delivered transition.
+    let smoothness: { jolt: number; lurch: number } | null = null;
+    try {
+      const [aInfo, bInfo] = await Promise.all([probe(partA), probe(best.bridgePath)]);
+      const d = config.output.seamCrossfadeSec;
+      const m = await transitionSmoothness(fullPath, spec.fps, [aInfo.durationSec - d / 2, aInfo.durationSec + bInfo.durationSec - 1.5 * d]);
+      smoothness = { jolt: Math.round(m.jolt * 100) / 100, lurch: Math.round(m.lurch * 100) / 100 };
+      log.info("join smoothness", { gen: gen.id, ...smoothness, model: best.model.id, recipe: best.recipe.id });
+    } catch (e) { log.warn("smoothness measurement failed", { gen: gen.id, error: (e as Error).message }); }
     setStage("export", 0.95);
     const exportStart = Date.now();
     const posterPath = path.join(dir, "poster.jpg");
@@ -367,7 +377,7 @@ export async function runGenerateJob(job: Job, report: Reporter, judge = judgeTr
     const result: Generation["result"] = {
       bridgePath: finalBridge, fullPath, posterPath, bridgeDurationSec: best.durationSec, fullDurationSec: full.durationSec,
       cutA: frameA.t, cutB: frameB.t, providerId: best.model.providerId, modelId: best.model.id, quality: best.scores, attempts: attempts.length,
-      fellBackToLocal, suggestion,
+      fellBackToLocal, suggestion, smoothness,
     };
     Generations.update(gen.id, { status: "ready", stage: "ready", stageLabel: labelFor("ready"), progress: 1, result, recipeId: best.recipe.id, friendlyError: null });
     recordGeneration({ generation: { ...gen, recipeId: best.recipe.id }, a: analysisA, b: analysisB, attempts, quality: best.scores, promptVersion: best.attempt.promptIR.version, durationSec: best.durationSec });

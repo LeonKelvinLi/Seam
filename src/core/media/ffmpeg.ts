@@ -264,13 +264,14 @@ export async function trimClip(input: string, output: string, startSec: number |
  * own clip length, and playing that more than `maxSpeedup` times faster turns a smooth move into a flash (a 5 s morph
  * squeezed into 1.1 s on 2026-09-16), so the bridge only shortens that far. Returns the bridge's final duration.
  */
-export async function normalizeBridge(input: string, output: string, spec: FrameSpec, targetDurationSec: number, maxSpeedup = Infinity): Promise<number> {
+export async function normalizeBridge(input: string, output: string, spec: FrameSpec, targetDurationSec: number, maxSpeedup = Infinity, ramp = config.output.bridgeRamp): Promise<number> {
   const info = await probe(input);
   const durationSec = info.durationSec > 0 ? Math.max(targetDurationSec, info.durationSec / maxSpeedup) : targetDurationSec;
   const factor = info.durationSec > 0 ? durationSec / info.durationSec : 1;
-  const gap = info.width > 0 && info.height > 0 ? Math.abs((info.width / info.height) / (spec.width / spec.height) - 1) : 1;
-  const frame = gap <= COVER_MAX_ASPECT_GAP ? coverFilter(spec.width, spec.height) : fitFilter(spec.width, spec.height);
-  const filter = `[0:v]${frame},setpts=${factor.toFixed(5)}*PTS,fps=${spec.fps},setsar=1[v]`;
+  const frame = bridgeFrameFilter(info, spec);
+  const curve = ramp ? speedRamp(info.durationSec, durationSec) : null;
+  const retime = curve ? `setpts='(${curve})/TB'` : `setpts=${factor.toFixed(5)}*PTS`;
+  const filter = `[0:v]${frame},${retime},fps=${spec.fps},setsar=1[v]`;
   await ffmpeg([
     "-i", input, "-f", "lavfi", "-i", "anullsrc=channel_layout=stereo:sample_rate=48000",
     "-filter_complex", filter, "-map", "[v]", "-map", "1:a:0", "-t", durationSec.toFixed(3),
@@ -278,6 +279,28 @@ export async function normalizeBridge(input: string, output: string, spec: Frame
     "-c:a", "aac", "-ar", "48000", "-ac", "2", "-movflags", "+faststart", output,
   ]);
   return Math.round(durationSec * 1000) / 1000;
+}
+
+/** Crop a bridge to fill the output when the aspect ratios nearly agree, otherwise fit it. */
+export function bridgeFrameFilter(info: ProbeInfo, spec: FrameSpec): string {
+  const gap = info.width > 0 && info.height > 0 ? Math.abs((info.width / info.height) / (spec.width / spec.height) - 1) : 1;
+  return gap <= COVER_MAX_ASPECT_GAP ? coverFilter(spec.width, spec.height) : fitFilter(spec.width, spec.height);
+}
+
+/**
+ * Output time as a function of source time T for a bridge squeezed from `sourceSec` into `outSec`: slowest at both
+ * ends (where it meets the real footage), fastest in the middle, same total length. The output-per-source rate is
+ * w(T) = wEnd - (wEnd - wMid) * sin^2(pi T / S), whose integral is below; it hits outSec exactly at T = S.
+ * Returns null when there is no real speed-up to shape (a linear retime is then just as smooth).
+ */
+export function speedRamp(sourceSec: number, outSec: number): string | null {
+  if (!(sourceSec > 0) || sourceSec < outSec * 1.15) return null;
+  const avg = outSec / sourceSec; // mean output seconds per source second (0.4 for 5 s -> 2 s)
+  let wMid = Math.min(0.15, avg), wEnd = 2 * avg - wMid; // wEnd 0.65 -> the ends play at about 1.5x
+  if (wEnd > 1) { wEnd = 1; wMid = 2 * avg - 1; }
+  if (wEnd <= wMid + 0.05 || wMid <= 0) return null;
+  const S = sourceSec.toFixed(4), e = wEnd.toFixed(5), d = (wEnd - wMid).toFixed(5);
+  return `${e}*T-${d}*(T/2-${S}*sin(2*PI*T/${S})/(4*PI))`;
 }
 
 /** Add a silent audio track to a silent video without re-encoding video. */

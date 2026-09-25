@@ -72,12 +72,19 @@ export const config = {
     /** Longest edge of the delivered video. */
     maxEdge: 1280,
     /** Seconds of crossfade at each seam between footage and the AI bridge. */
-    seamCrossfadeSec: 0.12,
+    // 0.2 with the speed-ramped bridge measured smoothest (scripts/smoothness-bench.ts); the bridge's first and last
+    // frames reproduce the footage, so the dissolve blends near-identical images rather than showing a double exposure.
+    seamCrossfadeSec: num("SEAM_SEAM_CROSSFADE_SEC", 0.2),
     /**
      * The fastest an AI bridge is played back relative to how the model rendered it: 2.5 plays a 5 s render in 2 s,
      * the length of the site's example bridges (scripts/build-examples.ts). Faster than that, a camera move reads as a flash.
      */
     maxBridgeSpeedup: num("SEAM_MAX_BRIDGE_SPEEDUP", 2.5),
+    /**
+     * Speed-ramp the bridge instead of playing it at one constant speed: near real speed where it meets the footage,
+     * fastest in the middle. A constant 2.5x lurched at both joins (footage at 1x, bridge at 2.5x).
+     */
+    bridgeRamp: (process.env.SEAM_BRIDGE_RAMP ?? "1") !== "0",
     /** Hold duration used when an uploaded still image needs to become footage. */
     imageHoldSec: 1.6,
   },

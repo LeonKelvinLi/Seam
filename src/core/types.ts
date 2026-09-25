@@ -245,6 +245,8 @@ export interface GenerationResult {
   fellBackToLocal: boolean;
   /** Friendly suggestion shown when the footage fought the chosen recipe. */
   suggestion: string | null;
+  /** Join smoothness of the delivered video (src/core/quality/smoothness.ts): jolt 1 is invisible, 3+ reads as a cut. */
+  smoothness?: { jolt: number; lurch: number } | null;
 }
 
 export interface Generation {
