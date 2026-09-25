@@ -232,7 +232,10 @@ export async function runGenerateJob(job: Job, report: Reporter, judge = judgeTr
       } catch (e) {
         const msg = (e as Error).message;
         log.warn("attempt failed", { gen: gen.id, n, error: msg });
-        if (e instanceof ProviderError && !e.retryable && isBillingError(e.message)) { markProviderUnavailable(e.providerId); log.warn("provider parked", { provider: e.providerId, reason: "billing" }); }
+        // An unfunded wallet will not refill in minutes: park the provider for an hour, and (like a skipped queue) don't
+        // let a render that never happened use up one of the generation's attempts.
+        const billing = e instanceof ProviderError && !e.retryable && isBillingError(e.message);
+        if (billing) { markProviderUnavailable(e.providerId, 60 * 60_000); log.warn("provider parked", { provider: e.providerId, reason: "billing" }); }
         const outcomeUnknown = e instanceof ProviderOutcomeUnknownError;
         if (model.providerId === "higgsfield") {
           attempt.params = { ...attempt.params, providerRequestState: outcomeUnknown ? "unknown" : attempt.params.providerRequestState === "completed" ? "completed" : "failed" };
@@ -243,7 +246,7 @@ export async function runGenerateJob(job: Job, report: Reporter, judge = judgeTr
         }
         Attempts.update(attempt.id, { status: "failed", error: msg, durationMs: Date.now() - ta, params: attempt.params, providerJobId: attempt.providerJobId });
         attempt.status = "failed"; attempt.durationMs = Date.now() - ta;
-        return { attempt, model, ok: false, scores: null, bridgePath: null, error: msg, recipeId: rec.id, durationSec, outcomeUnknown, skipped: e instanceof ProviderQueueSkip };
+        return { attempt, model, ok: false, scores: null, bridgePath: null, error: msg, recipeId: rec.id, durationSec, outcomeUnknown, skipped: e instanceof ProviderQueueSkip || billing };
       }
     };
 
