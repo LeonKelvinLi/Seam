@@ -144,53 +144,77 @@ function useSceneMotion(
       node.querySelectorAll<HTMLElement>("[data-scene]"),
     );
     const stage = node.querySelector<HTMLElement>("[data-scrub-stage]");
+    const scrubScene = sections.find(
+      (section) => section.dataset.scene === "scrub",
+    );
     let frame = 0;
     let latestTime = 0;
-    const render = () => {
+    let geometryDirty = true;
+    let target = 0;
+    let position: number | null = null;
+    let previousFrame = 0;
+    const render = (time: number) => {
       frame = 0;
       node.dataset.documentHidden = String(document.hidden);
-      if (document.hidden) return;
-      const height = window.innerHeight;
-      // Read geometry together before changing any scene styles. Interleaving
-      // reads and writes makes the browser lay out the page during scrolling.
-      const stageHeight = stage?.offsetHeight ?? height - 72;
-      const geometry = sections.map((section) => ({
-        section,
-        rect: section.getBoundingClientRect(),
-      }));
-      for (const { section, rect } of geometry) {
-        const progress = enabled
-          ? clamp((height - rect.top) / (height + rect.height))
-          : 0.5;
-        section.style.setProperty("--progress", progress.toFixed(4));
-        section.dataset.visible = String(rect.top < height && rect.bottom > 0);
-        if (section.dataset.scene === "scrub") {
-          const pinned = enabled
-            ? clamp((72 - rect.top) / Math.max(1, rect.height - stageHeight))
-            : 0;
-          section.style.setProperty("--scrub", pinned.toFixed(4));
-          const video = scrub.current;
-          if (enabled && video && Number.isFinite(video.duration)) {
-            latestTime = pinned * Math.max(0, video.duration - 0.05);
-            if (
-              !video.seeking &&
-              Math.abs(video.currentTime - latestTime) > 0.07
-            )
-              video.currentTime = latestTime;
+      if (document.hidden) {
+        previousFrame = 0;
+        return;
+      }
+      if (geometryDirty) {
+        geometryDirty = false;
+        const height = window.innerHeight;
+        // Read geometry together before changing any scene styles. Interleaving
+        // reads and writes makes the browser lay out the page during scrolling.
+        const stageHeight = stage?.offsetHeight ?? height - 72;
+        const geometry = sections.map((section) => ({
+          section,
+          rect: section.getBoundingClientRect(),
+        }));
+        for (const { section, rect } of geometry) {
+          const progress = enabled
+            ? clamp((height - rect.top) / (height + rect.height))
+            : 0.5;
+          section.style.setProperty("--progress", progress.toFixed(4));
+          section.dataset.visible = String(
+            rect.top < height && rect.bottom > 0,
+          );
+          if (section.dataset.scene === "scrub") {
+            target = enabled
+              ? clamp((72 - rect.top) / Math.max(1, rect.height - stageHeight))
+              : 0;
           }
         }
       }
+      const elapsed = previousFrame ? Math.min(64, time - previousFrame) : 16;
+      previousFrame = time;
+      // Ease the visual playhead, never the document scroll. Stop the loop as
+      // soon as it settles, and read layout only on actual scroll/resize events.
+      position =
+        position === null || !enabled
+          ? target
+          : position + (target - position) * (1 - Math.exp(-elapsed / 160));
+      const settling = Math.abs(target - position) > 0.0005;
+      if (!settling) position = target;
+      scrubScene?.style.setProperty("--scrub", position.toFixed(4));
+      const video = scrub.current;
+      if (enabled && video && Number.isFinite(video.duration)) {
+        latestTime = position * Math.max(0, video.duration - 0.05);
+        if (!video.seeking && Math.abs(video.currentTime - latestTime) > 1 / 30)
+          video.currentTime = latestTime;
+      }
+      if (settling) frame = requestAnimationFrame(render);
     };
     const schedule = () => {
+      geometryDirty = true;
       if (!frame) frame = requestAnimationFrame(render);
     };
     const seek = () => {
       if (
         enabled &&
         scrub.current &&
-        Math.abs(scrub.current.currentTime - latestTime) > 0.07
+        Math.abs(scrub.current.currentTime - latestTime) > 1 / 30
       )
-        schedule();
+        if (!frame) frame = requestAnimationFrame(render);
     };
     const video = scrub.current;
     video?.addEventListener("loadedmetadata", schedule);

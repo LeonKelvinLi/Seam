@@ -15,6 +15,9 @@ in use. No animation dependency or paid generation was added for this work.
 - Kept the initial section geometry stable while reading the motion preference,
   avoiding a height change during hydration for visitors with motion enabled.
 - Grouped geometry reads before CSS writes in the scroll frame callback.
+- Eased the visual playhead over a 160ms time constant, with geometry cached
+  between scroll/resize events and no continuing animation loop once settled.
+  A Chrome check settled within one video frame of the scroll-derived target.
 - Shortened the pinned section to 190svh on desktop and 160svh on small screens.
 - Sized the 3D hero by viewport width so its output panel clears the timeline.
 - Used the actual stage height for video progress and made the stage fit short
