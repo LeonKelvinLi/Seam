@@ -1,0 +1,260 @@
+{
+  "id": "clipmelt-onetap-916",
+  "timeline": "sequence",
+  "width": 1080,
+  "height": 1920,
+  "fps": 30,
+  "duration": 29.4,
+  "clipWidth": 1080,
+  "loudness": -13,
+  "clips": {
+    "life1": {
+      "src": "data/ads/pexels/6646803_couch_phone_up.mp4"
+    },
+    "life2": {
+      "src": "data/ads/pexels/7227054_couch_phone.mp4"
+    },
+    "life3": {
+      "src": "data/ads/pexels/6238176_couch_shopping.mp4"
+    },
+    "life4": {
+      "src": "data/ads/pexels/6413916_lying_call.mp4"
+    },
+    "app": {
+      "src": "data/ads/real/app_condensed.mp4"
+    },
+    "skate": {
+      "src": "data/live-results/diag-0925/run1_full.mp4"
+    },
+    "coaster": {
+      "src": "data/ads/real/ugc_rails_full.mp4"
+    },
+    "cliff": {
+      "src": "data/live-results/fal-check3/run1_full.mp4"
+    },
+    "coffee": {
+      "src": "public/examples/coffee-ocean/after.mp4"
+    }
+  },
+  "shots": [
+    {
+      "type": "title",
+      "t0": 0,
+      "t1": 1.8,
+      "lines": [
+        "AI transitions",
+        "without After Effects."
+      ]
+    },
+    {
+      "type": "life",
+      "t0": 1.8,
+      "t1": 4.2,
+      "clip": "life1",
+      "from": 0,
+      "idea": "skateboard \u2192 BMX"
+    },
+    {
+      "type": "app",
+      "t0": 4.2,
+      "t1": 9.0,
+      "clip": "app",
+      "badgeUntil": 3.6
+    },
+    {
+      "type": "result",
+      "t0": 9.0,
+      "t1": 12.3,
+      "clip": "skate",
+      "from": 4.9,
+      "to": 8.2,
+      "ai": [
+        5.833,
+        7.907
+      ]
+    },
+    {
+      "type": "flash",
+      "t0": 12.3,
+      "t1": 13.1,
+      "caption": "the old way:<br>keyframes \u00b7 masks \u00b7 tracking"
+    },
+    {
+      "type": "life",
+      "t0": 13.1,
+      "t1": 14.9,
+      "clip": "life2",
+      "from": 3.0,
+      "idea": "roller coaster \u2192 cartoon"
+    },
+    {
+      "type": "result",
+      "t0": 14.9,
+      "t1": 17.9,
+      "clip": "coaster",
+      "from": 6.3,
+      "to": 9.3,
+      "ai": [
+        6.95,
+        9.0
+      ]
+    },
+    {
+      "type": "life",
+      "t0": 17.9,
+      "t1": 19.5,
+      "clip": "life3",
+      "from": 5.0,
+      "idea": "cliff jump \u2192 wave"
+    },
+    {
+      "type": "result",
+      "t0": 19.5,
+      "t1": 22.5,
+      "clip": "cliff",
+      "from": 4.1,
+      "to": 7.1,
+      "ai": [
+        4.933,
+        6.967
+      ]
+    },
+    {
+      "type": "life",
+      "t0": 22.5,
+      "t1": 24.1,
+      "clip": "life4",
+      "from": 3.0,
+      "idea": "coffee \u2192 ocean"
+    },
+    {
+      "type": "result",
+      "t0": 24.1,
+      "t1": 27.1,
+      "clip": "coffee",
+      "from": 2.5,
+      "to": 5.5,
+      "ai": [
+        3.033,
+        5.033
+      ]
+    },
+    {
+      "type": "outro",
+      "t0": 27.1,
+      "t1": 29.4
+    }
+  ],
+  "images": {
+    "mark": "public/brand/seamcut-mark-1024.png"
+  },
+  "copy": {
+    "brand": "Clipmelt",
+    "url": "clipmelt.com",
+    "outroLine": "your first transition is free"
+  },
+  "music": {
+    "src": "data/ads/music/track_c.wav",
+    "segments": [
+      {
+        "from": 36.2,
+        "at": 0,
+        "dur": 27.1,
+        "fadeIn": 0.01,
+        "fadeOut": 0.12
+      }
+    ]
+  },
+  "sfx": [
+    {
+      "kind": "sub",
+      "at": 0.05,
+      "gainDb": -8
+    },
+    {
+      "kind": "swell",
+      "at": 1.2,
+      "gainDb": -14
+    },
+    {
+      "kind": "click",
+      "at": 1.95,
+      "gainDb": -16
+    },
+    {
+      "kind": "tap",
+      "at": 6.65,
+      "gainDb": -8
+    },
+    {
+      "kind": "whoosh",
+      "at": 9.93,
+      "gainDb": -10
+    },
+    {
+      "kind": "glitch",
+      "at": 12.3,
+      "gainDb": -8
+    },
+    {
+      "kind": "click",
+      "at": 13.25,
+      "gainDb": -16
+    },
+    {
+      "kind": "whoosh",
+      "at": 15.55,
+      "gainDb": -10
+    },
+    {
+      "kind": "click",
+      "at": 18.05,
+      "gainDb": -16
+    },
+    {
+      "kind": "whoosh",
+      "at": 20.33,
+      "gainDb": -10
+    },
+    {
+      "kind": "click",
+      "at": 22.65,
+      "gainDb": -16
+    },
+    {
+      "kind": "whoosh",
+      "at": 24.63,
+      "gainDb": -10
+    },
+    {
+      "kind": "glitch",
+      "at": 27.1,
+      "gainDb": -2
+    },
+    {
+      "kind": "sting",
+      "at": 27.178,
+      "gainDb": 6
+    },
+    {
+      "kind": "sub",
+      "at": 27.178,
+      "gainDb": -6
+    },
+    {
+      "kind": "glitch",
+      "at": 27.6,
+      "gainDb": -6
+    },
+    {
+      "kind": "glitch",
+      "at": 27.84,
+      "gainDb": -8
+    },
+    {
+      "kind": "glitch",
+      "at": 28.72,
+      "gainDb": -8
+    }
+  ]
+}
