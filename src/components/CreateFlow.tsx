@@ -35,6 +35,8 @@ export function CreateFlow({ styles }: { styles: { id: string; name: string; nee
   const [needCredits, setNeedCredits] = useState(false);
   const [networkLimited, setNetworkLimited] = useState(false);
   const autoRecipe = useRef<string | null>(params.get("recipe"));
+  /** Project whose first transition was started automatically, so it happens once per pair of clips. */
+  const autoStarted = useRef<string | null>(null);
   const [selectedRecipeId, setSelectedRecipeId] = useState(params.get("recipe"));
   const selectedStyle = styles.find((r) => r.id === selectedRecipeId);
   const analyzeRequested = useRef<string | null>(null);
@@ -140,11 +142,41 @@ export function CreateFlow({ styles }: { styles: { id: string; name: string; nee
     if (phase === "choose" && autoRecipe.current) {
       const r = autoRecipe.current;
       autoRecipe.current = null;
+      autoStarted.current = projectId;
       setSelectedRecipeId(null);
       setUrl(projectId, null);
       void generate({ recipeId: r });
     }
   }, [phase, generate, projectId, setUrl]);
+
+  // No choosing step: once the clips are understood, start the best transition for them (the first recommendation).
+  // The other styles stay one tap away on the result screen.
+  useEffect(() => {
+    if (phase !== "choose" || !view || !projectId || autoRecipe.current || autoStarted.current === projectId || busy || needCredits) return;
+    if (view.generations.length) return;
+    const best = view.recommendations.find((r) => r && r.lane !== "surprise");
+    if (!best) return;
+    autoStarted.current = projectId;
+    void generate({ intent: best.lane, opportunityId: best.opportunity.id });
+  }, [phase, view, projectId, busy, needCredits, generate]);
+
+  /** The other recommended styles for the same clips, one tap each, under a result or a failed run. */
+  const otherStyles = (currentRecipeId: string | null) => {
+    const recs = (view?.recommendations ?? []).filter((r): r is NonNullable<typeof r> => !!r && r.opportunity.recipeId !== currentRecipeId);
+    if (!recs.length) return null;
+    return (
+      <div className="mt-6">
+        <p className="text-xs muted">Try a different style for these clips · 2 credits per preview</p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {recs.map((r) => (
+            <button key={r.lane} className="btn btn-ghost btn-sm" disabled={busy} onClick={() => generate({ intent: r.lane, opportunityId: r.opportunity.id })}>
+              {r.lane === "surprise" ? "Surprise me · " : ""}{r.opportunity.title}
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  };
 
   const onFile = async (role: "start" | "end", file: File) => {
     if (loadingSample.current) return;
@@ -198,7 +230,7 @@ export function CreateFlow({ styles }: { styles: { id: string; name: string; nee
       <div className="studio-topline mono"><Link href="/">Your transition studio</Link><span><span className="studio-status-dot" /> AI connects your shots</span></div>
       <ol className="studio-phase-rail" aria-label="Creation progress">
         <li data-active={phase === "upload" || phase === "analyzing"} aria-current={phase === "upload" || phase === "analyzing" ? "step" : undefined}><span className="mono">01</span> Upload two clips</li>
-        <li data-active={phase === "choose"} aria-current={phase === "choose" ? "step" : undefined}><span className="mono">02</span> Choose a transition</li>
+        <li data-active={phase === "choose"} aria-current={phase === "choose" ? "step" : undefined}><span className="mono">02</span> Best transition picked</li>
         <li data-active={phase === "generating" || phase === "ready" || phase === "failed"} aria-current={phase === "generating" || phase === "ready" || phase === "failed" ? "step" : undefined}><span className="mono">03</span> Generate & download</li>
       </ol>
       {/* ---------------------------------------------------------------- upload / analyzing */}
@@ -327,6 +359,7 @@ export function CreateFlow({ styles }: { styles: { id: string; name: string; nee
             <button className="btn btn-ghost" onClick={() => generate({ from: { generationId: gen.id, action: "smoother" } })} disabled={busy}>Make smoother</button>
             <button className="btn btn-ghost" onClick={() => generate({ from: { generationId: gen.id, action: "regenerate" } })} disabled={busy}>Regenerate</button>
           </div>
+          {otherStyles(gen.recipeId)}
           <div className="mt-3 flex flex-wrap gap-2">
             <button className="btn btn-ghost btn-sm" onClick={share}>{copied ? "Link copied" : "Share"}</button>
             <button className="btn btn-ghost btn-sm" onClick={() => setShowFineTune((v) => !v)}>Fine tune</button>
@@ -362,6 +395,7 @@ export function CreateFlow({ styles }: { styles: { id: string; name: string; nee
             <button className="btn btn-ghost" onClick={() => generate({ from: { generationId: gen.id, action: "another" } })} disabled={busy}>Try another idea</button>
             <button className="btn btn-ghost" onClick={reset}>Change clips</button>
           </div>
+          {otherStyles(gen.recipeId)}
         </div>
       )}
 

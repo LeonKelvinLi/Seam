@@ -8,7 +8,9 @@
 import { createHash } from "node:crypto";
 import { FreeRuns, Purchases, Users } from "@/db/repo";
 
-export const FREE_RUNS_PER_NETWORK_PER_DAY = Math.max(1, Number(process.env.SEAM_FREE_RUNS_PER_NETWORK ?? 2) || 2);
+// 5, not 2: households, offices and mobile carriers put many people behind one address (2 locked out the owner's own
+// phone on 2026-09-25 after two test runs). The daily free budget stays the hard backstop against abuse.
+export const FREE_RUNS_PER_NETWORK_PER_DAY = Math.max(1, Number(process.env.SEAM_FREE_RUNS_PER_NETWORK ?? 5) || 5);
 
 export function networkOf(ip: string): string {
   const v = ip.trim().toLowerCase().replace(/^::ffff:(?=\d+\.)/, "");

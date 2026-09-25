@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api, track } from "@/lib/api";
 import { GoogleButton, useHere } from "@/components/GoogleButton";
@@ -16,6 +16,9 @@ export function Paywall({ freeRuns, networkLimited = false }: { freeRuns: number
   const [error, setError] = useState<string | null>(null);
   useEffect(() => { api<Me>("/api/auth/me").then(setMe).catch(() => {}); }, []);
   useEffect(() => { track("paywall_shown", { free_runs: freeRuns }); }, [freeRuns]);
+  // On a phone the paywall renders below the buttons that triggered it; bring it into view so a tap never looks dead.
+  const box = useRef<HTMLElement>(null);
+  useEffect(() => { box.current?.scrollIntoView({ behavior: "smooth", block: "center" }); }, []);
   const guest = !me?.user?.email;
   const here = useHere();
   const buy = async (pack: Pack) => {
@@ -25,7 +28,7 @@ export function Paywall({ freeRuns, networkLimited = false }: { freeRuns: number
     catch (e) { setError((e as Error).message); setBusy(null); }
   };
   return (
-    <section className="mt-6 rounded-2xl border border-white/10 bg-white/[0.03] p-6" aria-live="polite">
+    <section ref={box} className="mt-6 rounded-2xl border border-white/10 bg-white/[0.03] p-6" aria-live="polite">
       <p className="mono text-xs muted">{networkLimited ? "Free limit for this network" : "Free trial used"}</p>
       <h2 className="display text-2xl mt-1">{networkLimited ? "Today's free transitions on this network are used up." : freeRuns === 1 ? "Your free transition is done." : `Your ${freeRuns} free transitions are done.`}</h2>
       <p className="mt-2 muted text-sm">{networkLimited ? "Sign in with Google to use your own free transition, or add a pack." : guest ? "Sign in to keep this project and buy credits. Two credits per preview transition." : "Add a credit pack to keep generating. Credits never expire."}</p>
