@@ -247,6 +247,7 @@ export async function runGenerateJob(job: Job, report: Reporter, judge = judgeTr
     };
 
     let attemptNo = 0;
+    let switchedRecipe = false;
     const paidCustomer = Purchases.forUser(project.userId).length > 0;
     while (attemptNo < maxAttempts) {
       const learned = learnedModelQuality([recipe.id]);
@@ -256,7 +257,8 @@ export async function runGenerateJob(job: Job, report: Reporter, judge = judgeTr
       if (overBudget && attemptNo === 0) log.warn("daily provider budget reached; using the procedural bridge", { gen: gen.id });
       // The last attempt on a pair the cheap models could not bridge goes to the strongest model for the class, whatever
       // its tier or price: a run that ends with nothing is worse than a dearer take that works.
-      const lastChance = attemptNo > 0 && attemptNo + 1 >= maxAttempts;
+      // A switch to a safer recipe gets the usual routing; escalating to the priciest model is for the chosen recipe.
+      const lastChance = !switchedRecipe && attemptNo > 0 && attemptNo + 1 >= maxAttempts;
       const ranked = overBudget ? [LOCAL_MODEL] : routeModels({ recipe, mode: gen.mode, exclude, learned, best: lastChance, measured });
       const remote = ranked.filter((m) => m.providerId !== "local");
       const leadIsQuick = remote.length > 0 && expectedProfile(remote[0], measured[remote[0].id]).expectedWaitSec <= FAN_OUT_MIN_WAIT_SEC;
@@ -291,6 +293,7 @@ export async function runGenerateJob(job: Job, report: Reporter, judge = judgeTr
       const next = planNextAttempt({ attempt: attemptNo, maxAttempts, recipe, fineTune, outcomes, opportunities: opps });
       if (!next) break;
       setStage("retry", 0.2 + attemptNo * 0.15, next.userMessage);
+      if (next.recipeId !== recipe.id) switchedRecipe = true;
       recipe = getRecipe(next.recipeId);
       fineTune = next.fineTune;
       exclude = [...new Set([...exclude, ...next.excludeModels])];
@@ -353,6 +356,10 @@ export async function runGenerateJob(job: Job, report: Reporter, judge = judgeTr
     Exports.create({ generationId: gen.id, kind: "bridge", path: finalBridge });
     timings.exportMs = Date.now() - exportStart;
 
+    // Delivered although the selected move didn't show: say what the viewer is looking at.
+    if (!suggestion && best.scores.styleMatch && best.scores.styleMatch !== "matched") {
+      suggestion = `Not quite ${best.recipe.name}: Clipmelt found its own way between your clips. Try another if you want to go again.`;
+    }
     const result: Generation["result"] = {
       bridgePath: finalBridge, fullPath, posterPath, bridgeDurationSec: best.durationSec, fullDurationSec: full.durationSec,
       cutA: frameA.t, cutB: frameB.t, providerId: best.model.providerId, modelId: best.model.id, quality: best.scores, attempts: attempts.length,

@@ -10,7 +10,7 @@ import { sampleFrames } from "@/core/media/ffmpeg";
 import type { TransitionRecipe } from "@/core/recipes/types";
 import type { QualityScores } from "@/core/types";
 import { styleRequirement } from "@/core/recipes/style-contract";
-import { enforceStyleAssessment } from "./style";
+import { annotateStyleAssessment } from "./style";
 
 const log = logger("judge");
 
@@ -65,7 +65,7 @@ export async function openaiJudge(bridgePath: string, sourceFrame: string, destF
     model, instructions: SYSTEM, content, schema: Schema, name: "quality_scores", maxOutputTokens: 4000,
   }, api);
   const p = res.data;
-  const scores = enforceStyleAssessment({
+  const scores = annotateStyleAssessment({
     startFidelity: clamp(p.startFidelity), endFidelity: clamp(p.endFidelity), subjectConsistency: clamp(p.subjectConsistency),
     continuity: clamp(p.continuity), artifacts: clamp(p.artifacts), aesthetic: clamp(p.aesthetic), transitionSuccess: clamp(p.transitionSuccess),
     overall: clamp(p.overall), issues: p.issues.slice(0, 8),

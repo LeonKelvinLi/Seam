@@ -12,7 +12,6 @@ import type { QualityScores } from "@/core/types";
 import { openaiJudge } from "./openai-judge";
 import { heuristicJudge } from "./heuristic-judge";
 import { detectSeamBreaks, type SeamBreak } from "./seamless";
-import { passesStyle } from "./style";
 
 const log = logger("quality");
 
@@ -109,6 +108,7 @@ export function thresholdFor(mode: "preview" | "final" = "final"): number {
   return mode === "preview" ? config.generation.qualityThresholdPreview : config.generation.qualityThreshold;
 }
 
+/** Delivery gate: seamless, faithful to both clips, and good enough overall. Matching the selected style is not required. */
 export function passes(scores: QualityScores, mode: "preview" | "final" = "final"): boolean {
-  return scores.seamless !== false && passesStyle(scores) && scores.overall >= thresholdFor(mode) && scores.startFidelity >= 45 && scores.endFidelity >= 45;
+  return scores.seamless !== false && scores.overall >= thresholdFor(mode) && scores.startFidelity >= 45 && scores.endFidelity >= 45;
 }

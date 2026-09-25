@@ -139,23 +139,21 @@ test("a take no vision judge could check is refused, and the generation stops an
   assert.equal(Users.get(user.id)!.credits, before + 2, "the preview's credits come back");
 });
 
-test("wrong-style renders are retried in the same style, never delivered, and refunded once", async (t) => {
+test("a clean take in a different style is delivered with a note instead of retried and refunded", async (t) => {
   const requested: string[] = [];
-  useProviders(t, true, async (req) => { requested.push(req.transitionType); return rendered(req, "wrong-style"); });
+  useProviders(t, true, async (req) => { requested.push(req.transitionType); return rendered(req, "other-style"); });
   const previousAttempts = config.generation.maxAttempts;
   config.generation.maxAttempts = 3;
   t.after(() => { config.generation.maxAttempts = previousAttempts; });
-  const { user, gen, job } = await queuedGeneration("style_failure", "orbit");
+  const { user, gen, job } = await queuedGeneration("style_other", "orbit");
   assert.ok(Users.spend(user.id, 2));
-  const wrongStyle = async () => ({ judge: "openai" as const, costUsd: 0, scores: { ...passing, overall: 99, styleMatch: "mismatched" as const, styleEvidence: "The camera pushes in without circling the subject.", issues: ["No orbit is visible."] } });
-  await assert.rejects(runGenerateJob(job, () => {}, wrongStyle), /every AI bridge attempt failed or was rejected/);
-  assert.equal(requested.length, 3);
-  assert.ok(requested.every(r => r === "orbit"));
-  assert.ok(Attempts.forGeneration(gen.id).every(a => a.recipeId === "orbit" && a.status === "rejected"));
-  assert.equal(Generations.get(gen.id)?.result, null);
-  assert.equal(Generations.get(gen.id)?.status, "failed");
-  assert.equal(Generations.get(gen.id)?.recipeId, "orbit");
-  assert.equal(Users.get(user.id)!.credits, user.credits, "refund restores the balance");
+  const otherStyle = async () => ({ judge: "openai" as const, costUsd: 0, scores: { ...passing, overall: 99, styleMatch: "mismatched" as const, styleEvidence: "The camera pushes in without circling the subject.", issues: ["No orbit is visible."] } });
+  await runGenerateJob(job, () => {}, otherStyle);
+  assert.ok(requested.length >= 1 && requested.every(r => r === "orbit"));
+  const done = Generations.get(gen.id)!;
+  assert.equal(done.status, "ready");
+  assert.match(done.result?.suggestion ?? "", /Not quite Orbit Transition/);
+  assert.equal(Users.get(user.id)!.credits, user.credits - 2, "a delivered take is charged");
 });
 
 for (const requestId of [null, "accepted-job"] as const) {
