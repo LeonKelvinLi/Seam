@@ -1,0 +1,139 @@
+{
+  "id": "clipmelt-inset-dandelion-916",
+  "timeline": "sequence",
+  "width": 1080,
+  "height": 1920,
+  "fps": 30,
+  "duration": 13.9,
+  "clipWidth": 1080,
+  "loudness": -13,
+  "clips": {
+    "result": {
+      "src": "data/live-results/post-dandelion-snow/run1_full.mp4"
+    },
+    "dand": {
+      "src": "data/ads/pexels/pair2_a_dandelion.mp4"
+    },
+    "snow": {
+      "src": "data/ads/pexels/pair2_b_snow.mp4"
+    }
+  },
+  "shots": [
+    {
+      "type": "inset",
+      "t0": 0,
+      "t1": 4.6,
+      "clip": "result",
+      "from": 1.4,
+      "to": 6.0,
+      "ai": [
+        3.8,
+        5.9
+      ],
+      "a": "dand",
+      "aAt": 2.0,
+      "b": "snow",
+      "bAt": 0.5,
+      "text": "dandelion<br>\u2192 snow"
+    },
+    {
+      "type": "pair",
+      "t0": 4.6,
+      "t1": 6.6,
+      "a": "dand",
+      "aFrom": 0.5,
+      "b": "snow",
+      "bFrom": 0.3,
+      "text": "a dandelion + a snowy forest"
+    },
+    {
+      "type": "result",
+      "t0": 6.6,
+      "t1": 11.6,
+      "clip": "result",
+      "from": 2.2,
+      "to": 7.2,
+      "ai": [
+        3.8,
+        5.9
+      ]
+    },
+    {
+      "type": "outro",
+      "t0": 11.6,
+      "t1": 13.9
+    }
+  ],
+  "images": {
+    "mark": "public/brand/seamcut-mark-1024.png"
+  },
+  "copy": {
+    "brand": "Clipmelt",
+    "url": "clipmelt.com",
+    "outroLine": "your first transition is free"
+  },
+  "music": {
+    "src": "data/ads/music/track_a.wav",
+    "segments": [
+      {
+        "from": 41.6,
+        "at": 0,
+        "dur": 11.6,
+        "fadeIn": 0.3,
+        "fadeOut": 0.12
+      }
+    ]
+  },
+  "sfx": [
+    {
+      "kind": "swell",
+      "at": 1.2,
+      "gainDb": -16
+    },
+    {
+      "kind": "whoosh_long",
+      "at": 2.35,
+      "gainDb": -10
+    },
+    {
+      "kind": "click",
+      "at": 4.6,
+      "gainDb": -16
+    },
+    {
+      "kind": "whoosh",
+      "at": 8.15,
+      "gainDb": -11
+    },
+    {
+      "kind": "glitch",
+      "at": 11.6,
+      "gainDb": -2
+    },
+    {
+      "kind": "sting",
+      "at": 11.678,
+      "gainDb": 6
+    },
+    {
+      "kind": "sub",
+      "at": 11.678,
+      "gainDb": -6
+    },
+    {
+      "kind": "glitch",
+      "at": 12.1,
+      "gainDb": -6
+    },
+    {
+      "kind": "glitch",
+      "at": 12.34,
+      "gainDb": -8
+    },
+    {
+      "kind": "glitch",
+      "at": 13.22,
+      "gainDb": -8
+    }
+  ]
+}

@@ -1,0 +1,110 @@
+{
+  "_rule": "Every post uses a fresh pair of web clips. Check this list before picking footage; add each pair when it is used.",
+  "retired": [
+    {
+      "id": "cliff-surf",
+      "clips": [
+        "data/ads/real/p1_a_cliff.mp4",
+        "data/ads/real/p1_b_surf.mp4"
+      ],
+      "used_in": [
+        "chain ads",
+        "creator ad",
+        "inset reel 2026-09-26"
+      ]
+    },
+    {
+      "id": "skate-bmx",
+      "clips": [
+        "data/ads/real/p2_b_skate.mp4",
+        "data/ads/real/bmx_sky_39055942.mp4"
+      ],
+      "used_in": [
+        "chain ads",
+        "one-tap ad",
+        "app recordings"
+      ]
+    },
+    {
+      "id": "surf-skate",
+      "clips": [
+        "data/ads/real/p1_b_surf.mp4",
+        "data/ads/real/p2_b_skate.mp4"
+      ],
+      "used_in": [
+        "chain ads"
+      ]
+    },
+    {
+      "id": "bmx-paraglide",
+      "clips": [
+        "data/ads/real/bmx_sky_39055942.mp4",
+        "data/ads/real/paraglide_pov_12803095.mp4"
+      ],
+      "used_in": [
+        "chain ads"
+      ]
+    },
+    {
+      "id": "coaster-cartoon",
+      "clips": [
+        "data/ads/real/ugc_rails_full.mp4"
+      ],
+      "used_in": [
+        "UGC breakdown",
+        "one-tap ad"
+      ],
+      "note": "rights unconfirmed; organic only until confirmed"
+    },
+    {
+      "id": "coffee-ocean",
+      "clips": [
+        "public/examples/coffee-ocean/a.mp4",
+        "public/examples/coffee-ocean/b.mp4"
+      ],
+      "used_in": [
+        "site hero",
+        "one-tap ad"
+      ]
+    },
+    {
+      "id": "couch-lifestyle",
+      "clips": [
+        "pexels 6646803",
+        "pexels 7227054",
+        "pexels 6238176",
+        "pexels 6413916"
+      ],
+      "used_in": [
+        "one-tap ad"
+      ]
+    },
+    {
+      "id": "dandelion-snow",
+      "source": "pexels 36964457 (dandelion close-up) -> 19722431 (snow on evergreen)",
+      "clips": [
+        "data/ads/pexels/pair2_a_dandelion.mp4",
+        "data/ads/pexels/pair2_b_snow.mp4"
+      ],
+      "used_in": [
+        "instagram reel 2026-09-26 (clipmelt-inset-dandelion-916)"
+      ],
+      "result": "data/live-results/post-dandelion-snow/run1_full.mp4 (Wan 3.0 Prime, q85)"
+    }
+  ],
+  "queued": [
+    {
+      "id": "paperplane-wing",
+      "source": "pexels 9169192 (man with paper planes) -> 33299649 (airliner wing over sunset clouds)",
+      "clips": [
+        "data/ads/pexels/pair1_a_paperplane.mp4",
+        "data/ads/pexels/pair1_b_wing.mp4"
+      ],
+      "note": "2026-09-26 run failed (MiniMax 79 vs 80 bar: plane grew into riveted metal). Retry with a trim where the paper plane is larger in frame."
+    }
+  ],
+  "music_used": {
+    "track_c.wav": "all ads before 2026-09-26",
+    "track_a.wav": "dandelion reel from 41.6 s (drop at 44 s)"
+  }
+}
