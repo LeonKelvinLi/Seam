@@ -1,6 +1,7 @@
 /**
- * A real phone-sized screen recording of the live studio, for ads: upload two clips, wait for the recommendations,
- * pick the first one, wait for the result and let it play. Frames come from the CDP screencast with their wall-clock
+ * A real phone-sized screen recording of the live studio, for ads: upload two clips, let the studio start the best
+ * transition by itself (as it does since 68e9306), wait for the result, let it play, and download that same result
+ * (full video) with the session's own cookies so an ad can show the exact output the recording produced. Frames come from the CDP screencast with their wall-clock
  * timestamps (meta.json), so an ad can speed up the waits while showing the real elapsed time.
  * Spends one free trial run (one generation) as a fresh guest.
  *   CLIP_A=a.mp4 CLIP_B=b.mp4 node scripts/motion/record-app.mjs [baseUrl] [outDir]
@@ -39,16 +40,10 @@ try {
   await sleep(2500);
   await b.setFiles('input[type="file"]', 1, [clipB]);
   mark("clipB");
-  let ok = false;
-  for (let i = 0; i < 240 && !ok; i++) { await sleep(1000); ok = await b.eval(`document.body.innerText.includes("Recommended for your clips")`); }
-  if (!ok) throw new Error("recommendations never appeared");
-  mark("recommended");
-  await b.eval(`window.scrollTo({ top: 0, behavior: "smooth" })`);
-  await sleep(1800);
-  await b.eval(`(() => { const c = document.querySelector("button.lane-card"); c.scrollIntoView({ block: "center", behavior: "smooth" }); })()`);
-  await sleep(1500);
-  await b.eval(`document.querySelector("button.lane-card").click()`);
-  mark("picked");
+  let g = "";
+  for (let i = 0; i < 240 && !g; i++) { await sleep(1000); g = await b.eval(`new URLSearchParams(location.search).get("g") || ""`); }
+  if (!g) throw new Error("the studio never started a generation");
+  mark("started");
   let state = "";
   for (let i = 0; i < 600; i++) {
     await sleep(1000);
@@ -63,6 +58,15 @@ try {
   for (const a of gen?.generation?.attemptLog ?? []) console.log(`attempt ${a.n} ${a.modelId} ${a.status} q=${a.quality ?? "-"} ${Math.round((a.durationMs ?? 0) / 1000)}s ${a.error ?? ""}`);
   if (state !== "ready") throw new Error(`generation ${state || "timed out"}`);
   await b.eval(`(() => { const v = [...document.querySelectorAll("video")].pop(); if (v) { v.scrollIntoView({ block: "center" }); v.muted = true; v.currentTime = 0; v.play(); } })()`);
+  // The same result at full resolution, fetched with this guest's cookies (media is only served to its owner).
+  const full = gen?.generation?.result?.fullUrl;
+  if (full) {
+    const { cookies } = await b.send("Network.getAllCookies");
+    const cookie = cookies.filter((c) => BASE.includes(c.domain.replace(/^\./, ""))).map((c) => `${c.name}=${c.value}`).join("; ");
+    const res = await fetch(new URL(full, BASE), { headers: { cookie } });
+    if (res.ok) { fs.writeFileSync(path.join(OUT, "result_full.mp4"), Buffer.from(await res.arrayBuffer())); console.log("saved result_full.mp4"); }
+    else console.log(`result download failed ${res.status}`);
+  }
   await sleep(9000);
   mark("end");
   await b.send("Page.stopScreencast");

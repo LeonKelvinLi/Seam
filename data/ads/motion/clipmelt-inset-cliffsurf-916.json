@@ -1,0 +1,139 @@
+{
+  "id": "clipmelt-inset-cliffsurf-916",
+  "timeline": "sequence",
+  "width": 1080,
+  "height": 1920,
+  "fps": 30,
+  "duration": 14.7,
+  "clipWidth": 1080,
+  "loudness": -13,
+  "clips": {
+    "result": {
+      "src": "data/live-results/rel-0926-cliff-surf/run1_full.mp4"
+    },
+    "cliff": {
+      "src": "data/ads/real/p1_a_cliff.mp4"
+    },
+    "surf": {
+      "src": "data/ads/real/p1_b_surf.mp4"
+    }
+  },
+  "shots": [
+    {
+      "type": "inset",
+      "t0": 0,
+      "t1": 5.2,
+      "clip": "result",
+      "from": 1.9,
+      "to": 7.1,
+      "ai": [
+        4.85,
+        6.95
+      ],
+      "a": "cliff",
+      "aAt": 1.0,
+      "b": "surf",
+      "bAt": 0.3,
+      "text": "2 clips<br>\u2192 this"
+    },
+    {
+      "type": "pair",
+      "t0": 5.2,
+      "t1": 7.2,
+      "a": "cliff",
+      "aFrom": 0.4,
+      "b": "surf",
+      "bFrom": 0.0,
+      "text": "that's all it needs"
+    },
+    {
+      "type": "result",
+      "t0": 7.2,
+      "t1": 12.4,
+      "clip": "result",
+      "from": 3.6,
+      "to": 8.8,
+      "ai": [
+        4.85,
+        6.95
+      ]
+    },
+    {
+      "type": "outro",
+      "t0": 12.4,
+      "t1": 14.7
+    }
+  ],
+  "images": {
+    "mark": "public/brand/seamcut-mark-1024.png"
+  },
+  "copy": {
+    "brand": "Clipmelt",
+    "url": "clipmelt.com",
+    "outroLine": "your first transition is free"
+  },
+  "music": {
+    "src": "data/ads/music/track_c.wav",
+    "segments": [
+      {
+        "from": 36.2,
+        "at": 0,
+        "dur": 12.4,
+        "fadeIn": 0.01,
+        "fadeOut": 0.12
+      }
+    ]
+  },
+  "sfx": [
+    {
+      "kind": "splash",
+      "at": 1.1,
+      "gainDb": -12
+    },
+    {
+      "kind": "whoosh_long",
+      "at": 2.9,
+      "gainDb": -9
+    },
+    {
+      "kind": "click",
+      "at": 5.2,
+      "gainDb": -16
+    },
+    {
+      "kind": "whoosh",
+      "at": 8.4,
+      "gainDb": -10
+    },
+    {
+      "kind": "glitch",
+      "at": 12.4,
+      "gainDb": -2
+    },
+    {
+      "kind": "sting",
+      "at": 12.478,
+      "gainDb": 6
+    },
+    {
+      "kind": "sub",
+      "at": 12.478,
+      "gainDb": -6
+    },
+    {
+      "kind": "glitch",
+      "at": 12.9,
+      "gainDb": -6
+    },
+    {
+      "kind": "glitch",
+      "at": 13.14,
+      "gainDb": -8
+    },
+    {
+      "kind": "glitch",
+      "at": 14.02,
+      "gainDb": -8
+    }
+  ]
+}
