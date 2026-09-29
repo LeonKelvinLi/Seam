@@ -23,6 +23,8 @@ services:
         value: "1"
       - key: SEAM_FORCE_PROVIDER
         value: ""
+      - key: SEAM_PREFER_PROVIDER
+        value: higgsfield
       - key: SEAM_QUALITY_THRESHOLD_PREVIEW
         value: "80"
       - key: SEAM_QUALITY_THRESHOLD

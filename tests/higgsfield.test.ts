@@ -32,3 +32,14 @@ test("status polling resolves completed videos and types the failure modes", () 
   assert.throws(() => parseStatus({ status: "nsfw" }), (e: unknown) => e instanceof ProviderError && !e.retryable);
   assert.throws(() => parseStatus({ status: "completed", video: null }), ProviderError);
 });
+
+test("MiniMax H3 and Kling 3.0 on Higgsfield carry the end frame under their own field names", () => {
+  const h3 = HIGGSFIELD_MODELS.find((m) => m.id === "higgsfield:minimax-h3")!;
+  assert.deepEqual(buildBody(h3, req, "https://cdn/a.jpg", "https://cdn/b.jpg"), {
+    prompt: req.prompt.positive, image_url: "https://cdn/a.jpg", end_image_url: "https://cdn/b.jpg", duration: 5, resolution: "2K", aspect_ratio: "9:16",
+  });
+  const kling = HIGGSFIELD_MODELS.find((m) => m.id === "higgsfield:kling-3.0-pro")!;
+  assert.deepEqual(buildBody(kling, req, "https://cdn/a.jpg", "https://cdn/b.jpg"), {
+    prompt: req.prompt.positive, image_url: "https://cdn/a.jpg", last_image_url: "https://cdn/b.jpg", duration: 5, sound: "off",
+  });
+});

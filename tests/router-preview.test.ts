@@ -54,3 +54,15 @@ test("a fan-out round ends at the first pass and hands back the still-running si
   assert.equal(allFail.done.length, 2);
   assert.equal(allFail.pending.length, 0);
 });
+
+test("with Higgsfield preferred, its MiniMax H3 leads and fal stays behind it as the fallback", (t) => {
+  const { force, prefer } = config.providers;
+  config.providers.force = "";
+  config.providers.prefer = "higgsfield";
+  t.after(() => { config.providers.force = force; config.providers.prefer = prefer; });
+  for (const provider of PROVIDERS) t.mock.method(provider, "isAvailable", () => true);
+  const route = routeModels({ recipe: getRecipe("dissolve-match"), mode: "preview", measured });
+  assert.equal(route[0].id, "higgsfield:minimax-h3", route.map((m) => m.id).join(" > "));
+  const firstFal = route.findIndex((m) => m.providerId === "fal");
+  assert.ok(firstFal > 0 && route.slice(0, firstFal).every((m) => m.providerId === "higgsfield"), "every Higgsfield model before any fal model");
+});

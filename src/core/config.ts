@@ -41,6 +41,8 @@ export const config = {
     higgsfieldKeyId: env("HIGGSFIELD_API_KEY_ID"),
     higgsfieldKeySecret: env("HIGGSFIELD_API_KEY_SECRET"),
     force: env("SEAM_FORCE_PROVIDER") as "" | "local" | "fal" | "runway" | "higgsfield",
+    /** Provider whose models are tried first while it is available; the others are the fallback (an empty wallet parks it). */
+    prefer: env("SEAM_PREFER_PROVIDER") as "" | "fal" | "runway" | "higgsfield",
     /** One bridge model id that every attempt is routed to (proof runs, debugging). Empty in production. */
     forceModel: env("SEAM_FORCE_MODEL"),
   },

@@ -45,7 +45,7 @@ async function harness(t: TestContext, submit: () => Promise<Response>, status =
     if (endpoint === "https://cdn.test/result.mp4") return new Response("test video bytes");
     assert.fail(`unexpected network call: ${endpoint}`);
   });
-  return { req, run: () => higgsfieldProvider.generateTransition(req, HIGGSFIELD_MODELS[0]), counts: () => ({ submissions, reads }) };
+  return { req, run: () => higgsfieldProvider.generateTransition(req, HIGGSFIELD_MODELS.find((m) => m.id === "higgsfield:dop-lite")!), counts: () => ({ submissions, reads }) };
 }
 
 for (const [label, submit] of [

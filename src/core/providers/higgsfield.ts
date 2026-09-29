@@ -21,6 +21,20 @@ const DOP_STRENGTHS = { fpv: 0.8, morph: 0.6, human: 0.75, environment: 0.8, pro
 // costPerSecondUsd from the developer dashboard.
 export const HIGGSFIELD_MODELS: ModelSpec[] = [
   {
+    // The model behind the paper plane -> airliner wing transition Leon picked (2026-09-27, made in the web app): 2K,
+    // first and last frame. Not in the published OpenAPI; its fields were probed on 2026-09-29 with invalid values
+    // (end_image_url, integer duration, resolution "2K", aspect_ratio). Price is an estimate (10 web credits per 5 s).
+    id: "higgsfield:minimax-h3", providerId: "higgsfield", endpoint: "/minimax/h3/image-to-video", label: "MiniMax H3 (Higgsfield)",
+    supportsLastFrame: true, durations: [5], costPerSecondUsd: 0.08, tier: "both",
+    strengths: { fpv: 0.9, morph: 0.88, human: 0.9, environment: 0.9, product: 0.88, generic: 0.9 }, dialect: "higgsfield", latencyEstimateSec: 240,
+  },
+  {
+    // Kling 3.0 Pro takes the end frame as last_image_url (probed the same way); sound off keeps the price down.
+    id: "higgsfield:kling-3.0-pro", providerId: "higgsfield", endpoint: "/kling-video/v3.0/pro/image-to-video", label: "Kling 3.0 Pro (Higgsfield)",
+    supportsLastFrame: true, durations: [5], costPerSecondUsd: 0.14, tier: "both",
+    strengths: { fpv: 0.85, morph: 0.85, human: 0.88, environment: 0.85, product: 0.85, generic: 0.85 }, dialect: "higgsfield", latencyEstimateSec: 300,
+  },
+  {
     id: "higgsfield:dop-lite", providerId: "higgsfield", endpoint: "/higgsfield-ai/dop/lite", label: "Higgsfield DoP Lite",
     supportsLastFrame: true, durations: [5], costPerSecondUsd: 0.02, tier: "preview",
     strengths: { ...DOP_STRENGTHS, morph: 0.55 }, dialect: "higgsfield", latencyEstimateSec: 210, // measured 190-410 s on production
@@ -63,6 +77,8 @@ export const HIGGSFIELD_NOT_ENABLED: ModelSpec[] = [
 
 export const isVeo = (model: ModelSpec) => model.endpoint.startsWith("/veo");
 export const isHailuo = (model: ModelSpec) => model.endpoint.startsWith("/minimax/hailuo");
+export const isH3 = (model: ModelSpec) => model.endpoint.startsWith("/minimax/h3");
+export const isKling = (model: ModelSpec) => model.endpoint.startsWith("/kling-video");
 
 /** Request body per model family, straight from the OpenAPI field names. */
 export function buildBody(model: ModelSpec, req: Pick<TransitionRequest, "prompt" | "aspectRatio">, firstUrl: string, lastUrl: string): Record<string, unknown> {
@@ -71,6 +87,12 @@ export function buildBody(model: ModelSpec, req: Pick<TransitionRequest, "prompt
       prompt: req.prompt.positive, first_frame_url: firstUrl, last_frame_url: lastUrl,
       duration: String(model.durations[0] ?? 4), resolution: "720", aspect_ratio: req.aspectRatio === "9:16" ? "9:16" : "16:9", generate_audio: false,
     };
+  }
+  if (isH3(model)) {
+    return { prompt: req.prompt.positive, image_url: firstUrl, end_image_url: lastUrl, duration: model.durations[0] ?? 5, resolution: "2K", aspect_ratio: req.aspectRatio };
+  }
+  if (isKling(model)) {
+    return { prompt: req.prompt.positive, image_url: firstUrl, last_image_url: lastUrl, duration: model.durations[0] ?? 5, sound: "off" };
   }
   if (isHailuo(model)) {
     // prompt_optimizer would rewrite the shot direction and drop the no-cut and one-object rules; keep it verbatim.

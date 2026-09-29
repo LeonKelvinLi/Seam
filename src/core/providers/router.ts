@@ -69,7 +69,10 @@ export function routeModels(input: RouteInput): ModelSpec[] {
       : quality * 0.5 + tierFit * 0.25 + speed * 0.15 + cheap * 0.1;
     return { m, score };
   });
-  const ordered = scored.sort((a, b) => b.score - a.score).map((s) => s.m);
+  const ranked = scored.sort((a, b) => b.score - a.score).map((s) => s.m);
+  // Leon's pick (2026-09-29, "cant we just use higgsfield api"): the preferred provider's models go first.
+  const prefer = config.providers.prefer;
+  const ordered = prefer ? [...ranked.filter((m) => m.providerId === prefer), ...ranked.filter((m) => m.providerId !== prefer)] : ranked;
   if (proceduralAllowed() && !exclude.has(LOCAL_MODEL.id)) ordered.push(LOCAL_MODEL);
   return ordered;
 }
