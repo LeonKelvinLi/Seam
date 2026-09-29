@@ -21,6 +21,7 @@ const PAIRS = [
   { id: "surf-skate", a: `${R}/p1_b_surf.mp4`, aCut: 7.0, bridge: `${R}/v4_envmorph_b.mp4`, b: `${R}/p2_b_skate.mp4`, bCut: 0 },
   { id: "cliff-surf", a: `${R}/p1_a_cliff.mp4`, aCut: 2.4, bridge: `${R}/v5_dive.mp4`, b: `${R}/p1_b_surf.mp4`, bCut: 0 },
   { id: "bmx-para", a: `${R}/bmx_sky_39055942.mp4`, aCut: 7.3, bridge: `${R}/v3_fpv.mp4`, b: `${R}/paraglide_pov_12803095.mp4`, bCut: 8.0 },
+  { id: "plane-wing", a: "data/ads/pexels/pair1_a_paperplane.mp4", aCut: 4.1, bridge: "data/live-results/hf-paperplane-wing/bridge_minimax_h3.mp4", b: "data/ads/pexels/pair1_b_wing.mp4", bCut: 0 },
 ];
 const SIDE = 2.2, CROSSFADE = Number(process.env.BENCH_CROSSFADE ?? 0.12);
 const cover = `scale=${spec.width}:${spec.height}:force_original_aspect_ratio=increase,crop=${spec.width}:${spec.height},fps=${spec.fps},setsar=1`;
@@ -39,14 +40,16 @@ for (const p of PAIRS) {
   await part(p.b, p.bCut, SIDE, bPart);
   const aSec = (await probe(aPart)).durationSec;
   const results: Record<string, { jolt: number; lurch: number; file: string }> = {};
-  for (const tag of (process.env.BENCH_MODES ?? "linear,ramp").split(",") as ("linear" | "ramp")[]) {
-    const bridge = path.join(dir, `bridge_${tag}.mp4`), full = path.join(dir, `full_${tag}.mp4`);
-    const bSec = await normalizeBridge(p.bridge, bridge, spec, 2.0, 2.5, tag === "ramp");
+  // BENCH_MODES entries are linear|ramp, optionally @speedup (default 2.5): "ramp@2.5,ramp@1.25,linear@1".
+  for (const mode of (process.env.BENCH_MODES ?? "linear,ramp").split(",")) {
+    const [tag, sp] = mode.split("@"), speedup = Number(sp ?? 2.5);
+    const bridge = path.join(dir, `bridge_${mode}.mp4`), full = path.join(dir, `full_${mode}.mp4`);
+    const bSec = await normalizeBridge(p.bridge, bridge, spec, 2.0, speedup, tag === "ramp");
     await stitch(aPart, bridge, bPart, full, spec, CROSSFADE);
     const joins: [number, number] = [aSec - CROSSFADE / 2, aSec + bSec - 1.5 * CROSSFADE];
     const m = await transitionSmoothness(full, spec.fps, joins);
     results[tag] = { jolt: m.jolt, lurch: m.lurch, file: full };
-    rows.push(`${p.id.padEnd(11)} ${tag.padEnd(6)} jolt in ${m.joinIn.jolt.toFixed(2)} out ${m.joinOut.jolt.toFixed(2)} | lurch in ${m.joinIn.lurch.toFixed(2)} out ${m.joinOut.lurch.toFixed(2)}`);
+    rows.push(`${p.id.padEnd(11)} ${mode.padEnd(11)} bridge ${bSec.toFixed(1)}s jolt in ${m.joinIn.jolt.toFixed(2)} out ${m.joinOut.jolt.toFixed(2)} | lurch in ${m.joinIn.lurch.toFixed(2)} out ${m.joinOut.lurch.toFixed(2)}`);
   }
   if (results.linear && results.ramp) await ffmpeg(["-i", results.linear.file, "-i", results.ramp.file, "-filter_complex",
     "[0:v]scale=360:640[l];[1:v]scale=360:640[r];[l][r]hstack=inputs=2,format=yuv420p[v]", "-map", "[v]", "-c:v", "libx264", "-crf", "20", path.join(OUT, `${p.id}_old-vs-new.mp4`)]);

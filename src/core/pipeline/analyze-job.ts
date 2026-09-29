@@ -46,6 +46,8 @@ async function extractBoundaryFrames(asset: Asset): Promise<ExtractedFrame[]> {
   if (files.length === 0) throw new Error(`no frames extracted for ${asset.role} clip`);
   const rasters = await Promise.all(files.map((f) => loadRasters(f.path)));
   const feats = rasters.map((r, i) => computeFeatures(r, i > 0 ? rasters[i - 1] : undefined));
+  // The window's first frame has nothing before it, so it would read as perfectly still and win the calm-cut bonus.
+  if (feats.length > 1) feats[0] = { ...feats[0], motion: feats[1].motion };
   return files.map((f, i) =>
     Frames.create({ assetId: asset.id, t: Math.min(f.t, Math.max(0, dur - 1 / config.output.fps)), path: f.path, features: feats[i], boundaryScore: boundaryScore(feats[i], feats[i + 1]) }),
   );

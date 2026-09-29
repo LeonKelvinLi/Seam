@@ -357,8 +357,17 @@ export async function runGenerateJob(job: Job, report: Reporter, judge = judgeTr
     let smoothness: { jolt: number; lurch: number } | null = null;
     try {
       const [aInfo, bInfo] = await Promise.all([probe(partA), probe(best.bridgePath)]);
-      const d = config.output.seamCrossfadeSec;
-      const m = await transitionSmoothness(fullPath, spec.fps, [aInfo.durationSec - d / 2, aInfo.durationSec + bInfo.durationSec - 1.5 * d]);
+      const measure = (file: string, d: number) => transitionSmoothness(file, spec.fps, [aInfo.durationSec - d / 2, aInfo.durationSec + bInfo.durationSec - 1.5 * d]);
+      let m = await measure(fullPath, config.output.seamCrossfadeSec);
+      // A join that still jumps (a bridge landing a little off B's first frame, footage moving at the cut): a longer
+      // dissolve hides most of it (5.2 -> 3.0 on the paper plane pair, scripts/smoothness-bench.ts). Local, no credits.
+      if (m.jolt > 2) {
+        const longer = path.join(dir, "full_long_seam.mp4"), d = Math.max(0.5, config.output.seamCrossfadeSec);
+        await stitch(partA, best.bridgePath, partB, longer, spec, d);
+        const m2 = await measure(longer, d);
+        log.info("join repair", { gen: gen.id, before: Number(m.jolt.toFixed(2)), after: Number(m2.jolt.toFixed(2)) });
+        if (m2.jolt < m.jolt) { fs.renameSync(longer, fullPath); m = m2; } else fs.rmSync(longer, { force: true });
+      }
       smoothness = { jolt: Math.round(m.jolt * 100) / 100, lurch: Math.round(m.lurch * 100) / 100 };
       log.info("join smoothness", { gen: gen.id, ...smoothness, model: best.model.id, recipe: best.recipe.id });
     } catch (e) { log.warn("smoothness measurement failed", { gen: gen.id, error: (e as Error).message }); }

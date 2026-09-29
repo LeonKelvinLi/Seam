@@ -100,7 +100,7 @@
         "data/ads/pexels/pair1_a_paperplane.mp4",
         "data/ads/pexels/pair1_b_wing.mp4"
       ],
-      "note": "2026-09-26 run failed (MiniMax 79 vs 80 bar: plane grew into riveted metal). Retry with a trim where the paper plane is larger in frame."
+      "note": "2026-09-27: made with Higgsfield from cut frames A@4.10 s / B@0.00 s. Ready: data/live-results/hf-paperplane-wing/full_minimax_x1.mp4 (MiniMax H3, plane thrown into lens; 10 credits) and full_highflip.mp4 (High flip preset, bridge trimmed 3.4-8.6 s; 40.5 credits). Not posted yet."
     }
   ],
   "music_used": {

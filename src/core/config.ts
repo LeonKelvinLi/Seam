@@ -72,14 +72,16 @@ export const config = {
     /** Longest edge of the delivered video. */
     maxEdge: 1280,
     /** Seconds of crossfade at each seam between footage and the AI bridge. */
-    // 0.2 with the speed-ramped bridge measured smoothest (scripts/smoothness-bench.ts); the bridge's first and last
-    // frames reproduce the footage, so the dissolve blends near-identical images rather than showing a double exposure.
-    seamCrossfadeSec: num("SEAM_SEAM_CROSSFADE_SEC", 0.2),
+    // 0.35 with the bridge near real speed measured smoothest (scripts/smoothness-bench.ts, 2026-09-28); the bridge's
+    // first and last frames reproduce the footage, so the dissolve blends near-identical images, not a double exposure.
+    seamCrossfadeSec: num("SEAM_SEAM_CROSSFADE_SEC", 0.35),
     /**
-     * The fastest an AI bridge is played back relative to how the model rendered it: 2.5 plays a 5 s render in 2 s,
-     * the length of the site's example bridges (scripts/build-examples.ts). Faster than that, a camera move reads as a flash.
+     * The fastest an AI bridge is played back relative to how the model rendered it. Higgsfield's Transitions app plays
+     * its renders at real speed (scripts/hf-study.py); 1.25 plays a 5 s render in 4 s with the joins at real speed.
+     * The old 2.5 (5 s in 2 s) turned camera moves into a quick effect: on five Higgsfield bridges the speed jump at
+     * the joins (lurch) fell from 2.3-7.0 to 1.3-2.5 on the four ordinary pairs at 1.25 with a 0.35 s crossfade.
      */
-    maxBridgeSpeedup: num("SEAM_MAX_BRIDGE_SPEEDUP", 2.5),
+    maxBridgeSpeedup: num("SEAM_MAX_BRIDGE_SPEEDUP", 1.25),
     /**
      * Speed-ramp the bridge instead of playing it at one constant speed: near real speed where it meets the footage,
      * fastest in the middle. A constant 2.5x lurched at both joins (footage at 1x, bridge at 2.5x).

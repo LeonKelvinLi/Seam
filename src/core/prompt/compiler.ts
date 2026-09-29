@@ -31,7 +31,9 @@ const BASE_AVOID = [
   "cross-dissolve", "double exposure", "split screen",
 ];
 
-const CRAFT = "Smooth, steady, cinematic camera motion with natural motion blur.";
+// The timing of Higgsfield's Transitions app: 22 of its renders from this account held on the first frame for about
+// a second, eased into the move and settled on the last frame before ending (scripts/hf-study.py, 2026-09-28).
+const CRAFT = "Smooth, steady, cinematic camera motion with natural motion blur. Hold on the first image for a beat, ease into the move, keep moving through the change, then ease out and hold still on the last image.";
 const NO_BLEND = "No cuts, no flashes, no fades, no dissolves, no double exposure, no split screen. Only one of each object is ever on screen: things transform, they are never replaced by a second copy.";
 
 function describe(a: FrameAnalysis): string {

@@ -122,8 +122,8 @@ test("a quick lead model runs alone: no second model is paid for behind it", asy
   assert.equal(preparedDuringRender, true, "source preparation overlaps the provider wait");
   const timing = Attempts.forGeneration(gen.id)[0].params.timings as Record<string, number>;
   for (const key of ["providerMs", "normalizeMs", "judgeMs"]) assert.ok(timing[key] >= 0, `recorded ${key}`);
-  // Dissolve Match asks for 0.9 s at the default pace; a 1.2 s render only needs 1.3x, well inside the speed cap.
-  assert.ok(Math.abs(g.result!.bridgeDurationSec - 0.9) < 0.01, `bridge ${g.result!.bridgeDurationSec}s`);
+  // Dissolve Match asks for 0.9 s at the default pace, but a 1.2 s render is played no faster than 1.25x: 0.96 s.
+  assert.ok(Math.abs(g.result!.bridgeDurationSec - 0.96) < 0.01, `bridge ${g.result!.bridgeDurationSec}s`);
 });
 
 test("a take no vision judge could check is refused, and the generation stops and refunds", async (t) => {

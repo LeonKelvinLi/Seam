@@ -6,12 +6,16 @@
 import type { ExtractedFrame, FrameAnalysis, FrameFeatures } from "@/core/types";
 import { colorSimilarity } from "./features";
 
-/** How good a frame is as a cut point on its own: sharp, lit, not mid-motion-blur. */
+/**
+ * How good a frame is as a cut point on its own: sharp, lit, and calm. Bridge models start on the frame and hold it
+ * for about a second before moving (Higgsfield's Transitions app did in 22 of 22 renders, scripts/hf-study.py), so a
+ * cut in the middle of a movement stops that movement dead at the join.
+ */
 export function boundaryScore(f: FrameFeatures, next?: FrameFeatures): number {
   const lit = 1 - Math.abs(f.brightness - 0.5) * 1.6;
   const occluderComing = next ? Math.max(0, next.uniformCoverage - f.uniformCoverage) : 0;
   return Math.max(0, Math.min(1,
-    f.sharpness * 0.45 + Math.max(0, lit) * 0.2 + f.edgeDensity * 0.15 + (1 - f.motion) * 0.1 + occluderComing * 0.5,
+    f.sharpness * 0.35 + Math.max(0, lit) * 0.2 + f.edgeDensity * 0.1 + (1 - f.motion) * 0.3 + occluderComing * 0.5,
   ));
 }
 
@@ -31,7 +35,7 @@ export interface PairChoice { a: ExtractedFrame; b: ExtractedFrame; score: numbe
 
 /**
  * Choose the boundary pair. Later frames of A / earlier frames of B keep more of the user's footage,
- * so proximity to the literal boundary is rewarded; occlusions and colour continuity are rewarded more.
+ * so proximity to the literal boundary is rewarded; occlusions, colour continuity and calm footage are rewarded more.
  */
 export function chooseBoundaryPair(
   aFrames: ExtractedFrame[], bFrames: ExtractedFrame[],
@@ -45,8 +49,11 @@ export function chooseBoundaryPair(
     const occl = Math.max(aa?.occlusionOpportunity ?? 0, a.features.uniformCoverage > 0.8 ? 0.6 : 0);
     const color = colorSimilarity(a.features, b.features);
     const facePenalty = (aa?.facesNearEdge ? 0.1 : 0) + (ab?.facesNearEdge ? 0.1 : 0);
+    // Moving on either side of a join meets the bridge's still hold: outweighs keeping the last half second of A.
+    // Hand-held gestures register only 0.1-0.15 in features.motion, so small movement already counts as busy.
+    const calm = 1 - Math.min(1, Math.max(a.features.motion, b.features.motion) * 4);
     const score =
-      (a.boundaryScore + b.boundaryScore) * 0.2 + ((nearA + nearB) / 2) * 0.25 + color * 0.2 + occl * 0.25 - facePenalty;
+      (a.boundaryScore + b.boundaryScore) * 0.2 + ((nearA + nearB) / 2) * 0.25 + color * 0.2 + occl * 0.25 + calm * 0.2 - facePenalty;
     if (!best || score > best.score) best = { a, b, score };
   }
   if (!best) throw new Error("no boundary frames available");
