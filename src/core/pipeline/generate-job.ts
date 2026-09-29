@@ -180,7 +180,7 @@ export async function runGenerateJob(job: Job, report: Reporter, judge = judgeTr
       const stage = (s: string, progress: number, label?: string) => { if (live.current) setStage(s, progress, label); };
       const durationSec = durationFor(rec, ft);
       const ir = compileIR({ a: analysisA, b: analysisB, pair: pairRow.data, recipe: rec, hints: opp.hints, fineTune: ft, durationSec, aspectRatio: aspect, attempt: n });
-      if (model.providerId !== "local") {
+      if (model.providerId !== "local" && !model.ownPrompt) {
         const directorStart = Date.now();
         const shot = await shotFor(rec, ir);
         attemptTimings.directorMs = Date.now() - directorStart;
@@ -354,7 +354,8 @@ export async function runGenerateJob(job: Job, report: Reporter, judge = judgeTr
     // of refunded after the wait (Leon, 2026-09-29). Only a run with no video at all fails and refunds.
     if (!best && bestRendered) {
       best = bestRendered;
-      suggestion ??= "This take missed our smoothness check. Tap a style to get another take.";
+      // Only a vision judge's verdict is worth a note: the pixel checks alone flag fast whip pans as cuts.
+      if (config.openai.enabled && !openaiOutOfCredit()) suggestion ??= "This take missed our smoothness check. Tap a style to get another take.";
     }
     if (!best) throw new GenerationStopped(FRIENDLY_FAIL, "every AI bridge attempt failed");
 

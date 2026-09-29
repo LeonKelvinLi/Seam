@@ -72,7 +72,10 @@ export function routeModels(input: RouteInput): ModelSpec[] {
   const ranked = scored.sort((a, b) => b.score - a.score).map((s) => s.m);
   // Leon's pick (2026-09-29, "cant we just use higgsfield api"): the preferred provider's models go first.
   const prefer = config.providers.prefer;
-  const ordered = prefer ? [...ranked.filter((m) => m.providerId === prefer), ...ranked.filter((m) => m.providerId !== prefer)] : ranked;
+  // Within it, models that write their own shot (Higgsfield DoP start+end frame) lead: no prompt of ours is needed.
+  const ordered = prefer
+    ? [...ranked.filter((m) => m.providerId === prefer && m.ownPrompt), ...ranked.filter((m) => m.providerId === prefer && !m.ownPrompt), ...ranked.filter((m) => m.providerId !== prefer)]
+    : ranked;
   if (proceduralAllowed() && !exclude.has(LOCAL_MODEL.id)) ordered.push(LOCAL_MODEL);
   return ordered;
 }

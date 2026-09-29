@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { HIGGSFIELD_MODELS, HIGGSFIELD_NOT_ENABLED, buildBody, parseStatus } from "@/core/providers/higgsfield";
+import { DOP_DEFAULT_MOTION, DOP_MOTIONS, HIGGSFIELD_MODELS, HIGGSFIELD_NOT_ENABLED, buildBody, parseStatus } from "@/core/providers/higgsfield";
 import { ProviderError } from "@/core/providers/types";
 
 const req = { prompt: { positive: "a seamless dolly from the cup into the ocean", negative: null }, aspectRatio: "9:16" as const };
@@ -42,4 +42,14 @@ test("MiniMax H3 and Kling 3.0 on Higgsfield carry the end frame under their own
   assert.deepEqual(buildBody(kling, req, "https://cdn/a.jpg", "https://cdn/b.jpg"), {
     prompt: req.prompt.positive, image_url: "https://cdn/a.jpg", last_image_url: "https://cdn/b.jpg", duration: 5, sound: "off",
   });
+});
+
+test("DoP start+end frame sends no prompt of ours: Higgsfield writes the shot and the style is a motion preset", () => {
+  const dop = HIGGSFIELD_MODELS.find((m) => m.id === "higgsfield:dop-turbo-flf")!;
+  assert.equal(dop.ownPrompt, true);
+  assert.deepEqual(buildBody(dop, { ...req, transitionType: "whip-pan", motionStrength: 0.6 }, "https://cdn/a.jpg", "https://cdn/b.jpg"), {
+    prompt: "", image_url: "https://cdn/a.jpg", end_image_url: "https://cdn/b.jpg", enhance_prompt: true, motions: [{ id: DOP_MOTIONS["whip-pan"], strength: 0.7 }],
+  });
+  const body = buildBody(dop, { ...req, transitionType: "color-match" }, "https://cdn/a.jpg", "https://cdn/b.jpg");
+  assert.deepEqual(body.motions, [{ id: DOP_DEFAULT_MOTION, strength: 0.8 }], "a style without a camera move gets Through Object In");
 });

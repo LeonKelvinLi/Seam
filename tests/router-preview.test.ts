@@ -55,14 +55,17 @@ test("a fan-out round ends at the first pass and hands back the still-running si
   assert.equal(allFail.pending.length, 0);
 });
 
-test("with Higgsfield preferred, its MiniMax H3 leads and fal stays behind it as the fallback", (t) => {
+test("with Higgsfield preferred, its own transition engine (DoP start+end frame) leads and fal stays behind as the fallback", (t) => {
   const { force, prefer } = config.providers;
   config.providers.force = "";
   config.providers.prefer = "higgsfield";
   t.after(() => { config.providers.force = force; config.providers.prefer = prefer; });
   for (const provider of PROVIDERS) t.mock.method(provider, "isAvailable", () => true);
   const route = routeModels({ recipe: getRecipe("dissolve-match"), mode: "preview", measured });
-  assert.equal(route[0].id, "higgsfield:minimax-h3", route.map((m) => m.id).join(" > "));
+  assert.equal(route[0].id, "higgsfield:dop-turbo-flf", route.map((m) => m.id).join(" > "));
+  for (const recipe of ["liquid-transform", "object-morph", "whip-pan", "earth-zoom"]) {
+    assert.equal(routeModels({ recipe: getRecipe(recipe), mode: "preview", measured })[0].ownPrompt, true, `${recipe} goes to Higgsfield's own engine`);
+  }
   const firstFal = route.findIndex((m) => m.providerId === "fal");
   assert.ok(firstFal > 0 && route.slice(0, firstFal).every((m) => m.providerId === "higgsfield"), "every Higgsfield model before any fal model");
 });

@@ -21,6 +21,8 @@ export interface ModelSpec {
   strengths: Record<ModelClass, number>;
   dialect: PromptDialect;
   latencyEstimateSec: number;
+  /** The provider writes the shot itself from the two frames (Higgsfield DoP enhance_prompt): no prompt of ours is sent. */
+  ownPrompt?: boolean;
 }
 
 export interface TransitionRequest {

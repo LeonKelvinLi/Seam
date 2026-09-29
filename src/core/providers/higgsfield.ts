@@ -21,6 +21,21 @@ const DOP_STRENGTHS = { fpv: 0.8, morph: 0.6, human: 0.75, environment: 0.8, pro
 // costPerSecondUsd from the developer dashboard.
 export const HIGGSFIELD_MODELS: ModelSpec[] = [
   {
+    // Higgsfield's own transition engine, found 2026-09-29 by probing (not in the published OpenAPI): DoP with a start
+    // and an end frame, one of its motion presets (GET /v1/motions) and enhance_prompt, so Higgsfield writes the shot.
+    // No prompt of ours, no OpenAI. First test (paper plane -> airliner wing): starts and ends on the exact frames
+    // (PSNR 44-46 / 42-43), 188 s and 382 s. Price is an estimate.
+    id: "higgsfield:dop-turbo-flf", providerId: "higgsfield", endpoint: "/higgsfield-ai/dop/turbo/first-last-frame", label: "Higgsfield DoP Turbo",
+    supportsLastFrame: true, durations: [5], costPerSecondUsd: 0.05, tier: "both", ownPrompt: true,
+    // Unmeasured seeds stay below the proven fal models; SEAM_PREFER_PROVIDER is what puts it first in production.
+    strengths: { fpv: 0.88, morph: 0.8, human: 0.86, environment: 0.86, product: 0.86, generic: 0.86 }, dialect: "higgsfield", latencyEstimateSec: 240,
+  },
+  {
+    id: "higgsfield:dop-standard-flf", providerId: "higgsfield", endpoint: "/higgsfield-ai/dop/standard/first-last-frame", label: "Higgsfield DoP",
+    supportsLastFrame: true, durations: [5], costPerSecondUsd: 0.08, tier: "both", ownPrompt: true,
+    strengths: { fpv: 0.86, morph: 0.78, human: 0.85, environment: 0.85, product: 0.85, generic: 0.85 }, dialect: "higgsfield", latencyEstimateSec: 390,
+  },
+  {
     // The model behind the paper plane -> airliner wing transition Leon picked (2026-09-27, made in the web app): 2K,
     // first and last frame. Not in the published OpenAPI; its fields were probed on 2026-09-29 with invalid values
     // (end_image_url, integer duration, resolution "2K", aspect_ratio). Price is an estimate (10 web credits per 5 s).
@@ -78,10 +93,40 @@ export const HIGGSFIELD_NOT_ENABLED: ModelSpec[] = [
 export const isVeo = (model: ModelSpec) => model.endpoint.startsWith("/veo");
 export const isHailuo = (model: ModelSpec) => model.endpoint.startsWith("/minimax/hailuo");
 export const isH3 = (model: ModelSpec) => model.endpoint.startsWith("/minimax/h3");
+export const isDopFirstLast = (model: ModelSpec) => model.endpoint.startsWith("/higgsfield-ai/dop/") && model.endpoint.endsWith("/first-last-frame");
+
+/**
+ * Clipmelt style -> Higgsfield DoP motion preset (ids from GET /v1/motions, all start_end_frame). A style with no
+ * matching camera move gets Through Object In: the camera pushes into something until it fills the frame and comes
+ * out in the next shot, the hidden switch Higgsfield's transitions are known for.
+ */
+export const DOP_MOTIONS: Record<string, string> = {
+  "whip-pan": "25c72c28-7857-4aa0-af92-ba5380f0e67d", // Whip Pan
+  "crash-zoom": "3ec247ed-063d-476d-8266-48829c2eced6", // Crash Zoom In
+  "infinite-zoom": "3ec247ed-063d-476d-8266-48829c2eced6",
+  "fpv-fly-through": "7673d9e0-208c-4cf8-8b72-fce5b0e92ecb", // FPV Drone
+  "tunnel-rush": "7673d9e0-208c-4cf8-8b72-fce5b0e92ecb",
+  "drone-dive": "7673d9e0-208c-4cf8-8b72-fce5b0e92ecb",
+  "motion-match": "1d5ee550-a8b2-4200-8909-4ca7795911dc", // Flying
+  "orbit": "ea035f68-b350-40f1-b7f4-7dff999fdd67", // 360 Orbit
+  "push-through": "3a24a20d-b494-4e8a-9b5f-4ef05ee5073d", // Super Dolly In
+  "pull-out-reveal": "ea0d11ac-b4e2-4ea7-89c2-a4a44a62dc79", // Through Object Out
+  "camera-spin": "c718443d-fc3c-4a79-bccf-6c98b56737ec", // Roll Transition
+  "earth-zoom": "46fa79e3-efce-41e8-95bc-1dc5a1a30795", // Earth Zoom Out
+  "space-zoom": "46fa79e3-efce-41e8-95bc-1dc5a1a30795",
+  "miniature-world": "68af9add-43ea-4261-a706-16b640fdcff9", // Crane Up
+};
+export const DOP_DEFAULT_MOTION = "ebf152b3-f794-4d5c-886f-ff61ec6498bc"; // Through Object In
+export const dopMotionFor = (recipeId: string | undefined) => (recipeId && DOP_MOTIONS[recipeId]) || DOP_DEFAULT_MOTION;
 export const isKling = (model: ModelSpec) => model.endpoint.startsWith("/kling-video");
 
 /** Request body per model family, straight from the OpenAPI field names. */
-export function buildBody(model: ModelSpec, req: Pick<TransitionRequest, "prompt" | "aspectRatio">, firstUrl: string, lastUrl: string): Record<string, unknown> {
+export function buildBody(model: ModelSpec, req: Pick<TransitionRequest, "prompt" | "aspectRatio"> & Partial<Pick<TransitionRequest, "transitionType" | "motionStrength">>, firstUrl: string, lastUrl: string): Record<string, unknown> {
+  if (isDopFirstLast(model)) {
+    // Like Higgsfield's own apps: an empty prompt with enhance_prompt, the motion preset carrying the style.
+    const strength = Math.min(1, Math.max(0.7, req.motionStrength ?? 0.8));
+    return { prompt: "", image_url: firstUrl, end_image_url: lastUrl, enhance_prompt: true, motions: [{ id: dopMotionFor(req.transitionType), strength }] };
+  }
   if (isVeo(model)) {
     return {
       prompt: req.prompt.positive, first_frame_url: firstUrl, last_frame_url: lastUrl,
