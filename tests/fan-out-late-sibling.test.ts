@@ -52,10 +52,11 @@ async function queuedGeneration(tag: string, recipeId = "dissolve-match") {
 
 /** Real routing with fake renders; `fal` decides whether the quick fal models are in the route. */
 function useProviders(t: TestContext, fal: boolean, provider: (req: TransitionRequest) => Promise<TransitionResult>) {
-  const { force } = config.providers, { parallelAttempts } = config.generation;
+  const { force } = config.providers, { parallelAttempts, maxAttempts } = config.generation;
   config.providers.force = "";
   config.generation.parallelAttempts = 2;
-  t.after(() => { config.providers.force = force; config.generation.parallelAttempts = parallelAttempts; });
+  config.generation.maxAttempts = 3; // these tests cover fan-out and retries; one take per click is tested on its own
+  t.after(() => { config.providers.force = force; config.generation.parallelAttempts = parallelAttempts; config.generation.maxAttempts = maxAttempts; });
   t.mock.method(falProvider, "isAvailable", () => fal);
   t.mock.method(higgsfieldProvider, "isAvailable", () => true);
   t.mock.method(falProvider, "generateTransition", provider);
@@ -253,4 +254,19 @@ test("a provider with an empty wallet does not use up an attempt", async (t) => 
   await runGenerateJob(job, () => {}, passingJudge);
   assert.equal(calls, 2);
   assert.equal(Generations.get(gen.id)?.status, "ready");
+});
+
+test("one take per click: a take under the bar is delivered with a note, not retried or refunded", async (t) => {
+  let renders = 0;
+  useProviders(t, true, async (req) => { renders++; return rendered(req, "single"); });
+  config.generation.maxAttempts = 1;
+  const { user, gen, job } = await queuedGeneration("single_take");
+  const before = Users.get(user.id)!.credits;
+  const weak = async () => ({ judge: "heuristic" as const, costUsd: 0, scores: { ...passing, overall: 62, issues: ["Soft blend in the middle"] } });
+  await runGenerateJob(job, () => {}, weak);
+  assert.equal(renders, 1, "one click, one render");
+  const g = Generations.get(gen.id)!;
+  assert.equal(g.status, "ready");
+  assert.match(g.result?.suggestion ?? "", /another take/);
+  assert.equal(Users.get(user.id)!.credits, before, "the take was delivered, so the credits stay spent");
 });

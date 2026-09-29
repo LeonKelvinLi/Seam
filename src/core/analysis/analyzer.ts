@@ -2,7 +2,7 @@
  * VisionAnalyzer facade: OpenAI when configured, heuristic otherwise, and heuristic as a
  * safety net whenever the model call fails. Callers never branch on which one ran.
  */
-import { openaiErrorSummary } from "@/core/openai";
+import { openaiErrorSummary, openaiOutOfCredit } from "@/core/openai";
 import { config } from "@/core/config";
 import { logger } from "@/core/log";
 import type { FrameAnalysis, FrameFeatures, PairAnalysis } from "@/core/types";
@@ -15,7 +15,7 @@ export interface FrameInput { path: string; t: number; features: FrameFeatures; 
 export interface AnalyzerResult<T> { data: T; analyzer: "openai" | "heuristic"; costUsd: number }
 
 export async function analyzeFrames(frames: FrameInput[], side: "start" | "end"): Promise<AnalyzerResult<FrameAnalysis[]>> {
-  if (config.openai.enabled) {
+  if (config.openai.enabled && !openaiOutOfCredit()) {
     try {
       const r = await openaiAnalyzeFrames(frames, side);
       return { data: r.frames, analyzer: "openai", costUsd: r.costUsd };
@@ -32,7 +32,7 @@ export async function analyzePair(
   structuralSimilarity: number,
 ): Promise<AnalyzerResult<PairAnalysis>> {
   const fallback = heuristicPair(a.analysis, a.features, b.analysis, b.features, structuralSimilarity);
-  if (config.openai.enabled) {
+  if (config.openai.enabled && !openaiOutOfCredit()) {
     try {
       const r = await openaiAnalyzePair(a, b);
       // Merge: keep the model's relationships/ideas, and add heuristic relationships it did not mention.

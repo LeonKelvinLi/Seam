@@ -45,7 +45,8 @@ export const config = {
     forceModel: env("SEAM_FORCE_MODEL"),
   },
   generation: {
-    maxAttempts: num("SEAM_MAX_ATTEMPTS", 3),
+    /** Rendered takes per click. 1, like Higgsfield: the take is delivered, and a new click makes a new take. */
+    maxAttempts: num("SEAM_MAX_ATTEMPTS", 1),
     qualityThreshold: num("SEAM_QUALITY_THRESHOLD", 82),
     // Calibrated for gpt-5.6-sol on 2026-09-16: clean morphs scored 90 to 95, a ghosted rim 78, blends 43 to 49.
     qualityThresholdPreview: num("SEAM_QUALITY_THRESHOLD_PREVIEW", 80),

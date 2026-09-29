@@ -4,7 +4,7 @@
  * heuristic only for procedural bridges or when the model is unavailable. Every AI take also goes through the
  * pixel check for dissolves and cuts (./seamless), which no score can override.
  */
-import { openaiErrorSummary } from "@/core/openai";
+import { openaiErrorSummary, openaiOutOfCredit } from "@/core/openai";
 import { config } from "@/core/config";
 import { logger } from "@/core/log";
 import type { TransitionRecipe } from "@/core/recipes/types";
@@ -32,8 +32,6 @@ type Judged = { scores: QualityScores; judge: "openai" | "heuristic" | "unavaila
  * Pixel statistics cannot tell a blend from a morph: the heuristic scored 93 a take the vision judge failed at 45
  * (2026-09-16). When the vision judge is configured but no model answers, an AI take is refused rather than shipped.
  */
-export const UNJUDGED_CAP = 60;
-export const JUDGE_UNAVAILABLE = "The quality check was unavailable, so this take was not accepted.";
 
 export async function judgeTransition(input: JudgeInput): Promise<Judged> {
   // The pixel check runs on every AI take, with or without OpenAI. The procedural bridge is a crossfade by design.
@@ -67,7 +65,7 @@ export function applySeamBreaks(scores: QualityScores, breaks: SeamBreak[]): Qua
 
 async function scoreTransition(input: JudgeInput): Promise<Judged> {
   // Start the vision request without waiting for the independent pixel-fidelity check. Neither result is accepted
-  // until both finish, and the same fidelity floor and unavailable-judge rejection still apply.
+  // until both finish, and the same fidelity floor applies.
   const [heuristic, vision] = await Promise.all([
     heuristicJudge(input.bridgePath, input.sourceFrame, input.destFrame, input.tmpDir),
     scoreWithVision(input),
@@ -83,16 +81,15 @@ async function scoreTransition(input: JudgeInput): Promise<Judged> {
       merged.overall = Math.round(Math.min(vision.scores.overall, (merged.startFidelity + merged.endFidelity) / 2 + 20));
       return { scores: merged, judge: "openai", costUsd: vision.costUsd };
     }
-    return {
-      scores: { ...heuristic, overall: Math.min(heuristic.overall, UNJUDGED_CAP), issues: [JUDGE_UNAVAILABLE, ...heuristic.issues].slice(0, 8) },
-      judge: "unavailable", costUsd: 0,
-    };
+    // No vision judge (no OpenAI key, or the account is empty): the pixel checks decide. A take is delivered either
+    // way now (one take per click), so refusing it would only leave the customer with nothing.
+    log.info("no vision judge; pixel checks decide");
   }
   return { scores: heuristic, judge: "heuristic", costUsd: 0 };
 }
 
 async function scoreWithVision(input: JudgeInput) {
-  if (input.cheap || !config.openai.enabled) return null;
+  if (input.cheap || !config.openai.enabled || openaiOutOfCredit()) return null;
   const models = [...new Set([config.openai.judgeModel, config.openai.judgeFallbackModel].filter(Boolean))];
   for (const model of models) {
     try {

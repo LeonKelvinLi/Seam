@@ -47,6 +47,8 @@ function capProcedural(scores: QualityScores, providerId: string) {
  * Wan behind it would book $0.25 a preview for a result that is almost never used.
  */
 const FAN_OUT_MIN_WAIT_SEC = 60;
+/** Models tried after provider errors (no video, nothing charged) on top of the rendered takes allowed. */
+const MAX_FAILOVERS = 3;
 
 const FRIENDLY_FAIL = "We couldn't build that transition from these clips. Try another style, or a different cut point.";
 const FRIENDLY_BUSY = "Clipmelt has reached today's AI limit. Your credits are untouched; try again later.";
@@ -145,6 +147,7 @@ export async function runGenerateJob(job: Job, report: Reporter, judge = judgeTr
     const outcomes: AttemptOutcome[] = [];
     const attempts: GenerationAttempt[] = [];
     let best: Best | null = null;
+    let bestRendered: Best | null = null; // highest-scored take that rendered, delivered if none passes
     let suggestion: string | null = null;
     let fellBackToLocal = false;
     const maxAttempts = Math.max(1, config.generation.maxAttempts);
@@ -152,7 +155,7 @@ export async function runGenerateJob(job: Job, report: Reporter, judge = judgeTr
     // One written shot per recipe, shared by concurrent attempts. Without OpenAI, or when the call fails, the template stands.
     const shots = new Map<string, Promise<string | null>>();
     const shotFor = (rec: TransitionRecipe, ir: PromptIR): Promise<string | null> => {
-      if (!config.openai.enabled) return Promise.resolve(null);
+      if (!config.openai.enabled || openaiOutOfCredit()) return Promise.resolve(null);
       let shot = shots.get(rec.id);
       if (!shot) {
         const styleMiss = outcomes.findLast((o) => o.scores && !passesStyle(o.scores));
@@ -185,7 +188,6 @@ export async function runGenerateJob(job: Job, report: Reporter, judge = judgeTr
       }
       const provider = getProvider(model.providerId);
       const prompt = renderPrompt(ir, model.dialect);
-      const noJudge = model.providerId !== "local" && config.openai.enabled && openaiOutOfCredit();
       const rawPath = path.join(dir, `attempt_${n}_raw.mp4`);
       const attempt = Attempts.create({
         generationId: gen.id, n, recipeId: rec.id, providerId: model.providerId, modelId: model.id, promptIR: ir, compiledPrompt: prompt,
@@ -196,7 +198,6 @@ export async function runGenerateJob(job: Job, report: Reporter, judge = judgeTr
       log.info("attempt", { gen: gen.id, n, recipe: rec.id, model: model.id, durationSec });
       const ta = Date.now();
       try {
-        if (noJudge) throw new Error("OpenAI account is out of credit: no judge can check a render, so none was paid for");
         const result = await provider.generateTransition({
           firstFramePath: frameA.path, lastFramePath: frameB.path, prompt, durationSec, aspectRatio: aspect, outputPath: rawPath,
           transitionType: rec.id, motionStrength: ir.motionStrength,
@@ -248,7 +249,7 @@ export async function runGenerateJob(job: Job, report: Reporter, judge = judgeTr
         }
         Attempts.update(attempt.id, { status: "failed", error: msg, durationMs: Date.now() - ta, params: attempt.params, providerJobId: attempt.providerJobId });
         attempt.status = "failed"; attempt.durationMs = Date.now() - ta;
-        return { attempt, model, ok: false, scores: null, bridgePath: null, error: msg, recipeId: rec.id, durationSec, outcomeUnknown, skipped: e instanceof ProviderQueueSkip || billing, unjudged: noJudge };
+        return { attempt, model, ok: false, scores: null, bridgePath: null, error: msg, recipeId: rec.id, durationSec, outcomeUnknown, skipped: e instanceof ProviderQueueSkip || billing };
       }
     };
 
@@ -278,10 +279,17 @@ export async function runGenerateJob(job: Job, report: Reporter, judge = judgeTr
       live.current = false;
       for (const late of pending) void late.then((r) => log.info("late attempt finished", { gen: gen.id, n: r.attempt.n, model: r.model.id, status: r.attempt.status }));
       attemptSeq += round.length;
-      attemptNo += round.length - results.filter((r) => r.skipped).length;
+      // Only a rendered take uses up an attempt: a provider error or a skipped queue fails over to the next model,
+      // which costs nothing, up to a few extra models.
+      attemptNo += results.filter((r) => r.scores && r.bridgePath).length;
+      if (attemptSeq >= maxAttempts + MAX_FAILOVERS) break;
       let passed = false;
       for (const r of results) {
-        if (r.scores && r.bridgePath) best = selectPassingCandidate(best, { attempt: r.attempt, bridgePath: r.bridgePath, scores: r.scores, model: r.model, recipe: getRecipe(r.recipeId), durationSec: r.durationSec }, gen.mode);
+        if (r.scores && r.bridgePath) {
+          const take = { attempt: r.attempt, bridgePath: r.bridgePath, scores: r.scores, model: r.model, recipe: getRecipe(r.recipeId), durationSec: r.durationSec };
+          best = selectPassingCandidate(best, take, gen.mode);
+          if (!bestRendered || take.scores.overall > bestRendered.scores.overall) bestRendered = take;
+        }
         if (r.model.providerId === "local" && attemptNo > 1) fellBackToLocal = true;
         if (r.ok) { passed = true; continue; }
         // A rejected or failed model gets one shot per generation; later rounds go to the next-best bridge model.
@@ -342,8 +350,13 @@ export async function runGenerateJob(job: Job, report: Reporter, judge = judgeTr
       suggestion = "This is a procedural preview of the selected style, not a verified AI transition.";
     }
 
-    // AI transitions only: a bridge that never passed is a refunded failure, not a crossfade dressed up as a result.
-    if (!best) throw new GenerationStopped(FRIENDLY_FAIL, "every AI bridge attempt failed or was rejected");
+    // One take per click, like Higgsfield: a rendered take that missed the bar is still delivered, with a note, instead
+    // of refunded after the wait (Leon, 2026-09-29). Only a run with no video at all fails and refunds.
+    if (!best && bestRendered) {
+      best = bestRendered;
+      suggestion ??= "This take missed our smoothness check. Tap a style to get another take.";
+    }
+    if (!best) throw new GenerationStopped(FRIENDLY_FAIL, "every AI bridge attempt failed");
 
     // ---- stitch: A[..cutA] + bridge + B[cutB..]
     setStage("stitch", 0.8);
