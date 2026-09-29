@@ -51,6 +51,25 @@ export function usageCost(model: string, usage?: ResponseUsage): number {
   return ((usage.input_tokens - cached) * price.input + cached * price.cached + usage.output_tokens * price.output) / 1e6;
 }
 
+/**
+ * An empty OpenAI account (credit_balance_exhausted, insufficient_quota) will not refill in minutes. While it is empty
+ * nothing can judge a bridge, so generation stops before paying for renders (2026-09-29: every run rendered, then
+ * refunded, while analysis quietly fell back to the heuristic).
+ */
+let outOfCreditUntil = 0;
+const OUT_OF_CREDIT_MS = 10 * 60_000;
+export function openaiOutOfCredit(now = Date.now()): boolean {
+  return now < outOfCreditUntil;
+}
+export function noteOpenAIError(error: unknown, now = Date.now()): void {
+  if (error instanceof OpenAI.APIError && /credit_balance_exhausted|insufficient_quota|billing_hard_limit/.test(`${error.code ?? ""} ${error.message}`)) {
+    outOfCreditUntil = now + OUT_OF_CREDIT_MS;
+  }
+}
+export function resetOpenAICredit(): void {
+  outOfCreditUntil = 0;
+}
+
 export async function structuredResponse<T extends z.ZodType>(args: {
   model: string;
   instructions: string;
@@ -67,7 +86,8 @@ export async function structuredResponse<T extends z.ZodType>(args: {
     reasoning: { effort: "low" },
     max_output_tokens: args.maxOutputTokens,
     store: false,
-  });
+  }).catch((e: unknown) => { noteOpenAIError(e); throw e; });
+  outOfCreditUntil = 0;
   // Check completion/refusal before parsing: a truncated JSON object is never usable output.
   if (response.status !== "completed") throw new OpenAIOutputError("incomplete");
   const blocks = response.output.flatMap((item) => item.type === "message" ? item.content : []);

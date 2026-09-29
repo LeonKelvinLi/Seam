@@ -13,9 +13,10 @@ import { projectView } from "@/lib/server/views";
 import { describeRuntime } from "@/core/config";
 
 async function main() {
+  // A sample pair name, or two clip paths joined by a comma ("a.mp4,b.mp4").
   const pair = process.argv[2] ?? "coffee-ocean";
   const dir = path.join(process.cwd(), "public", "samples");
-  const a = path.join(dir, `${pair}-a.mp4`), b = path.join(dir, `${pair}-b.mp4`);
+  const [a, b] = pair.includes(",") ? pair.split(",").map((p) => path.resolve(p)) : [path.join(dir, `${pair}-a.mp4`), path.join(dir, `${pair}-b.mp4`)];
   if (!fs.existsSync(a)) throw new Error(`missing ${a}; run npm run samples`);
   console.log("runtime:", describeRuntime());
   const user = Users.ensure("usr_smoke0000000");

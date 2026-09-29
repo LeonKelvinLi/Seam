@@ -102,14 +102,16 @@ const COVER_MAX_ASPECT_GAP = 0.08;
 export async function makeProxy(input: string, output: string, spec: FrameSpec, hasAudio: boolean, maxDurationSec?: number) {
   const args = ["-i", input];
   let durationSec = maxDurationSec;
+  const info = await probe(input);
   if (!hasAudio) {
     args.push("-f", "lavfi", "-i", "anullsrc=channel_layout=stereo:sample_rate=48000");
     // -shortest alone can leave buffered AAC beyond the video. That tail shifts stitch's crossfade offsets.
-    const sourceDuration = (await probe(input)).durationSec;
-    if (sourceDuration > 0) durationSec = Math.min(sourceDuration, maxDurationSec || Infinity);
+    if (info.durationSec > 0) durationSec = Math.min(info.durationSec, maxDurationSec || Infinity);
   }
+  // A clip already the project's shape skips the blurred backdrop it would never show: a third less work on one core
+  // (4K 20 s phone clip: 24 s instead of 36 s).
   args.push(
-    "-filter_complex", `[0:v]${fitFilter(spec.width, spec.height)},fps=${spec.fps},setsar=1[v]`,
+    "-filter_complex", `[0:v]${bridgeFrameFilter(info, spec)},fps=${spec.fps},setsar=1[v]`,
     "-map", "[v]", "-map", hasAudio ? "0:a:0" : "1:a:0",
     "-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p", "-r", String(spec.fps),
     "-c:a", "aac", "-ar", "48000", "-ac", "2", "-b:a", "128k",
@@ -328,7 +330,8 @@ export async function stitch(a: string, bridge: string, b: string, output: strin
     `[a1][2:a]acrossfade=d=${d.toFixed(3)}:c1=tri:c2=tri[a]`;
   await ffmpeg([
     "-i", a, "-i", bridge, "-i", b, "-filter_complex", filter, "-map", "[v]", "-map", "[a]",
-    "-c:v", "libx264", "-preset", "medium", "-crf", "18", "-pix_fmt", "yuv420p", "-r", String(spec.fps),
+    // veryfast: 4.8 s instead of 16.3 s for 20 s of 720p on one core (the server's), SSIM 0.9957 vs 0.9964, smaller file.
+    "-c:v", "libx264", "-preset", "veryfast", "-crf", "18", "-pix_fmt", "yuv420p", "-r", String(spec.fps),
     "-c:a", "aac", "-b:a", "160k", "-movflags", "+faststart", output,
   ]);
   return output;

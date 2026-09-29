@@ -5,6 +5,7 @@ import { extractFrameAt, probe } from "@/core/media/ffmpeg";
 import { imageSize, thumbnail } from "@/core/media/image";
 import { extForMime, kindForMime, storage } from "@/core/media/storage";
 import { Assets, Events, Projects, insert } from "@/db/repo";
+import { prepareProxies } from "@/core/pipeline/proxy";
 import type { Asset, AssetRole } from "@/core/types";
 import { ownedProject } from "./access";
 
@@ -50,6 +51,8 @@ export async function ingestFile(args: { projectId: string; userId: string; role
     id, projectId, role, kind, originalName, mime, path: filePath, sizeBytes: buffer.length, ...meta, thumbnailPath: thumbPath, proxyPath: null, createdAt: now(),
   });
   Projects.update(projectId, { status: "draft", analysisError: null });
+  // Re-encoding is the slow part of analysis; start it now, while the other clip is still being picked or uploaded.
+  prepareProxies(projectId);
   Events.track("upload_completed", { userId: args.userId, projectId, props: { role, kind, bytes: buffer.length, durationSec: meta.durationSec } });
   return asset;
 }

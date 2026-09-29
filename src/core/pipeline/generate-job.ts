@@ -13,7 +13,7 @@ import { getRecipe } from "@/core/recipes/registry";
 import { compileIR, renderPrompt } from "@/core/prompt/compiler";
 import { expectedProfile, proceduralAllowed, routeModels } from "@/core/providers/router";
 import { writeShot } from "@/core/prompt/director";
-import { openaiErrorSummary } from "@/core/openai";
+import { openaiErrorSummary, openaiOutOfCredit } from "@/core/openai";
 import { ProviderQueueSkip, ProviderError, ProviderOutcomeUnknownError } from "@/core/providers/types";
 import { isBillingError, markProviderUnavailable } from "@/core/providers/cooldown";
 import { styleStaging } from "@/core/recipes/style-contract";
@@ -185,6 +185,7 @@ export async function runGenerateJob(job: Job, report: Reporter, judge = judgeTr
       }
       const provider = getProvider(model.providerId);
       const prompt = renderPrompt(ir, model.dialect);
+      const noJudge = model.providerId !== "local" && config.openai.enabled && openaiOutOfCredit();
       const rawPath = path.join(dir, `attempt_${n}_raw.mp4`);
       const attempt = Attempts.create({
         generationId: gen.id, n, recipeId: rec.id, providerId: model.providerId, modelId: model.id, promptIR: ir, compiledPrompt: prompt,
@@ -195,6 +196,7 @@ export async function runGenerateJob(job: Job, report: Reporter, judge = judgeTr
       log.info("attempt", { gen: gen.id, n, recipe: rec.id, model: model.id, durationSec });
       const ta = Date.now();
       try {
+        if (noJudge) throw new Error("OpenAI account is out of credit: no judge can check a render, so none was paid for");
         const result = await provider.generateTransition({
           firstFramePath: frameA.path, lastFramePath: frameB.path, prompt, durationSec, aspectRatio: aspect, outputPath: rawPath,
           transitionType: rec.id, motionStrength: ir.motionStrength,
@@ -246,7 +248,7 @@ export async function runGenerateJob(job: Job, report: Reporter, judge = judgeTr
         }
         Attempts.update(attempt.id, { status: "failed", error: msg, durationMs: Date.now() - ta, params: attempt.params, providerJobId: attempt.providerJobId });
         attempt.status = "failed"; attempt.durationMs = Date.now() - ta;
-        return { attempt, model, ok: false, scores: null, bridgePath: null, error: msg, recipeId: rec.id, durationSec, outcomeUnknown, skipped: e instanceof ProviderQueueSkip || billing };
+        return { attempt, model, ok: false, scores: null, bridgePath: null, error: msg, recipeId: rec.id, durationSec, outcomeUnknown, skipped: e instanceof ProviderQueueSkip || billing, unjudged: noJudge };
       }
     };
 

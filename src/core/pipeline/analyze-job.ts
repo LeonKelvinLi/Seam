@@ -5,7 +5,8 @@ import fs from "node:fs";
 import { config } from "@/core/config";
 import { logger } from "@/core/log";
 import { Assets, Costs, Events, Frames, Opportunities, PairAnalyses, Projects, Recommendations, VisualAnalyses } from "@/db/repo";
-import { chooseOutputFrame, extractFrames, imageToClip, makeProxy, probe, type FrameSpec } from "@/core/media/ffmpeg";
+import { chooseOutputFrame, extractFrames, type FrameSpec } from "@/core/media/ffmpeg";
+import { ensureProxy } from "./proxy";
 import { storage } from "@/core/media/storage";
 import { computeFeatures, loadRasters, structuralSimilarity } from "@/core/analysis/features";
 import { boundaryScore, chooseBoundaryPair, pickCandidates } from "@/core/analysis/frame-selection";
@@ -21,18 +22,6 @@ export function specForProject(p: Project): FrameSpec {
   return { width: p.outputWidth ?? 1280, height: p.outputHeight ?? 720, fps: config.output.fps };
 }
 
-async function ensureProxy(asset: Asset, spec: FrameSpec): Promise<Asset> {
-  if (asset.proxyPath && fs.existsSync(asset.proxyPath)) return asset;
-  const out = storage.proxy(asset.id);
-  if (asset.kind === "video") {
-    await makeProxy(asset.path, out, spec, asset.hasAudio);
-  } else {
-    await imageToClip(asset.path, out, spec, config.output.imageHoldSec, asset.role === "start" ? "in" : "out");
-  }
-  const info = await probe(out);
-  Assets.update(asset.id, { proxyPath: out, durationSec: info.durationSec, fps: info.fps });
-  return { ...asset, proxyPath: out, durationSec: info.durationSec, fps: info.fps };
-}
 
 async function extractBoundaryFrames(asset: Asset): Promise<ExtractedFrame[]> {
   const dur = asset.durationSec ?? 0;
@@ -71,11 +60,14 @@ export async function runAnalyzeJob(job: Job, report: Reporter) {
     const a = await ensureProxy(startAsset, spec);
     report("transcode", 0.15);
     const b = await ensureProxy(endAsset, spec);
+    const transcodeMs = Date.now() - t0;
 
     // ---- frames + cheap features
     report("frames", 0.25);
+    const framesStart = Date.now();
     const aFrames = await extractBoundaryFrames(a);
     const bFrames = await extractBoundaryFrames(b);
+    const framesMs = Date.now() - framesStart;
 
     // ---- candidates: best-scoring frames, always including the literal boundary frames
     const n = config.analysis.visionFramesPerSide;
@@ -98,6 +90,7 @@ export async function runAnalyzeJob(job: Job, report: Reporter) {
     bCand.forEach((f, i) => { analyses.set(f.id, bRes.data[i]); VisualAnalyses.create({ assetId: b.id, frameId: f.id, analyzer: bRes.analyzer, data: bRes.data[i] }); });
 
     // ---- boundary pair
+    const pairStart = Date.now();
     const pair = chooseBoundaryPair(aCand, bCand, analyses, a.durationSec ?? 0, 0, config.analysis.boundaryWindowSec);
     report("analysis", 0.75);
     const [ra, rb] = await Promise.all([loadRasters(pair.a.path), loadRasters(pair.b.path)]);
@@ -107,6 +100,7 @@ export async function runAnalyzeJob(job: Job, report: Reporter) {
       { path: pair.b.path, analysis: analyses.get(pair.b.id)!, features: pair.b.features },
       structural,
     );
+    const pairMs = Date.now() - pairStart;
     const pairRow = PairAnalyses.create({ projectId, startFrameId: pair.a.id, endFrameId: pair.b.id, analyzer: pairRes.analyzer, data: pairRes.data });
 
     // ---- opportunities + lanes
@@ -121,7 +115,7 @@ export async function runAnalyzeJob(job: Job, report: Reporter) {
     if (costUsd > 0) Costs.add({ attemptId: null, generationId: null, kind: "analysis", providerId: "openai", modelId: config.openai.visionModel, units: 3, usd: costUsd });
     Projects.update(projectId, { status: "analyzed" });
     Events.track("analysis_completed", { userId: project.userId, projectId, props: { ms: Date.now() - t0, frameVisionMs, analyzer: pairRes.analyzer, top: opps[0]?.recipeId, costUsd } });
-    log.info("analysis complete", { projectId, ms: Date.now() - t0, analyzer: pairRes.analyzer, top: opps.slice(0, 3).map((o) => `${o.recipeId}:${o.scores.overall}`) });
+    log.info("analysis complete", { projectId, ms: Date.now() - t0, transcodeMs, framesMs, frameVisionMs, pairMs, analyzer: pairRes.analyzer, top: opps.slice(0, 3).map((o) => `${o.recipeId}:${o.scores.overall}`) });
   } catch (e) {
     Projects.update(projectId, { status: "failed", analysisError: (e as Error).message });
     Events.track("analysis_failed", { userId: project.userId, projectId, props: { error: (e as Error).message } });

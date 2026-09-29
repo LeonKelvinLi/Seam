@@ -370,6 +370,8 @@ export const Jobs = {
     return row ? (hydrate<Job>("jobs", row) as Job) : undefined;
   },
   queuedCount: () => (db().prepare("SELECT COUNT(*) c FROM jobs WHERE status='queued'").get() as { c: number }).c,
+  /** Jobs mid-run: a deploy restarts the instance and re-runs them (a second provider render), so push when this is 0. */
+  runningCount: () => (db().prepare("SELECT COUNT(*) c FROM jobs WHERE status='running'").get() as { c: number }).c,
   /** After a crash or deploy, jobs left 'running' belong to a dead process: put them back in the queue. */
   requeueStale(): number {
     // Attempts that were mid-flight belong to the dead process too; close them so the re-run starts clean.

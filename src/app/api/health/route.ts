@@ -27,8 +27,8 @@ export async function GET(req: Request) {
     const free = st.bavail * st.bsize;
     checks.disk = { ok: free > MIN_FREE_BYTES, detail: `${Math.round(free / 1024 / 1024)} MB free` };
   } catch (e) { checks.disk = { ok: false, detail: (e as Error).message }; }
-  let queued = 0;
-  try { queued = Jobs.queuedCount(); } catch { /* database check already failed */ }
+  let queued = 0, running = 0;
+  try { queued = Jobs.queuedCount(); running = Jobs.runningCount(); } catch { /* database check already failed */ }
   const budget = budgetStatus();
   // Render uses the bare URL for restarts. External monitors opt into dependency readiness.
   const readiness = new URL(req.url).searchParams.get("readiness") === "1";
@@ -40,7 +40,7 @@ export async function GET(req: Request) {
   }
   const ok = Object.values(checks).every((c) => c.ok);
   return Response.json({
-    ok, checks, queuedJobs: queued, coolingDown: coolingDownProviders(), budget,
+    ok, checks, queuedJobs: queued, runningJobs: running, coolingDown: coolingDownProviders(), budget,
     version: (process.env.RENDER_GIT_COMMIT ?? "dev").slice(0, 7), time: new Date().toISOString(),
   }, { status: ok ? 200 : 503, headers: { "cache-control": "no-store" } });
 }
