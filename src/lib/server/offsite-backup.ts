@@ -5,7 +5,6 @@ import { createHash } from "node:crypto";
 import Database from "better-sqlite3";
 import { S3Client, PutObjectCommand, HeadObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
 import { config } from "@/core/config";
-import { db } from "@/db/client";
 
 export interface BackupObject { path: string; key: string; sha256: string; bytes: number }
 export interface BackupManifest { version: 1; createdAt: string; dataRoot: string; files: BackupObject[] }
@@ -95,7 +94,9 @@ export async function createOffsiteSnapshot(store: ObjectStore, now = new Date()
   const stage = fs.mkdtempSync(path.join(backups, ".offsite-"));
   try {
     const databaseFile = path.join(stage, "seam.sqlite");
-    await db().backup(databaseFile);
+    // The operator CLI must not run application startup migrations or requeue live jobs.
+    const live = new Database(config.dbPath, { readonly: true, fileMustExist: true });
+    try { await live.backup(databaseFile); } finally { live.close(); }
     const snapshot = new Database(databaseFile, { readonly: true });
     let media: string[];
     try {

@@ -1,4 +1,40 @@
-# Production readiness (updated 2026-09-09)
+# Production readiness (checked 2026-10-25)
+
+## Current verification
+
+This section supersedes the dated implementation notes below. Configuration is not proof of a successful
+payment, email delivery, backup, or AI generation.
+
+| Area | Current evidence and remaining work |
+|---|---|
+| Deployment | `https://clipmelt.com` and `https://seamcut.onrender.com` serve the same Render service. The Next.js 16.3.8 security PR was merged as `0924fec`; the live health endpoint reports that revision. |
+| Security follow-up | A fresh npm audit found newer Next.js, sharp, source-map-js and Zod advisories. The follow-up lockfile resolves Next.js 16.4.3, sharp 0.35.5, source-map-js 1.2.2 and Zod 4.6.7; `npm audit` reports zero vulnerabilities. Verify the deployed revision after release. |
+| Generation | Higgsfield DoP first/last-frame models lead. One rendered take per click; provider failures can fail over. A rendered take below the quality bar can be delivered with a note. OpenAI is optional; do not infer that every output passed a vision judge. |
+| Live AI proof | A fresh coffee/ocean run on deployed `0924fec` completed in 279 seconds, using Higgsfield DoP Turbo in one attempt; the judge scored 87/100. The full edit and bridge downloaded, the signed-out [share page](https://clipmelt.com/t/xmyqb4hr) loaded, and a second run returned 402 with zero credits. The contact sheet shows a steam/haze bridge; the judge notes an overly long cream-colour hold, so this is a passing functional proof rather than a general quality guarantee. |
+| Pricing | Preview: 2 credits; final: 6. Starter: $9/12 credits (6 previews); Pro: $29/44 (22); Studio: $99/170 (85). Legacy checkout receipts retain their purchased allocation. `src/lib/server/billing.ts` is the source of truth. |
+| Google | Production Google sign-in completed through the browser and returned to `/account` successfully on October 25. |
+| Email | A reset request to the owner account returned 200; the actual “Reset your Clipmelt password” message arrived in the Gmail inbox at 4:53 PM Pacific on October 25. No password was changed. |
+| Stripe | Payment Links and webhook signing secret are configured; server-created Checkout Sessions are disabled because `STRIPE_SECRET_KEY` is absent. Dashboard access is blocked on owner password recovery. Refund/delayed-payment event subscriptions and a real purchase/refund remain unverified. |
+| Provider funds | fal's key-scoped billing endpoint reports $4.22882, below the configured $15 threshold. Funding requires an approved top-up. This does not measure Higgsfield funds. |
+| Backups | No `SEAM_BACKUP_BUCKET` is set. The runtime image now includes the backup upload/verify CLI; connect private S3/R2 storage, upload a snapshot, and verify it into a new isolated directory before treating this as complete. |
+| Health | Basic database/FFmpeg/disk checks pass. Dependency readiness returns 503 for low fal funds and unconfigured off-site backup. Keep those checks enabled until their causes are resolved. |
+
+The backup CLI uses a separate read-only SQLite connection, so it does not run application startup recovery
+or change active job states. Use it in Render Shell, from `/app`:
+
+```sh
+node --import tsx scripts/backup-offsite.ts --help
+node --import tsx scripts/backup-offsite.ts upload
+node --import tsx scripts/backup-offsite.ts verify ACTUAL-MANIFEST-KEY /tmp/seam-restore-NEW
+```
+
+The verify command checks downloaded database/media checksums, SQLite integrity and referenced-media coverage;
+it never replaces live data. A successful local fixture test is not evidence of a production restore.
+
+## Historical implementation and verification notes
+
+The sections below describe work at their stated dates. Their prices, routing, retry counts and account
+setup status may be superseded by the current verification above and the running service.
 
 ## Higgsfield submission safety — 2026-09-17
 

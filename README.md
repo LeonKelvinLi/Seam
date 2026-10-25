@@ -1,12 +1,12 @@
 # Clipmelt
 
-Live preview deployment: https://seamcut.onrender.com (Render Docker service `seamcut`, see `docs/deploy-render.md`; deploys are manual from the Render dashboard).
+Production: https://clipmelt.com (Render Docker service `seamcut`; also available at https://seamcut.onrender.com). CI gates automatic deployment. See `docs/production.md` for current verification and outstanding owner setup.
 
 **Turn any two clips into one impossible shot.** Upload two clips. AI figures out the transition.
 
 Seam is an AI transition director: it looks at the end of clip A and the start of clip B, decides which
 transition the footage actually supports, writes the generation prompt, routes it to a video model,
-judges the result, retries when needed, and stitches a finished edit. Users never see prompts, models,
+judges the result, fails over on provider errors, and stitches a finished edit. Users never see prompts, models,
 frames or parameters — they see three recommendations, a *Surprise me* button, and a video.
 
 Every transition Clipmelt offers is a seamless AI bridge: a generated shot that starts on the last frame of clip A and
@@ -25,7 +25,7 @@ Requirements: Node 20+, `ffmpeg`/`ffprobe` on PATH (or `FFMPEG_PATH` / `FFPROBE_
 
 With no API keys Seam runs fully local for development and CI: heuristic visual analysis, a procedural ffmpeg
 bridge, and a heuristic quality judge. Once a bridge model is configured, that procedural bridge is never delivered —
-a run that no AI bridge passes fails and refunds its credits instead of shipping a crossfade (`SEAM_ALLOW_PROCEDURAL=1`
+a run with no AI video fails and refunds its credits instead of shipping a procedural crossfade (`SEAM_ALLOW_PROCEDURAL=1`
 re-enables it deliberately). Copy `.env.example` to `.env.local` to enable:
 
 | Key | Unlocks |
@@ -77,9 +77,9 @@ npm test                               # unit + ffmpeg integration tests
    preserve, avoid) → rendered per provider dialect.
 5. **Router → provider → judge → retry** — models are ranked per transition class and mode; output is time-remapped, judged
    (start/end fidelity, subject consistency, continuity, artifacts, aesthetics), and retried with calmer settings, the next-best
-   bridge model, or a safer seamless recipe. Nothing that fails the bar ships, and a pixel check (`src/core/quality/seamless.ts`)
-   fails any take with a cross-dissolve or a hard cut whatever the judge scored. Bridge models all take both boundary frames:
-   Higgsfield DoP leads, MiniMax Hailuo-02 is the last resort, and Veo 3.1 waits until the Higgsfield account is enabled for
+   bridge model, or a safer seamless recipe. One rendered take is delivered per click, including a below-bar take with a note; only a run with no video fails and refunds. A pixel check (`src/core/quality/seamless.ts`)
+   records cross-dissolves and hard cuts as quality failures. Bridge models all take both boundary frames:
+   Higgsfield DoP Turbo/Standard first-last-frame endpoints lead with motion presets and provider-written prompts; H3, Kling and fal are fallbacks, and Veo 3.1 waits until the Higgsfield account is enabled for
    it (`npx tsx scripts/probe-higgsfield.ts` checks at no cost). None of their APIs has a negative prompt, so the Higgsfield
    prompt is a plain shot direction with the no-cut and one-object rules written in.
 6. **Stitch** — A is cut at the chosen frame, B resumed at its chosen frame, short video and audio crossfades at both seams.
@@ -87,18 +87,18 @@ npm test                               # unit + ffmpeg integration tests
 ## Accounts and payments
 
 Accounts work with no extra setup: email + password (scrypt), sessions in SQLite, and a guest's projects are adopted on
-sign-in. Every new account starts with 5 credits; a preview transition costs 1 credit, a final-quality one costs 3, and a
-failed generation refunds its credit. Pages: `/signup`, `/login`, `/account`, `/pricing`. API: `/api/auth/{signup,login,logout,me}`.
+sign-in. Every new account starts with one free preview (2 credits); a preview transition costs 2 credits, a final-quality one costs 6, and a
+failed generation refunds its credits. Signing up after spending the guest trial does not grant another trial. Pages: `/signup`, `/login`, `/account`, `/pricing`. API: `/api/auth/{signup,login,logout,me}`.
 
 Stripe, two options (both grant credits through the same webhook):
 
-1. **Checkout sessions (recommended).** In the Stripe dashboard create three one-time Products/Prices (Starter $9 → 50 credits,
-   Pro $29 → 250, Studio $89 → 1,000), then set `STRIPE_SECRET_KEY` and `STRIPE_PRICE_STARTER|PRO|STUDIO` in `.env.local`.
+1. **Checkout sessions (recommended).** In the Stripe dashboard create three one-time Products/Prices (Starter $9 → 12 credits,
+   Pro $29 → 44, Studio $99 → 170), then set `STRIPE_SECRET_KEY` and `STRIPE_PRICE_STARTER|PRO|STUDIO` in `.env.local`.
 2. **Payment Links.** Create a Payment Link per pack in the dashboard and paste the URLs into `STRIPE_LINK_STARTER|PRO|STUDIO`.
    The app appends `client_reference_id=<userId>` so the webhook can credit the right account.
 
-Then add a webhook endpoint in Stripe pointing at `https://<your-domain>/api/stripe/webhook` for the event
-`checkout.session.completed`, and put its signing secret in `STRIPE_WEBHOOK_SECRET`. For local testing:
+Then add a webhook endpoint in Stripe pointing at `https://<your-domain>/api/stripe/webhook` for the events
+`checkout.session.completed`, `checkout.session.async_payment_succeeded`, and `charge.refunded`, and put its signing secret in `STRIPE_WEBHOOK_SECRET`. For local testing:
 `stripe listen --forward-to localhost:3000/api/stripe/webhook`. Packs and prices live in `src/lib/server/billing.ts`.
 
 ## Sample and example media
