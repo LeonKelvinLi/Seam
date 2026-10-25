@@ -8,6 +8,9 @@
 !postcss.config.mjs
 !src/
 !src/**
+!scripts/
+!scripts/_env.ts
+!scripts/backup-offsite.ts
 !docs/
 !docs/deploy-assets.json
 !docs/verify-deploy-assets.mjs

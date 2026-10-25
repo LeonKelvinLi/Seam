@@ -1,5 +1,11 @@
 # Render preview deployment
 
+> Historical initial-deployment walkthrough. Current production uses `https://clipmelt.com`, AI providers,
+> and automatic deployment after passing CI, as configured in `render.yaml`. It does not force local FFmpeg.
+> Read [current production verification](production.md#current-verification) before following the older setup
+> steps below. The runtime image includes `node --import tsx scripts/backup-offsite.ts --help` for backup
+> upload and isolated restore verification; private S3/R2 configuration is still required.
+
 This deploys the existing Next.js app as one Docker web service. Preview generation is forced to the
 local ffmpeg provider. OpenAI remains the optional visual analyzer; no Anthropic integration is required.
 

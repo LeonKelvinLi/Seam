@@ -4,6 +4,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import Database from "better-sqlite3";
+import { spawnSync } from "node:child_process";
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), "seam-offsite-"));
 process.env.SEAM_DATA_DIR = path.join(dir, "live");
 const { db } = await import("@/db/client");
@@ -40,6 +41,17 @@ test("missing referenced media never publishes a completed snapshot", async () =
   fs.rmSync(path.join(process.env.SEAM_DATA_DIR!, "uploads/source.mp4"));
   await assert.rejects(createOffsiteSnapshot(store, new Date(Date.now() + 1000)));
   assert.equal([...objects.keys()].filter(k => k.includes("snapshots/")).length, count);
+});
+test("operator snapshot leaves running jobs unchanged in the live database", () => {
+  fs.writeFileSync(path.join(process.env.SEAM_DATA_DIR!, "uploads/source.mp4"), Buffer.from("fixture footage bytes"));
+  db().prepare("INSERT INTO jobs (id,type,payload,status,stage,stageLabel,createdAt,updatedAt) VALUES (?,?,?,?,?,?,?,?)")
+    .run("job_backup_live", "generate", "{}", "running", "render", "Rendering", "now", "now");
+  const child = spawnSync(process.execPath, ["--import", "tsx", "--input-type=module", "-e", `
+    const { createOffsiteSnapshot } = await import('./src/lib/server/offsite-backup.ts');
+    await createOffsiteSnapshot({has:async()=>false,put:async()=>{},get:async()=>{}});
+  `], { env: process.env, encoding: "utf8", timeout: 30_000 });
+  assert.equal(child.status, 0, child.stderr);
+  assert.equal((db().prepare("SELECT status FROM jobs WHERE id=?").get("job_backup_live") as { status: string }).status, "running");
 });
 test("manifest traversal is rejected without writing outside the restore directory", async () => {
   objects.set("bad.json", Buffer.from(JSON.stringify({ version: 1, dataRoot: "/var/data/seam", files: [{ path: "../escape" }] })));
