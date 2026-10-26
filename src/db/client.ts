@@ -28,6 +28,15 @@ CREATE TABLE IF NOT EXISTS stripeRefundTotals (
   chargeId TEXT PRIMARY KEY, paymentIntentId TEXT NOT NULL,
   amountRefunded INTEGER NOT NULL, currency TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS paymentOrders (
+  id TEXT PRIMARY KEY, userId TEXT NOT NULL, provider TEXT NOT NULL, pack TEXT NOT NULL,
+  credits INTEGER NOT NULL, amountCents INTEGER NOT NULL, currency TEXT NOT NULL,
+  preferenceId TEXT, createdAt TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS mercadoPagoPayments (
+  paymentId TEXT PRIMARY KEY, orderId TEXT NOT NULL, revokedCredits INTEGER NOT NULL DEFAULT 0,
+  refundedCents INTEGER NOT NULL DEFAULT 0, chargedBack INTEGER NOT NULL DEFAULT 0
+);
 CREATE INDEX IF NOT EXISTS stripeRefundTotals_payment ON stripeRefundTotals(paymentIntentId);
 CREATE TABLE IF NOT EXISTS projects (
   id TEXT PRIMARY KEY, userId TEXT NOT NULL, title TEXT NOT NULL, status TEXT NOT NULL,

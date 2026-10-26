@@ -6,14 +6,14 @@ export default function PrivacyPage() {
       <Section heading="What we collect">
         <p><strong>Account data:</strong> your email address and a salted hash of your password. Guests get a random identifier stored in a cookie.</p>
         <p><strong>Content:</strong> the clips and images you upload, frames extracted from them, generated bridges and exports.</p>
-        <p><strong>Usage and billing:</strong> which link or site first brought you here (campaign tags, referring site, landing page), which features you use, generation outcomes and quality scores, credit balance, and purchase records. Card details are handled by Stripe and never reach our servers.</p>
+        <p><strong>Usage and billing:</strong> which link or site first brought you here (campaign tags, referring site, landing page), which features you use, generation outcomes and quality scores, credit balance, and purchase records. Payment details and buyer identification are entered directly with Stripe or Mercado Pago. We receive payment records to grant credits and reconcile refunds; we do not store raw card numbers or CPF/CNPJ identification numbers.</p>
         <p><strong>Technical:</strong> IP address and browser type in request logs, kept briefly for security and abuse prevention. To keep the free transition to one per person we also store a salted hash of your network address and the date (never the address itself) for two days.</p>
       </Section>
       <Section heading="Why we process it">
         <p>To run the service (store your projects, generate transitions, deliver downloads), to bill you, to keep the service secure, and to improve transition quality by learning which recipes work. We do not sell personal data and we do not run third-party advertising trackers.</p>
       </Section>
       <Section heading="Who processes it for us">
-        <p>Hosting and storage: Render (United States). Payments: Stripe. AI generation and analysis, only when a generation runs: the model providers configured for the service, which may include OpenAI, fal.ai, Runway and Higgsfield. Each receives only the frames or clips needed for that job.</p>
+        <p>Hosting and storage: Render (United States). Payments: Stripe or Mercado Pago, as shown at checkout. AI generation and analysis, only when a generation runs: the model providers configured for the service, which may include OpenAI, fal.ai, Runway and Higgsfield. Each receives only the frames or clips needed for that job.</p>
       </Section>
       <Section heading="Cookies">
         <p>We use strictly necessary cookies only: a session cookie for signed-in users and a guest identifier so your projects survive a page reload. No analytics or advertising cookies are set.</p>

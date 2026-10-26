@@ -4,18 +4,12 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { api } from "@/lib/api";
 import { GoogleButton } from "@/components/GoogleButton";
+import { formatPackPrice, type DisplayPack as Pack } from "@/lib/money";
 
-interface Pack {
-  id: string;
-  name: string;
-  credits: number;
-  priceUsd: number;
-  blurb: string;
-}
 interface Me {
   user: { email: string | null; credits: number } | null;
   packs: Pack[];
-  billing: { checkout: boolean; links: string[]; webhook: boolean };
+  billing: { provider: string; checkout: boolean; links: string[]; webhook: boolean };
 }
 
 export function Pricing() {
@@ -48,7 +42,7 @@ export function Pricing() {
     setBusy(pack.id);
     setError(null);
     try {
-      const r = await api<{ url: string }>("/api/stripe/checkout", {
+      const r = await api<{ url: string }>("/api/payments/checkout", {
         method: "POST",
         json: { pack: pack.id },
       });
@@ -111,8 +105,8 @@ export function Pricing() {
                   </span>
                 </div>
                 <div className="price-amount">
-                  ${pack.priceUsd}
-                  <span>USD / one-time</span>
+                  {formatPackPrice(pack)}
+                  <span>{pack.currency} / one-time</span>
                 </div>
                 <div className="price-credit-count">{pack.credits} credits</div>
                 <p className="price-preview-count">
@@ -138,6 +132,7 @@ export function Pricing() {
               </article>
             ))}
           </div>
+          {me.billing.provider === "mercadopago" && configured && <p className="surface-message">Pay securely with Pix or cards through Mercado Pago.</p>}
           {!configured && (
             <p className="surface-message" role="status">
               Purchases are temporarily unavailable. Please try again later.
@@ -170,7 +165,7 @@ export function Pricing() {
           <h2>Your clips. Your call.</h2>
           <p>
             Download the AI transition for your own edit, or take the combined
-            video. If a generation fails the quality check, its credits go back
+            video. If a generation cannot produce a video, its credits go back
             to your balance.
           </p>
         </div>
