@@ -86,6 +86,10 @@ npm test                               # unit + ffmpeg integration tests
 
 ## Accounts and payments
 
+Brazilian Pix/card checkout through Mercado Pago is available behind `SEAM_PAYMENT_PROVIDER=mercadopago`.
+The approved fixed packs are Starter R$49.90/12 credits, Pro R$149.90/44, and Studio R$499.90/170.
+See `docs/payments-brazil.md` for private credential setup, signed webhooks, testing and activation.
+
 Accounts work with no extra setup: email + password (scrypt), sessions in SQLite, and a guest's projects are adopted on
 sign-in. Every new account starts with one free preview (2 credits); a preview transition costs 2 credits, a final-quality one costs 6, and a
 failed generation refunds its credits. Signing up after spending the guest trial does not grant another trial. Pages: `/signup`, `/login`, `/account`, `/pricing`. API: `/api/auth/{signup,login,logout,me}`.

@@ -36,7 +36,7 @@ export interface Session {
 export interface Purchase {
   id: string;
   userId: string;
-  provider: "stripe";
+  provider: "stripe" | "mercadopago";
   externalId: string | null;
   pack: string;
   amountCents: number;

@@ -90,9 +90,9 @@ export function Account() {
           {leaving ? "Signing out…" : "Sign out"}
         </button>
       </div>
-      {params.get("paid") && (
+      {(params.get("paid") || params.get("payment") === "pending") && (
         <div className="account-payment-note" role="status">
-          Checkout complete. Your balance updates when Stripe confirms payment.{" "}
+          {params.get("payment") === "pending" ? "Payment is pending. Credits arrive once payment is confirmed." : "Checkout submitted. Your balance updates when payment is confirmed."}{" "}
           <button onClick={load}>Refresh balance</button>
         </div>
       )}
